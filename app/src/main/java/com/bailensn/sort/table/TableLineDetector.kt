@@ -41,10 +41,14 @@ object TableLineDetector {
     private const val FIT_WINDOW = 32
     private const val MAX_SLOPE = 0.15f
 
+    /** CLAHE 对褪色打印稿有用，对截图偶有副作用，留个开关方便回退。 */
+    private const val ENHANCE_CONTRAST = true
+
     fun detect(bitmap: Bitmap): LineDetection {
         val rgba = Mat()
         val gray = Mat()
         val work = Mat()
+        val lighting = Mat()
         val binary = Mat()
         val horizontalMask = Mat()
         val verticalMask = Mat()
@@ -67,6 +71,10 @@ object TableLineDetector {
             } else {
                 gray.copyTo(work)
             }
+
+            // 先压平光照、提一档局部对比度，浅灰的表格线才不会被当成纸白。
+            GrayPreprocessor.flatten(work, lighting)
+            if (ENHANCE_CONTRAST) GrayPreprocessor.enhanceContrast(work)
 
             Imgproc.adaptiveThreshold(
                 work,
@@ -114,6 +122,7 @@ object TableLineDetector {
             rgba.release()
             gray.release()
             work.release()
+            lighting.release()
             binary.release()
             horizontalMask.release()
             verticalMask.release()

@@ -86,4 +86,56 @@ class GarbageColumnTrimmerTest {
 
         assertEquals(2, GarbageColumnTrimmer.trim(rows).first().size)
     }
+
+    @Test
+    fun clearsStrayDigitsInsideEmptyColumnRun() {
+        // 6 科后面连着 3 个没用到的空列，格线线头被认成 1、2、7，必须清掉。
+        val rows = listOf(
+            listOf("张三丰", "94.5", "", "2", ""),
+            listOf("李四海", "77.5", "", "", ""),
+            listOf("王五岳", "95", "1", "", "7"),
+            listOf("赵六合", "87.5", "", "", ""),
+            listOf("钱七曜", "81.5", "", "", ""),
+        )
+
+        val cleaned = GarbageColumnTrimmer.cleanIsolatedDigits(rows)
+
+        assertEquals("", cleaned[0][3])
+        assertEquals("", cleaned[2][2])
+        assertEquals("7", rows[2][4]) // 原数据不动
+        assertEquals("", cleaned[2][4])
+        assertEquals("94.5", cleaned[0][1])
+    }
+
+    @Test
+    fun keepsDigitsInFilledColumn() {
+        // 序号列每行都有值，哪怕都是单个数字也不能清。
+        val rows = listOf(
+            listOf("1", "张三", ""),
+            listOf("2", "李四", ""),
+            listOf("3", "王五", ""),
+        )
+
+        val cleaned = GarbageColumnTrimmer.cleanIsolatedDigits(rows)
+
+        assertEquals("1", cleaned[0][0])
+        assertEquals("3", cleaned[2][0])
+    }
+
+    @Test
+    fun keepsSingleSparseColumn() {
+        // 只有一列稀疏（附加分只有两个人有），不构成「空列块」，保留。
+        val rows = listOf(
+            listOf("张三", "94.5", "5"),
+            listOf("李四", "88", ""),
+            listOf("王五", "79", ""),
+            listOf("赵六", "66", ""),
+            listOf("钱七", "60", ""),
+            listOf("孙八", "55", ""),
+        )
+
+        val cleaned = GarbageColumnTrimmer.cleanIsolatedDigits(rows)
+
+        assertEquals("5", cleaned[0][2])
+    }
 }

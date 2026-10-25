@@ -14,6 +14,9 @@ package com.bailensn.sort.table
  */
 object GarbageColumnTrimmer {
 
+    /** 连续这么空（甚至更空）的列，视为「表里没用到的空列」。 */
+    private const val EMPTY_COLUMN_RATIO = 0.35
+
     /** 右侧列：空到这种程度就当噪声。 */
     private const val MAX_EMPTY_RATIO = 0.6
 
@@ -63,6 +66,48 @@ object GarbageColumnTrimmer {
         }
 
         return grid.map { row -> row.subList(start, end) }
+    }
+
+    /**
+     * 清掉「空列里孤零零的单个数码」。
+     *
+     * 成绩单里常有整块没用到的空列（选科、备注），格线上的线头会被认成 1、2、7，
+     * 于是空列里零星冒出几个数字——导出后这些数字会被当成数据，排序就乱了。
+     * 只在**连续两列以上都是空列**时才清：单个稀疏列（比如只有几个人有的附加分）保留。
+     */
+    fun cleanIsolatedDigits(rows: List<List<String>>): List<List<String>> {
+        if (rows.isEmpty()) return rows
+        val width = rows.maxOfOrNull { it.size } ?: return rows
+        if (width <= 1) return rows
+
+        val filledRatio = DoubleArray(width) { column ->
+            rows.count { row -> row.getOrNull(column)?.isNotBlank() == true }.toDouble() / rows.size
+        }
+        val noisy = BooleanArray(width)
+        var start = 0
+        while (start < width) {
+            if (filledRatio[start] > EMPTY_COLUMN_RATIO) {
+                start++
+                continue
+            }
+            var end = start
+            while (end + 1 < width && filledRatio[end + 1] <= EMPTY_COLUMN_RATIO) end++
+            if (end > start) {
+                for (column in start..end) noisy[column] = true
+            }
+            start = end + 1
+        }
+        if (noisy.none { it }) return rows
+
+        return rows.map { row ->
+            row.toMutableList().also { cells ->
+                noisy.forEachIndexed { column, isNoisy ->
+                    if (!isNoisy) return@forEachIndexed
+                    val value = cells.getOrNull(column) ?: return@forEachIndexed
+                    if (value.length == 1 && value[0].isDigit()) cells[column] = ""
+                }
+            }
+        }
     }
 
     private fun noChinese(value: String): Boolean = value.none { it.code > 0x2E80 }

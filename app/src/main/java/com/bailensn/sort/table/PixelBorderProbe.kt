@@ -111,9 +111,12 @@ class PixelBorderProbe private constructor(
         fun from(bitmap: Bitmap): PixelBorderProbe? = runCatching {
             val rgba = Mat()
             val gray = Mat()
+            val lighting = Mat()
             try {
                 Utils.bitmapToMat(bitmap, rgba)
                 Imgproc.cvtColor(rgba, gray, Imgproc.COLOR_RGBA2GRAY)
+                // 和线检测同一套光照归一化，否则暗处的线会被判成「这里没画线」。
+                GrayPreprocessor.flatten(gray, lighting)
                 val binary = Mat()
                 Imgproc.adaptiveThreshold(
                     gray,
@@ -128,6 +131,7 @@ class PixelBorderProbe private constructor(
             } finally {
                 rgba.release()
                 gray.release()
+                lighting.release()
             }
         }.getOrNull()
     }

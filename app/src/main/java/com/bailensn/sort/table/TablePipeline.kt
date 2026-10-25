@@ -56,11 +56,20 @@ object TablePipeline {
 
         if (detection.isUsable) {
             val warped = runCatching { PerspectiveRectifier.rectify(working, detection) }.getOrNull()
-            // 个别照片外框求交会算出坏四边形，warp 出来一片白；这种就当没校正过。
-            if (warped != null && !looksBlank(warped)) {
-                working = warped
-                detection = detectSafely(working)
+            // 个别照片外框求交会算出坏四边形，warp 出来一条白带；这种就当没校正过。
+            // 判据：warp 结果不能白、不能丢内容、而且上面还得能重新检到表格线。
+            val warpedDetection = warped?.let { detectSafely(it) }
+            val usable = warped != null &&
+                warpedDetection != null &&
+                !looksBlank(warped) &&
+                keepsInk(working, warped) &&
+                warpedDetection.isUsable
+            if (usable) {
+                working = warped!!
+                detection = warpedDetection!!
                 rectified = true
+            } else {
+                warped?.recycle()
             }
         }
 
@@ -243,8 +252,8 @@ object TablePipeline {
             matrix[cell.row][cell.column] = chosen
         }
 
-        // 右侧零星字符基本是照片背景被线检测当成列，先裁掉再纠错。
-        val trimmed = GarbageColumnTrimmer.trim(matrix)
+        // 空列里冒出来的单个数字是格线线头，先清掉；再裁两侧被背景带出来的垃圾列。
+        val trimmed = GarbageColumnTrimmer.trim(GarbageColumnTrimmer.cleanIsolatedDigits(matrix))
         // 分数列里 5→S、0→O 这类错字按列纠正：整列大多是数字时才动手。
         val repaired = NumericColumnRepair.repair(trimmed)
         val grid = TableGridBuilder.normalize(repaired, TableGrid.Mode.GRID_LINES, cellGrid.merges)
@@ -263,6 +272,35 @@ object TablePipeline {
         return TableGridBuilder.fromClusters(regions)
             ?: TableGrid(emptyList(), TableGrid.Mode.TEXT_CLUSTER)
     }
+
+    /**
+     * 校正后不能把内容丢了。
+     *
+     * 透视变换把表格拉正时，墨迹总量基本不变；如果结果里的暗像素只剩一点点，
+     * 说明四边形选歪了、只框到表格的一条边——这种白带状的图继续往下走没用。
+     */
+    private fun keepsInk(source: Bitmap, warped: Bitmap): Boolean {
+        val before = darkRatio(source)
+        if (before <= 0.0) return true
+        return darkRatio(warped) >= before * 0.5
+    }
+
+    /** 抽 96x96 采样估暗像素占比。 */
+    private fun darkRatio(bitmap: Bitmap): Double = runCatching {
+        val size = 96
+        val small = Bitmap.createScaledBitmap(bitmap, size, size, false)
+        val pixels = IntArray(size * size)
+        small.getPixels(pixels, 0, size, 0, 0, size, size)
+        if (small !== bitmap) small.recycle()
+        var dark = 0
+        for (pixel in pixels) {
+            val r = (pixel shr 16) and 0xFF
+            val g = (pixel shr 8) and 0xFF
+            val b = pixel and 0xFF
+            if ((r * 299 + g * 587 + b * 114) / 1000 < 160) dark++
+        }
+        dark.toDouble() / pixels.size
+    }.getOrDefault(0.0)
 
     /** 抽 64x64 采样，估算「几乎全白」的图。 */
     private fun looksBlank(bitmap: Bitmap): Boolean {
