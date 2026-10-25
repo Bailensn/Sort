@@ -10,3 +10,10 @@ captures/
 .kotlin/
 *.apk
 *.aab
+*.part
+
+# 模型由 Gradle 任务下载（约 31 MB），不进仓库
+app/src/main/assets/models/
+
+# 本地验证用的成绩单照片（含真实姓名/成绩），不入库
+/*.png

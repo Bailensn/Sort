@@ -1,3 +1,5 @@
+import java.net.URI
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
@@ -12,7 +14,8 @@ android {
 
     defaultConfig {
         applicationId = "com.bailensn.sort"
-        minSdk = 24
+        // ppocr-sdk（ONNX Runtime）要求 26。
+        minSdk = 26
         targetSdk = 37
         versionCode = 1
         versionName = "1.0.0"
@@ -54,15 +57,85 @@ android {
         sourceCompatibility = JavaVersion.VERSION_21
         targetCompatibility = JavaVersion.VERSION_21
     }
+
+    packaging {
+        resources {
+            excludes += "/META-INF/{AL2.0,LGPL2.1}"
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// PP-OCRv6 small ONNX 模型：构建期下载到 assets，避免把 30 MB 二进制塞进 git。
+// 已经存在（本地或 CI 缓存）就跳过；下载失败会重试 3 次。
+// ---------------------------------------------------------------------------
+val ocrModelDir = layout.projectDirectory.dir("src/main/assets/models")
+val ocrModels = mapOf(
+    "det/inference.onnx" to
+        "https://huggingface.co/PaddlePaddle/PP-OCRv6_small_det_onnx/resolve/main/inference.onnx",
+    "det/inference.yml" to
+        "https://huggingface.co/PaddlePaddle/PP-OCRv6_small_det_onnx/resolve/main/inference.yml",
+    "rec/inference.onnx" to
+        "https://huggingface.co/PaddlePaddle/PP-OCRv6_small_rec_onnx/resolve/main/inference.onnx",
+    "rec/inference.yml" to
+        "https://huggingface.co/PaddlePaddle/PP-OCRv6_small_rec_onnx/resolve/main/inference.yml",
+)
+
+val downloadOcrModels = tasks.register("downloadOcrModels") {
+    group = "ocr"
+    description = "下载 PP-OCRv6 small ONNX 模型到 app/src/main/assets/models"
+    outputs.dir(ocrModelDir)
+
+    doLast {
+        val root = ocrModelDir.asFile
+        ocrModels.forEach { (relativePath, url) ->
+            val target = File(root, relativePath)
+            if (target.isFile && target.length() > 1024L) {
+                return@forEach
+            }
+            target.parentFile?.mkdirs()
+            val temp = File(target.parentFile, "${target.name}.part")
+            var failure: Exception? = null
+            for (attempt in 1..3) {
+                try {
+                    URI(url).toURL().openStream().use { input ->
+                        temp.outputStream().use { output -> input.copyTo(output) }
+                    }
+                    failure = null
+                    break
+                } catch (e: Exception) {
+                    failure = e
+                    temp.delete()
+                    Thread.sleep(1_000L * attempt)
+                }
+            }
+            if (failure != null) {
+                throw GradleException("下载 OCR 模型失败：$url（${failure.message}）")
+            }
+            if (!temp.renameTo(target)) {
+                throw GradleException("无法写入模型文件：${target.absolutePath}")
+            }
+        }
+    }
+}
+
+tasks.matching { it.name.startsWith("merge") && it.name.endsWith("Assets") }.configureEach {
+    dependsOn(downloadOcrModels)
 }
 
 dependencies {
+    implementation(project(":ppocr-sdk"))
+
     implementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(platform(libs.androidx.compose.bom))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.lifecycle.runtime.compose)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.exifinterface)
+    implementation(libs.kotlinx.coroutines.android)
 
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.graphics)

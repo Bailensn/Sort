@@ -1,171 +1,131 @@
-# Sort · Jetpack Compose + CMake Native 模板
+# 表格转 Excel · Compose + PP-OCRv6 + CMake Native
 
-一个可以直接推到 GitHub 上跑的 Android 工程模板：**Compose (Material 3) + C++/JNI（CMake 构建）+ AGP 9 内置 Kotlin**，自带 GitHub Actions CI。
+拍一张表格照片，或者从相册选一张，**离线**识别文字、还原行列，导出一份带边框的 `.xlsx`。
 
-界面里有一个真实的 JNI 调用：点按钮会走 `Java → JNI → C++ std::sort → Java`，用来验证 native 工具链是否真的通了。
+- OCR：PaddleOCR **PP-OCRv6 small**（ONNX Runtime，端上推理，不联网）
+- 微矫正：投影估角纠偏 + 外框四点透视校正
+- 表格处理：拟合横竖线、切单元格、逐格识别，避免「姓名+分数」粘成一个检测框
+- 回读纠错：再跑一遍整图检测，按覆盖面积落回单元格，和逐格结果交叉校对
+- 导出：手写 OOXML（不引 Apache POI），细边框、自动换行、按内容估宽
+- 分享：`FileProvider` + `ACTION_SEND`
+- 保留 C++ `libmain.so`（CMake/JNI 模板）
 
 ## 版本
 
 | 组件 | 版本 | 说明 |
 | --- | --- | --- |
 | AGP | **9.4.1** | 最高支持 API 37；最低要求 Gradle 9.6.0 / JDK 17 |
-| Gradle | **9.8.0** | 见 `gradle/wrapper/gradle-wrapper.properties`（9.8.2 是同分支最新补丁） |
+| Gradle | **9.8.0** | 见 `gradle/wrapper/gradle-wrapper.properties` |
 | Kotlin | **2.4.21** | 用 buildscript classpath 覆盖 AGP 自带的 KGP 2.2.10 |
 | JDK | **21** | `compileOptions` 与 Kotlin `jvmTarget` 都是 21 |
 | compileSdk / targetSdk | **37** | Android 17 |
-| minSdk | 24 | |
-| Compose BOM | 2026.09.00 | material3 / ui / ui-test 都由 BOM 管版本 |
-| Activity Compose | 1.13.0 | |
-| Lifecycle | 2.11.0 | |
-| Core KTX | 1.19.1 | |
-| NDK | **30.0.16248370 (r30)** | 官方 r30 已把 sysroot 升到 API 37 |
+| minSdk | **26** | 由 ONNX Runtime 决定 |
+| Compose BOM | 2026.09.00 | |
+| Activity Compose | 1.13.0 | Photo Picker |
+| Lifecycle | 2.11.0 | ViewModel + `collectAsStateWithLifecycle` |
+| ONNX Runtime | **1.31.0** | OCR 推理 |
+| OpenCV | **4.14.0** | 纠偏、表格线、透视变换 |
+| OCR 模型 | PP-OCRv6 small | det 约 9.9 MB，rec 约 21 MB |
+| NDK | **30.0.16248370 (r30)** | sysroot 到 API 37 |
 | CMake | **3.22.1** | AGP 9.4 能驱动的最高 SDK CMake 版本 |
-| ABI | arm64-v8a、x86_64 | 需要 32 位时自行加回 `armeabi-v7a` / `x86` |
+| ABI | arm64-v8a、x86_64 | 需要 32 位时自行加回 |
 
 ## 目录结构
 
 ```
 .
 ├── .github/
-│   ├── dependabot.yml              # 每周自动升级 Gradle 依赖 + Actions
-│   └── workflows/android.yml       # CI：assemble + test + lint
+│   ├── dependabot.yml
+│   └── workflows/android.yml
 ├── app/
-│   ├── build.gradle.kts
-│   ├── proguard-rules.pro          # 预留 JNI 方法的 keep 规则
+│   ├── build.gradle.kts               # 模型下载、CMake、依赖
 │   └── src/
 │       ├── main/
-│       │   ├── AndroidManifest.xml
-│       │   ├── cpp/
-│       │   │   ├── CMakeLists.txt
-│       │   │   └── native-lib.cpp  # 产物 libmain.so：greeting / buildInfo / sort
+│       │   ├── cpp/                   # libmain.so（C++23 / JNI 模板）
 │       │   ├── java/com/bailensn/sort/
 │       │   │   ├── MainActivity.kt
-│       │   │   ├── NativeBridge.kt # System.loadLibrary("main") + external fun
-│       │   │   └── ui/
-│       │   │       ├── Format.kt
-│       │   │       ├── SortApp.kt
-│       │   │       └── theme/{Color,Theme,Type}.kt
-│       │   └── res/                # 自适应图标、主题、字符串
-│       ├── test/                   # JVM 单测（CI 会跑）
-│       └── androidTest/            # Compose 仪器测试（CI 只编译）
-├── gradle/
-│   ├── libs.versions.toml          # 版本唯一来源
-│   └── wrapper/
-├── build.gradle.kts                # KGP 版本覆盖 + 插件声明
-├── settings.gradle.kts
-├── gradle.properties
-└── gradlew / gradlew.bat
+│       │   │   ├── NativeBridge.kt
+│       │   │   ├── table/
+│       │   │   │   ├── Deskewer.kt              # 投影估角 + 旋转
+│       │   │   │   ├── TableLineDetector.kt     # 带斜率的线拟合
+│       │   │   │   ├── PerspectiveRectifier.kt # 四点透视校正
+│       │   │   │   ├── CellGrid.kt              # 线 → 单元格
+│       │   │   │   ├── TableGridBuilder.kt      # 纯 Kotlin 表格重建
+│       │   │   │   ├── GridOverlay.kt           # 网格叠加图
+│       │   │   │   └── TablePipeline.kt         # 完整流水线 + 回读纠错
+│       │   │   ├── ui/table/                    # 界面 + ViewModel
+│       │   │   ├── ui/theme/
+│       │   │   ├── util/ImageLoader.kt
+│       │   │   └── xlsx/                        # XlsxWriter / XlsxExporter
+│       │   └── res/
+│       ├── test/                      # 纯 JVM 单测（CI 会跑）
+│       └── androidTest/
+├── ppocr-sdk/                         # 从 ppocr-android 融合的 OCR SDK
+├── gradle/libs.versions.toml
+├── build.gradle.kts
+└── settings.gradle.kts
 ```
 
-## 几个关键设计
+## 处理流水线
 
-### 1. 没有 `org.jetbrains.kotlin.android`
+1. **取图**：系统 Photo Picker（无需存储权限），限制到 2048px，按 EXIF 摆正。
+2. **微矫正**：
+   - 二值图在 ±3° 内按 0.25° 步进旋转，统计行投影的跳变能量，取最锐利的角度；
+   - 旋转后用拟合出的四条最外层表格线求交点，做透视变换，把表格拉成正矩形。
+3. **表格处理**：自适应二值化 → 横/纵开运算 → 投影找线带 → 每个线带按窗口取质心、最小二乘拟合出真实斜线。
+4. **逐格识别**：相邻线围成单元格，按格裁图（去边框、补白边），**一格一次识别**，不会出现跨列合并框。
+5. **回读纠错**：整图再跑一次检测+识别，每个检测框按 75% 覆盖面积落回单元格，和逐格结果比对；不一致时按置信度取舍，并统计纠正数量。
+6. **导出**：`XlsxWriter` 写 OOXML zip（`inlineStr` + 细边框 + 自动列宽），`XlsxExporter` 写到缓存目录后走系统分享。
 
-AGP 9 默认启用「内置 Kotlin」，由 AGP 自己创建 Kotlin 编译任务。再应用 `kotlin-android` 会直接报错，所以 `app/build.gradle.kts` 里只有：
+## 界面与交互
 
-```kotlin
-plugins {
-    alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.compose)   // Compose 编译器插件仍然要，版本跟 Kotlin 对齐
-}
-```
+界面按四套自研设计 SKILL 的约束实现：
 
-Kotlin 源码目录、`kotlin { compilerOptions { ... } }` 都由 AGP 提供；`jvmTarget` 默认跟随 `compileOptions.targetCompatibility`，所以设了 Java 21 就不用再单独设 Kotlin。
+- 移动端：状态栏/手势条安全区、48dp 最小触控热区、底部全宽主操作、真实阶段进度；
+- B 端：单一主操作、0.5dp 发丝边框、同心圆角（16 外层 / 8 内层）；
+- 桌面 Agent：字号收敛为 20/15/13 三档、正文最小 13sp、禁用「·」中点分隔符、去掉说明式冗余文案；
+- 动效：仅用 `animateContentSize` 做布局过渡，不做无意义动画。
 
-### 2. Kotlin 2.4.21 是怎么生效的
+结果页支持「看原图 / 看网格」切换，绿线是实际参与切格的拟合线，可以直接对照原图检查。
 
-AGP 9.4.1 的 POM 里对 `org.jetbrains.kotlin:kotlin-gradle-plugin` 有一个 `2.2.10` 的 runtime 依赖。把更高版本放到根工程的 buildscript classpath 上，Gradle 的版本冲突解析会取高版本，AGP 的内置 Kotlin 就会用 2.4.21 的编译器：
+## 模型从哪来
 
-```kotlin
-buildscript {
-    dependencies {
-        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:2.4.21")
-    }
-}
-```
+模型不进 git（约 31 MB）。`app/build.gradle.kts` 里的 `downloadOcrModels`：
 
-验证方式：
+- 从 HuggingFace 下载 `PP-OCRv6_small_{det,rec}_onnx` 的 `inference.onnx` / `inference.yml`；
+- 落到 `app/src/main/assets/models/{det,rec}/`，已存在就跳过，失败重试 3 次；
+- `merge*Assets` 依赖它，第一次构建会联网下载；
+- CI 用 `actions/cache` 缓存该目录。
+
+换模型改 `ocrModels` 映射即可，det/rec 各要 `.onnx`，rec 还要 `inference.yml`（字符表）。
+
+## 构建
 
 ```bash
-./gradlew :app:buildEnvironment | grep kotlin-gradle-plugin
-```
-
-### 3. CMake 只能到 3.22.1
-
-SDK 里虽然有 CMake 3.30.3，但 AGP 9.4 的 `CMakeVersion` 枚举只认 `3.6 / 3.10.2 / 3.22.1`，写 3.30.3 会直接找不到。所以 `libs.versions.toml` 里固定 3.22.1，CI 也装这个版本。**不要手改成 3.30.3。**
-
-### 4. JDK 21 与字节码
-
-`compileOptions` 的 source/target 都是 21，Kotlin `jvmTarget` 自动跟随。CI 用 Temurin 21 跑 Gradle；AGP 9.4 的最低要求只是 JDK 17，所以这条链路是安全的。
-
-### 5. native 库名是 `libmain.so`
-
-CMake target 叫 `main`，产物就是 `libmain.so`；Kotlin 侧对应 `System.loadLibrary("main")`。
-JNI 符号按包名拼出来，当前是 `Java_com_bailensn_sort_NativeBridge_*`（包名、类名一改，这里必须同步）。
-
-## 本地构建
-
-前提：JDK 21、Android SDK（platform 37.0、build-tools 36.0.0）、NDK r30、CMake 3.22.1。Android Studio 打开工程时会自动提示安装。
-
-```bash
-# 首次可能需要
-chmod +x gradlew
-
+# 首次会下载模型（约 31 MB）
 ./gradlew :app:assembleDebug
-# 产物：app/build/outputs/apk/debug/app-debug.apk
 
-# 只跑单测 / lint
+# 单测 / lint
 ./gradlew :app:testDebugUnitTest :app:lintDebug
 ```
 
-如果 `local.properties` 不存在，Android Studio 会生成；命令行构建也可以用 `ANDROID_HOME` 环境变量。
+## CI
 
-## CI 做了什么
+`.github/workflows/android.yml`：JDK 21 → setup-android → 装 `platforms;android-37.0`、`build-tools;36.0.0`、`cmake;3.22.1`、`ndk;30.0.16248370` → 缓存模型 → `assembleDebug`、`assembleRelease`、`assembleDebugAndroidTest`、`testDebugUnitTest`、`lintDebug` → 上传 APK 与失败报告。
 
-`.github/workflows/android.yml` 在 `ubuntu-latest` 上：
+> `gradlew` 的可执行位在共享存储/Windows 上容易丢，workflow 里有 `chmod +x ./gradlew` 兜底。
 
-1. 装 Temurin JDK 21；
-2. `android-actions/setup-android` 准备 cmdline-tools 并接受 license；
-3. `sdkmanager` 安装 `platforms;android-37.0`、`build-tools;36.0.0`、`cmake;3.22.1`、`ndk;30.0.16248370`；
-4. `gradle/actions/setup-gradle` 做依赖缓存；
-5. 跑 `assembleDebug`、`assembleRelease`、`assembleDebugAndroidTest`、`testDebugUnitTest`、`lintDebug`；
-6. 上传 APK，失败时额外上传 `reports/` 和 `test-results/`。
+## 已知限制
 
-想跑真机/模拟器测试，再加一个 `ReactiveCircus/android-emulator-runner` job 调 `connectedDebugAndroidTest` 即可。
+- 合并单元格会被拆成多个格子，导出不做 merge；
+- 逐格识别假设单元格内是**单行**文字，多行会被压成一行（无框线时会退回整图检测 + 聚类）；
+- 竖排、旋转拍摄、手写体识别率有限；
+- 透视校正需要四条外框线都可见，缺边时只做旋转纠偏。
 
-> 注意：`gradlew` 的可执行位在共享存储/Windows 上容易丢，所以 workflow 里有一句 `chmod +x ./gradlew` 兜底。本地如果遇到 `Permission denied`，同样 `chmod +x gradlew`，或 `git update-index --chmod=+x gradlew`。
+## 改名 / 升级
 
-## 改成自己的项目
-
-1. `settings.gradle.kts` 的 `rootProject.name`
-2. `app/build.gradle.kts` 的 `namespace` 和 `applicationId`
-3. `app/src/main/java/...` 的包目录（test / androidTest 同步）
-4. `app/src/main/cpp/native-lib.cpp` 里的 JNI 符号名：`Java_<包名下划线转义>_NativeBridge_<方法名>`
-5. `res/values/strings.xml` 的 `app_name`
-6. native 库名（可选）：`CMakeLists.txt` 的 target、`NativeBridge.LIBRARY_NAME`（当前是 `main` / `libmain.so`）
-
-JNI 符号和包名是硬绑定的，第 3、4 步必须一起改，否则运行时会 `UnsatisfiedLinkError`。
-
-## 升级清单
-
-- **AGP / Gradle**：一起升。AGP 9.4 要求 Gradle ≥ 9.6.0；升 AGP 前先看它的 compatibility 表。
-- **Kotlin**：同步改 `libs.versions.toml` 的 `kotlin`、根 `build.gradle.kts` 的 classpath、以及 Compose 编译器插件版本（后两者由 catalog 引用时只需改一处）。
-- **NDK**：`libs.versions.toml` 的 `ndk` 与 workflow 里的 `ndk;...` 一起改。
-- **CMake**：在 AGP 支持列表更新前保持 3.22.1。
-- **Compose**：只改 BOM 版本，其余 Compose 库不写版本。
-
-## 排查
-
-**CI 报 Compose 编译器与 Kotlin 版本不匹配**：说明那版 AGP 的内置 Kotlin 没接受 2.4.21。临时退回外置 Kotlin（AGP 9.4 仍支持，但 AGP 10 会移除）：
-
-```properties
-# gradle.properties
-android.builtInKotlin=false
-android.newDsl=false
-```
-
-然后应用 `org.jetbrains.kotlin.android`（catalog 加插件、根和 app 的 `plugins {}` 各加一行），并删掉根工程的 KGP classpath。
-
-**`Failed to find target with hash string 'android-37'`**：装的是 `platforms;android-37.0`，AGP 9.4 会自己找到 37.0；如果用的是老 AGP，需要把目录软链/复制成 `android-37`。
-
-**找不到 NDK / CMake**：确认 `sdkmanager --list_installed` 里有 `ndk;30.0.16248370` 和 `cmake;3.22.1`；AGP 默认 NDK 是 28.2.13676358，本工程显式覆盖成了 r30。
+- 包名：`namespace` / `applicationId` / 源码目录 / JNI 符号 `Java_com_bailensn_sort_NativeBridge_*` 一起改；
+- native 库名：`CMakeLists.txt` 的 target（`main` → `libmain.so`）与 `NativeBridge.LIBRARY_NAME`；
+- Kotlin：同时改 `libs.versions.toml` 的 `kotlin` 和根 `build.gradle.kts` 的 classpath；
+- AGP / Gradle：一起升，AGP 9.4 要求 Gradle ≥ 9.6.0；
+- OpenCV / ONNX Runtime：升大版本前确认 `Utils.bitmapToMat`、`OrtSession` 等 API 未变。

@@ -13,13 +13,13 @@ import org.junit.runner.RunWith
  * 想真跑的话加一个 emulator-runner job 或本地 `./gradlew connectedDebugAndroidTest`。
  */
 @RunWith(AndroidJUnit4::class)
-class SortAppTest {
+class TableScreenTest {
 
     @get:Rule
     val composeRule = createAndroidComposeRule<MainActivity>()
 
     @Test
-    fun topBarTitleIsVisible() {
-        composeRule.onNodeWithText("Sort").assertIsDisplayed()
+    fun showsTitle() {
+        composeRule.onNodeWithText("表格转 Excel").assertIsDisplayed()
     }
 }

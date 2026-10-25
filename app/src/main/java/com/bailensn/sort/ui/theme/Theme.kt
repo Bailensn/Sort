@@ -1,47 +1,71 @@
 package com.bailensn.sort.ui.theme
 
-import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Shapes
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalContext
-
-private val DarkColors = darkColorScheme(
-    primary = Teal80,
-    secondary = Sand80,
-    tertiary = Slate80,
-)
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
 
 private val LightColors = lightColorScheme(
-    primary = Teal40,
-    secondary = Sand40,
-    tertiary = Slate40,
+    primary = Teal,
+    onPrimary = SurfaceLight,
+    primaryContainer = TealContainer,
+    onPrimaryContainer = TealDeep,
+    background = CanvasLight,
+    onBackground = Ink,
+    surface = SurfaceLight,
+    onSurface = Ink,
+    surfaceVariant = Color(0xFFF1EFEC),
+    onSurfaceVariant = InkMuted,
+    outline = Color(0xFFD6D3D1),
+    outlineVariant = Hairline,
+    error = ErrorRed,
+    onError = SurfaceLight,
+    errorContainer = ErrorContainer,
+    onErrorContainer = OnErrorContainer,
+)
+
+private val DarkColors = darkColorScheme(
+    primary = TealDark,
+    onPrimary = TealDeepDark,
+    primaryContainer = TealDeep,
+    onPrimaryContainer = TealDark,
+    background = CanvasDark,
+    onBackground = InkDark,
+    surface = SurfaceDark,
+    onSurface = InkDark,
+    surfaceVariant = Color(0xFF26241F),
+    onSurfaceVariant = InkMutedDark,
+    outline = Color(0xFF44403C),
+    outlineVariant = HairlineDark,
+    error = Color(0xFFF2B8B5),
+    onError = Color(0xFF601410),
+    errorContainer = Color(0xFF8C1D18),
+    onErrorContainer = Color(0xFFF9DEDC),
+)
+
+/** 内外圆角保持同心：16 的外层配 8 的内层（差一个 8dp padding）。 */
+private val SortShapes = Shapes(
+    extraSmall = RoundedCornerShape(6.dp),
+    small = RoundedCornerShape(10.dp),
+    medium = RoundedCornerShape(12.dp),
+    large = RoundedCornerShape(16.dp),
+    extraLarge = RoundedCornerShape(24.dp),
 )
 
 @Composable
 fun SortTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    // Android 12+ 跟随系统壁纸取色；关掉则使用上面的品牌色。
-    dynamicColor: Boolean = true,
     content: @Composable () -> Unit,
 ) {
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
-
-        darkTheme -> DarkColors
-        else -> LightColors
-    }
-
     MaterialTheme(
-        colorScheme = colorScheme,
+        colorScheme = if (darkTheme) DarkColors else LightColors,
         typography = SortTypography,
+        shapes = SortShapes,
         content = content,
     )
 }
