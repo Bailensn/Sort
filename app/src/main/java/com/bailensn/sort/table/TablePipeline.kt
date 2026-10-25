@@ -409,16 +409,23 @@ object TablePipeline {
                 else reading.confidence
         }
 
-        // 算术自检放在裁列之前：这时候每一列还和置信度矩阵对得上，
-        // 「多个格子都只改一位就能对平」时可以拿置信度决胜，改认得更虚的那一格。
-        val selfCheckResult = TableSelfCheck.check(matrix, confidenceGrid)
-        val selfCheck = selfCheckResult.report
+        // 顺序很重要：先清坏列/空列噪声、裁掉两侧垃圾列，**最后再做算术自检**。
+        // 反过来的话「最右一列是总分」会命中右边的垃圾列，
+        // 自检把算出来的总分写进垃圾列，导出后就会出现两列一模一样的成绩。
+        val cleanedRows = GarbageColumnTrimmer.cleanNoisyColumns(
+            GarbageColumnTrimmer.cleanBadColumns(matrix),
+        )
+        val trimmedAligned = GarbageColumnTrimmer.trimAligned(cleanedRows)
 
-        // 空列里冒出来的短噪声（1/161/N/wa）先清掉；再裁两侧被背景带出来的垃圾列。
-        // 先按业务规则清坏列（非数字多、又不像中文），再清空列噪声、裁两侧垃圾列。
-        val withoutBadColumns = GarbageColumnTrimmer.cleanBadColumns(selfCheckResult.rows)
-        val cleaned = GarbageColumnTrimmer.cleanNoisyColumns(withoutBadColumns)
-        val trimmed = GarbageColumnTrimmer.trim(cleaned)
+        // 裁列会丢掉左边的空白列，置信度矩阵按同样偏移切一刀，保持一一对应。
+        val width = trimmedAligned.rows.firstOrNull()?.size ?: 0
+        val alignedConfidence = confidenceGrid.map { row ->
+            row.drop(trimmedAligned.droppedLeading).take(width)
+        }
+
+        val selfCheckResult = TableSelfCheck.check(trimmedAligned.rows, alignedConfidence)
+        val selfCheck = selfCheckResult.report
+        val trimmed = selfCheckResult.rows
         // 分数列里 5→S、0→O 这类错字按列纠正：整列大多是数字时才动手。
         val repaired = NumericColumnRepair.repair(trimmed)
         val grid = TableGridBuilder.normalize(repaired, TableGrid.Mode.GRID_LINES, cellGrid.merges)

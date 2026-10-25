@@ -38,10 +38,15 @@ object GarbageColumnTrimmer {
      */
     private const val LETTER_COLUMN_RATIO = 0.5
 
-    fun trim(rows: List<List<String>>): List<List<String>> {
-        if (rows.isEmpty()) return rows
-        val width = rows.maxOfOrNull { it.size } ?: return rows
-        if (width <= 1) return rows
+    /** 裁列结果：裁完的行 + 左边被丢掉的列数（用于对齐置信度矩阵）。 */
+    data class Trimmed(val rows: List<List<String>>, val droppedLeading: Int)
+
+    fun trim(rows: List<List<String>>): List<List<String>> = trimAligned(rows).rows
+
+    fun trimAligned(rows: List<List<String>>): Trimmed {
+        if (rows.isEmpty()) return Trimmed(rows, 0)
+        val width = rows.maxOfOrNull { it.size } ?: return Trimmed(rows, 0)
+        if (width <= 1) return Trimmed(rows, 0)
 
         val grid = rows.map { row -> List(width) { index -> row.getOrNull(index).orEmpty().trim() } }
 
@@ -93,7 +98,7 @@ object GarbageColumnTrimmer {
             break
         }
 
-        return grid.map { row -> row.subList(start, end) }
+        return Trimmed(grid.map { row -> row.subList(start, end) }, start)
     }
 
     /**
