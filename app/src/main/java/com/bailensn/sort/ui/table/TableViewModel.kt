@@ -100,7 +100,13 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
                     PaddleOCR.createWithModels(
                         context = app,
                         modelDir = modelDir,
-                        config = PaddleOCRConfig(recScoreThresh = 0f, recBatchSize = 1),
+                        config = PaddleOCRConfig(
+                            recScoreThresh = 0f,
+                            recBatchSize = 1,
+                            // 整图检测只用来给逐格结果做校对，不需要全分辨率：
+                            // 1920 宽缩到 1024 以内，检测从 37 s 降到几秒，校对精度几乎不变。
+                            detMaxSideLimit = 1024,
+                        ),
                     )
                 }
                 engine = created

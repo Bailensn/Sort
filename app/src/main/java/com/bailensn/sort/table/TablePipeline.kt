@@ -341,8 +341,9 @@ object TablePipeline {
             matrix[cell.row][cell.column] = chosen
         }
 
-        // 空列里冒出来的单个数字是格线线头，先清掉；再裁两侧被背景带出来的垃圾列。
-        val trimmed = GarbageColumnTrimmer.trim(GarbageColumnTrimmer.cleanIsolatedDigits(matrix))
+        // 空列里冒出来的短噪声（1/161/N/wa）先清掉；再裁两侧被背景带出来的垃圾列。
+        val cleaned = GarbageColumnTrimmer.cleanNoisyColumns(matrix)
+        val trimmed = GarbageColumnTrimmer.trim(cleaned)
         // 分数列里 5→S、0→O 这类错字按列纠正：整列大多是数字时才动手。
         val repaired = NumericColumnRepair.repair(trimmed)
         val grid = TableGridBuilder.normalize(repaired, TableGrid.Mode.GRID_LINES, cellGrid.merges)

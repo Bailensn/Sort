@@ -98,7 +98,7 @@ class GarbageColumnTrimmerTest {
             listOf("钱七曜", "81.5", "", "", ""),
         )
 
-        val cleaned = GarbageColumnTrimmer.cleanIsolatedDigits(rows)
+        val cleaned = GarbageColumnTrimmer.cleanNoisyColumns(rows)
 
         assertEquals("", cleaned[0][3])
         assertEquals("", cleaned[2][2])
@@ -116,7 +116,7 @@ class GarbageColumnTrimmerTest {
             listOf("3", "王五", ""),
         )
 
-        val cleaned = GarbageColumnTrimmer.cleanIsolatedDigits(rows)
+        val cleaned = GarbageColumnTrimmer.cleanNoisyColumns(rows)
 
         assertEquals("1", cleaned[0][0])
         assertEquals("3", cleaned[2][0])
@@ -134,8 +134,40 @@ class GarbageColumnTrimmerTest {
             listOf("孙八", "55", ""),
         )
 
-        val cleaned = GarbageColumnTrimmer.cleanIsolatedDigits(rows)
+        val cleaned = GarbageColumnTrimmer.cleanNoisyColumns(rows)
 
         assertEquals("5", cleaned[0][2])
+    }
+
+    @Test
+    fun clearsJunkColumnsButKeepsSparseTotal() {
+        // 实测数据：6 科后面 3 个空列被认成 1/19/161/N/wa（填了不到一半的行），
+        // 总分列因为有人缺考只填了 2/3。
+        val rows = listOf(
+            listOf("14", "25", "李四海", "77.5", "1", "1", "13", "334.5"),
+            listOf("14", "26", "王五岳", "95", "19", "11", "", "411.5"),
+            listOf("14", "27", "赵六合", "87.5", "161", "wa", "10", "388"),
+            listOf("14", "28", "钱七曜", "81.5", "N", "161", "16", ""),
+            listOf("14", "29", "孙八荒", "69", "", "", "", "301"),
+            listOf("14", "30", "周九霄", "76", "", "", "", ""),
+            listOf("14", "31", "吴十方", "71", "", "", "", "267.5"),
+            listOf("14", "32", "冯二虎", "49.5", "", "", "", ""),
+            listOf("14", "33", "郑一鸣", "80.5", "", "", "", "319"),
+        )
+
+        val cleaned = GarbageColumnTrimmer.cleanNoisyColumns(rows)
+
+        // 三个噪声列被清空
+        assertEquals("", cleaned[2][4])
+        assertEquals("", cleaned[1][5])
+        assertEquals("", cleaned[3][6])
+        assertEquals("", cleaned[0][4])
+        // 总分列只有 6/9 有值，但它是真数据，必须留着
+        assertEquals("334.5", cleaned[0][7])
+        assertEquals("388", cleaned[2][7])
+        assertEquals("319", cleaned[8][7])
+        // 姓名和分数不受影响
+        assertEquals("赵六合", cleaned[2][2])
+        assertEquals("87.5", cleaned[2][3])
     }
 }

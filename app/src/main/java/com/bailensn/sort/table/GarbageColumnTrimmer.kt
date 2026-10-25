@@ -14,8 +14,11 @@ package com.bailensn.sort.table
  */
 object GarbageColumnTrimmer {
 
-    /** 连续这么空（甚至更空）的列，视为「表里没用到的空列」。 */
-    private const val EMPTY_COLUMN_RATIO = 0.35
+    /** 填充率低于这个值（也就是四成以上是空的）才可能是噪声列。 */
+    private const val MAX_NOISY_FILL = 0.6
+
+    /** 噪声列里几乎没有长值：长于 3 字符的占比不超过两成。 */
+    private const val MAX_LONG_VALUE_RATIO = 0.2
 
     /** 右侧列：空到这种程度就当噪声。 */
     private const val MAX_EMPTY_RATIO = 0.6
@@ -69,32 +72,41 @@ object GarbageColumnTrimmer {
     }
 
     /**
-     * 清掉「空列里孤零零的单个数码」。
+     * 清掉「空列里的噪声值」。
      *
-     * 成绩单里常有整块没用到的空列（选科、备注），格线上的线头会被认成 1、2、7，
-     * 于是空列里零星冒出几个数字——导出后这些数字会被当成数据，排序就乱了。
-     * 只在**连续两列以上都是空列**时才清：单个稀疏列（比如只有几个人有的附加分）保留。
+     * 成绩单里常有整块没用到的空列（选科、备注），但线头、格线、背景会在里面被认成
+     * `1`、`161`、`N`、`wa` 这种短噪声。它们混在真数据里，排序时就变成了脏数据。
+     *
+     * 判定一个列是噪声列：**空得多**（>40% 空）、**没有中文**、**几乎没有长于 3 字符的值**
+     * （真数据里的班级、学号、总分都更长）。且必须**相邻两列以上**都这样才算——
+     * 单个稀疏列（比如只有少数人有成绩的附加分）保留。
      */
-    fun cleanIsolatedDigits(rows: List<List<String>>): List<List<String>> {
+    fun cleanNoisyColumns(rows: List<List<String>>): List<List<String>> {
         if (rows.isEmpty()) return rows
         val width = rows.maxOfOrNull { it.size } ?: return rows
         if (width <= 1) return rows
 
-        val filledRatio = DoubleArray(width) { column ->
-            rows.count { row -> row.getOrNull(column)?.isNotBlank() == true }.toDouble() / rows.size
+        val noisy = BooleanArray(width) { column ->
+            val values = rows.mapNotNull { row -> row.getOrNull(column)?.takeIf(String::isNotBlank) }
+            val filledRatio = values.size.toDouble() / rows.size
+            if (filledRatio > MAX_NOISY_FILL) {
+                false
+            } else {
+                val longValues = values.count { it.length > 3 }
+                values.all(::noChinese) && longValues <= values.size * MAX_LONG_VALUE_RATIO
+            }
         }
-        val noisy = BooleanArray(width)
+
         var start = 0
         while (start < width) {
-            if (filledRatio[start] > EMPTY_COLUMN_RATIO) {
+            if (!noisy[start]) {
                 start++
                 continue
             }
             var end = start
-            while (end + 1 < width && filledRatio[end + 1] <= EMPTY_COLUMN_RATIO) end++
-            if (end > start) {
-                for (column in start..end) noisy[column] = true
-            }
+            while (end + 1 < width && noisy[end + 1]) end++
+            // 单列不算：真数据里「只有部分行有值」的列很常见。
+            if (end == start) noisy[start] = false
             start = end + 1
         }
         if (noisy.none { it }) return rows
@@ -102,9 +114,7 @@ object GarbageColumnTrimmer {
         return rows.map { row ->
             row.toMutableList().also { cells ->
                 noisy.forEachIndexed { column, isNoisy ->
-                    if (!isNoisy) return@forEachIndexed
-                    val value = cells.getOrNull(column) ?: return@forEachIndexed
-                    if (value.length == 1 && value[0].isDigit()) cells[column] = ""
+                    if (isNoisy && column < cells.size) cells[column] = ""
                 }
             }
         }

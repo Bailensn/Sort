@@ -106,8 +106,9 @@ object PerspectiveRectifier {
     }
 
     /**
-     * 左右两侧如果还有墨迹（说明最外圈的竖线没检测到、或者表格本身超出检测框），
-     * 就把四边形的左右边扩到内容边界；上下不扩，避免把标题、页码带进来。
+     * 四边如果还有墨迹（说明最外圈的线没检测到，或者表格被截在画面边缘），
+     * 就把四边形扩到内容边界。上下也扩：成绩单被截图切掉一行，整列数据就错位了，
+     * 这比误带进一点标题严重得多。扩展上限是宽 6% / 高 8%。
      *
      * 返回 [左上, 右上, 右下, 左下]。
      */
@@ -141,6 +142,7 @@ object PerspectiveRectifier {
             val right = maxOf(topRight.x, bottomRight.x).toInt().coerceIn(left + 1, width)
 
             val counts = IntArray(width)
+            val rowCounts = IntArray(height)
             val row = ByteArray(width)
             val band = bottom - top
             for (y in top until bottom) {
@@ -148,6 +150,16 @@ object PerspectiveRectifier {
                 for (x in 0 until width) {
                     if (row[x].toInt() != 0) counts[x]++
                 }
+            }
+            // 纵向也数一遍：表格被截在画面边缘时，最上面一两行会落在检测到的首线之外，
+            // 只做横向扩展的话这几行会被整行裁掉（成绩单少两行就是数据错位）。
+            for (y in 0 until height) {
+                binary.get(y, 0, row)
+                var ink = 0
+                for (x in 0 until width) {
+                    if (row[x].toInt() != 0) ink++
+                }
+                rowCounts[y] = ink
             }
             val minInk = maxOf(3, (band * 0.01).toInt())
 
@@ -166,22 +178,44 @@ object PerspectiveRectifier {
                 }
             }
 
+            val minRowInk = maxOf(3, (width * 0.02).toInt())
+            var contentTop = top
+            for (y in 0 until top) {
+                if (rowCounts[y] >= minRowInk) {
+                    contentTop = y
+                    break
+                }
+            }
+            var contentBottom = bottom
+            for (y in height - 1 downTo bottom) {
+                if (rowCounts[y] >= minRowInk) {
+                    contentBottom = y + 1
+                    break
+                }
+            }
+
             val pad = maxOf(4, width / 200)
             val expandLeft = (left - contentLeft) > pad
             val expandRight = (contentRight - right) > pad
             // 只容忍「少检测到一条边」这种量级（<=6% 宽度）；
             // 再多就说明框外是桌面、键盘这些背景，不能框进来，否则会在表格右边多出垃圾列。
-            val maxExpand = (width * 0.06).toInt().coerceAtLeast(24)
-            if (expandLeft && (left - contentLeft) > maxExpand) return listOf(topLeft, topRight, bottomRight, bottomLeft)
-            if (expandRight && (contentRight - right) > maxExpand) return listOf(topLeft, topRight, bottomRight, bottomLeft)
+            val maxExpandX = (width * 0.06).toInt().coerceAtLeast(24)
+            val maxExpandY = (height * 0.08).toInt().coerceAtLeast(24)
+            val overflows = (expandLeft && (left - contentLeft) > maxExpandX) ||
+                (expandRight && (contentRight - right) > maxExpandX) ||
+                (top - contentTop) > maxExpandY ||
+                (contentBottom - bottom) > maxExpandY
+            if (overflows) return listOf(topLeft, topRight, bottomRight, bottomLeft)
 
             val newLeft = if (expandLeft) (contentLeft - pad).coerceAtLeast(0).toDouble() else null
             val newRight = if (expandRight) (contentRight + pad).coerceAtMost(width).toDouble() else null
+            val newTop = if (top - contentTop > pad) (contentTop - pad).coerceAtLeast(0).toDouble() else null
+            val newBottom = if (contentBottom - bottom > pad) (contentBottom + pad).coerceAtMost(height).toDouble() else null
 
-            val tl = if (newLeft != null) Point(newLeft, topLeft.y) else topLeft
-            val bl = if (newLeft != null) Point(newLeft, bottomLeft.y) else bottomLeft
-            val tr = if (newRight != null) Point(newRight, topRight.y) else topRight
-            val br = if (newRight != null) Point(newRight, bottomRight.y) else bottomRight
+            val tl = Point(newLeft ?: topLeft.x, newTop ?: topLeft.y)
+            val tr = Point(newRight ?: topRight.x, newTop ?: topRight.y)
+            val br = Point(newRight ?: bottomRight.x, newBottom ?: bottomRight.y)
+            val bl = Point(newLeft ?: bottomLeft.x, newBottom ?: bottomLeft.y)
             return listOf(tl, tr, br, bl)
         } catch (t: Throwable) {
             return listOf(topLeft, topRight, bottomRight, bottomLeft)
