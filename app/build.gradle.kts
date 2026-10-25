@@ -33,7 +33,9 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            // R8 + 资源压缩：release 包体明显小一圈，JNI 符号靠 proguard-rules 保住。
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
@@ -120,6 +122,9 @@ abstract class BundleOcrModelsTask : DefaultTask() {
     }
 }
 
+// -PwithoutBundledModels 时不把 31 MB 的轻量模型打进包，出更小的 release。
+val bundleModelsInApk = !project.hasProperty("withoutBundledModels")
+
 val bundleOcrModels = tasks.register<BundleOcrModelsTask>("bundleOcrModels") {
     group = "ocr"
     description = "下载轻量 OCR 模型，作为 medium 下载失败时的内置兜底"
@@ -127,12 +132,14 @@ val bundleOcrModels = tasks.register<BundleOcrModelsTask>("bundleOcrModels") {
     urls.set(bundledOcrModels)
 }
 
-androidComponents {
-    onVariants { variant ->
-        variant.sources.assets?.addGeneratedSourceDirectory(
-            bundleOcrModels,
-            BundleOcrModelsTask::outputDir,
-        )
+if (bundleModelsInApk) {
+    androidComponents {
+        onVariants { variant ->
+            variant.sources.assets?.addGeneratedSourceDirectory(
+                bundleOcrModels,
+                BundleOcrModelsTask::outputDir,
+            )
+        }
     }
 }
 
@@ -149,6 +156,7 @@ dependencies {
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.exifinterface)
     implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.okhttp)
 
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.graphics)

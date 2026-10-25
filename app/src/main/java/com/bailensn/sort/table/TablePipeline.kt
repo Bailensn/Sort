@@ -7,6 +7,7 @@ import android.os.SystemClock
 import com.paddle.ocr.PaddleOCR
 import com.paddle.ocr.model.CellReading
 import com.paddle.ocr.postprocess.CellText
+import kotlinx.coroutines.async
 import com.paddle.ocr.model.OCRBox
 import kotlin.math.max
 import kotlin.math.min
@@ -108,8 +109,12 @@ object TablePipeline {
         cellGrid: CellGrid,
         borderInset: Int,
         onStage: (Stage) -> Unit,
-    ): CellPass {
+    ): CellPass = kotlinx.coroutines.coroutineScope {
         onStage(Stage.RECOGNIZE)
+        // 整图检测和逐格识别互不依赖，先并行开跑，最后再汇合。
+        val detectionJob = async(kotlinx.coroutines.Dispatchers.Default) {
+            runCatching { ocr.recognize(bitmap) }.getOrNull()?.results.orEmpty()
+        }
         // 按线宽往内缩，把表格线挡在识别图之外；小格子再额外缩一点。
         val rects = cellGrid.cells.map { cell ->
             val inset = maxOf(borderInset, minOf(cell.width, cell.height) / 40)
@@ -120,9 +125,11 @@ object TablePipeline {
                 (cell.bottom - inset).coerceAtLeast(cell.top + 1),
             )
         }
-        var recognized: List<CellReading> = runCatching { ocr.recognizeCells(bitmap, rects) }.getOrElse {
-            return CellPass(TableGrid(emptyList(), TableGrid.Mode.GRID_LINES), 0)
+        val recognizedResult = runCatching { ocr.recognizeCells(bitmap, rects) }
+        if (recognizedResult.isFailure) {
+            return@coroutineScope CellPass(TableGrid(emptyList(), TableGrid.Mode.GRID_LINES), 0)
         }
+        var recognized: List<CellReading> = recognizedResult.getOrThrow()
 
         // 逐格结果里置信度偏低的格子，换个尺度再认一次，取置信度高的那个：
         // 小字号、贴边的数字第一次常常认得不稳，这一遍能救回不少。
@@ -148,7 +155,7 @@ object TablePipeline {
 
         // 回读：整图再检测一遍，用它的结果和逐格结果互相校对。
         onStage(Stage.VERIFY)
-        val detections = runCatching { ocr.recognize(bitmap) }.getOrNull()?.results.orEmpty()
+        val detections = detectionJob.await()
         val byCell = mutableMapOf<Int, Pair<String, Float>>()
 
         for (result in detections) {
@@ -228,7 +235,7 @@ object TablePipeline {
         val repaired = NumericColumnRepair.repair(matrix)
         val grid = TableGridBuilder.normalize(repaired, TableGrid.Mode.GRID_LINES, cellGrid.merges)
             ?: TableGrid(emptyList(), TableGrid.Mode.GRID_LINES)
-        return CellPass(grid, corrected)
+        CellPass(grid, corrected)
     }
 
     private suspend fun recognizeByDetection(ocr: PaddleOCR, bitmap: Bitmap): TableGrid {

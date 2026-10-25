@@ -7,11 +7,12 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
-import java.net.HttpURLConnection
-import java.net.URL
+import java.util.concurrent.TimeUnit
 
 /**
  * 模型不再打进 APK，改为首次使用时下载到内部存储。
@@ -58,6 +59,17 @@ object ModelRepository {
         "https://aifasthub.com/PaddlePaddle",
         "https://huggingface.co/PaddlePaddle",
     )
+
+    /**
+     * 用 OkHttp 而不是 HttpURLConnection：它会做 IPv6/IPv4 的 happy eyeballs，
+     * 手机上 IPv6 不通时不会像 HttpURLConnection 那样卡满 15 秒再失败。
+     */
+    private val client: OkHttpClient = OkHttpClient.Builder()
+        .connectTimeout(6, TimeUnit.SECONDS)
+        .readTimeout(20, TimeUnit.SECONDS)
+        .writeTimeout(20, TimeUnit.SECONDS)
+        .retryOnConnectionFailure(true)
+        .build()
 
     fun modelDir(context: Context): File = File(context.filesDir, "ocr-models")
 
@@ -151,26 +163,28 @@ object ModelRepository {
     ) {
         target.parentFile?.mkdirs()
         val temp = File(target.parentFile, target.name + ".part")
-        // 大文件支持断点续传：上次中断留下的 .part 从断点继续，
-        // 换镜像也能接着下（同一份文件的字节内容一致）。
+        // 断点续传：上次中断留下的 .part 从断点继续。
         var existing = if (temp.isFile) temp.length() else 0L
-        if (existing >= minBytes) {
-            if (temp.renameTo(target)) {
-                onBytes(existing)
-                return
-            }
-            existing = 0
+        if (existing >= minBytes && temp.renameTo(target)) {
+            onBytes(existing)
+            return
         }
 
-        val connection = open(url, rangeStart = existing.takeIf { it > 0 })
-        try {
-            val resuming = existing > 0 && connection.responseCode == 206
+        val request = Request.Builder()
+            .url(url)
+            .header("User-Agent", "Sort-Android")
+            .apply { if (existing > 0) header("Range", "bytes=$existing-") }
+            .build()
+
+        client.newCall(request).execute().use { response ->
+            if (!response.isSuccessful) throw IOException("HTTP ${response.code}")
+            val resuming = existing > 0 && response.code == 206
             if (existing > 0 && !resuming) {
-                // 服务器不支持断点续传，从头来。
                 existing = 0
                 temp.delete()
             }
-            connection.inputStream.use { input ->
+            val body = response.body ?: throw IOException("空响应")
+            body.byteStream().use { input ->
                 FileOutputStream(temp, resuming).use { output ->
                     val buffer = ByteArray(64 * 1024)
                     var total = existing
@@ -184,16 +198,15 @@ object ModelRepository {
                     }
                 }
             }
-            if (temp.length() < minBytes) {
-                temp.delete()
-                throw IOException("下载内容不完整（${temp.length()} 字节）")
-            }
-            if (!temp.renameTo(target)) {
-                temp.delete()
-                throw IOException("无法写入 ${target.name}")
-            }
-        } finally {
-            connection.disconnect()
+        }
+
+        if (temp.length() < minBytes) {
+            temp.delete()
+            throw IOException("下载内容不完整（${temp.length()} 字节）")
+        }
+        if (!temp.renameTo(target)) {
+            temp.delete()
+            throw IOException("无法写入 ${target.name}")
         }
     }
 
@@ -209,19 +222,17 @@ object ModelRepository {
     private fun probe(mirror: String): Long {
         val startedAt = System.currentTimeMillis()
         return try {
-            val connection = open(
-                "$mirror/PP-OCRv6_small_rec_onnx/resolve/main/inference.yml",
-                connectTimeoutMs = 4_000,
-                readTimeoutMs = 4_000,
-            )
-            try {
-                connection.setRequestProperty("Range", "bytes=0-131071")
-                connection.inputStream.use { input ->
+            val request = Request.Builder()
+                .url("$mirror/PP-OCRv6_small_rec_onnx/resolve/main/inference.yml")
+                .build()
+            val call = client.newCall(request)
+            call.timeout().timeout(4, TimeUnit.SECONDS)
+            call.execute().use { response ->
+                if (!response.isSuccessful) return Long.MAX_VALUE
+                response.body?.byteStream()?.use { input ->
                     val buffer = ByteArray(16 * 1024)
                     while (input.read(buffer) > 0) Unit
                 }
-            } finally {
-                connection.disconnect()
             }
             System.currentTimeMillis() - startedAt
         } catch (t: Throwable) {
@@ -229,37 +240,4 @@ object ModelRepository {
         }
     }
 
-    private fun open(
-        url: String,
-        connectTimeoutMs: Int = 15_000,
-        readTimeoutMs: Int = 30_000,
-        rangeStart: Long? = null,
-    ): HttpURLConnection {
-        var current = url
-        var redirects = 0
-        while (true) {
-            val connection = URL(current).openConnection() as HttpURLConnection
-            connection.connectTimeout = connectTimeoutMs
-            connection.readTimeout = readTimeoutMs
-            connection.instanceFollowRedirects = false
-            connection.setRequestProperty("User-Agent", "Sort-Android")
-            if (rangeStart != null) {
-                connection.setRequestProperty("Range", "bytes=$rangeStart-")
-            }
-            val code = connection.responseCode
-            if (code in 300..399) {
-                val location = connection.getHeaderField("Location")
-                connection.disconnect()
-                if (location.isNullOrBlank()) throw IOException("重定向缺少 Location")
-                current = if (location.startsWith("http")) location else URL(URL(current), location).toString()
-                if (++redirects > 5) throw IOException("重定向过多")
-                continue
-            }
-            if (code !in 200..299) {
-                connection.disconnect()
-                throw IOException("HTTP $code")
-            }
-            return connection
-        }
-    }
 }

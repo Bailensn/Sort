@@ -100,6 +100,8 @@
 - 内置 5 个镜像，启动时并行测速按快慢排序，取最快的下载，失败自动换下一个：
   `modelscope.cn`（阿里云）、`hf-mirror.com`、`hf-mirror.net`、`aifasthub.com`、`huggingface.co`；
 - 五个都是 HF 的 `/<repo>/resolve/main/<file>` 路径结构，ModelScope 也兼容这个路径；
+- **下载不阻塞启动**：先用内置模型把引擎拉起来，下载在后台跑；下完如果当前空闲，
+  直接热切换到高精度模型，否则下次启动生效；
 - 下载有进度（百分比 + MB/s），完成后不再联网；
 - **默认只在 Wi-Fi 下自动下载**：当前是移动数据时会弹确认框，选「继续下载」才走流量，
   选「连 Wi-Fi 再下」就直接用内置 small；
@@ -112,6 +114,9 @@
 ```bash
 # 模型在首次运行时下载，构建不再联网
 ./gradlew :app:assembleDebug
+
+# 更小的 release：不打 31 MB 内置模型（首次使用必须联网下）
+./gradlew :app:assembleRelease -PwithoutBundledModels
 
 # 单测 / lint
 ./gradlew :app:testDebugUnitTest :app:lintDebug

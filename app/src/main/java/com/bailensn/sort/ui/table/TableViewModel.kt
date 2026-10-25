@@ -19,12 +19,8 @@ import com.paddle.ocr.PaddleOCRConfig
 import com.paddle.ocr.util.OpenCVUtils
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.async
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -43,9 +39,6 @@ sealed interface EngineState {
         /** 下载进度 0..1；null 表示不确定进度（加载模型、等确认）。 */
         val progress: Float? = null,
     ) : EngineState
-
-    /** 当前是移动数据，等用户确认是否继续下载模型。 */
-    data class AwaitingDownload(val message: String) : EngineState
     data class Ready(
         val loadTimeMs: Long,
         /** true = medium 没下成，正在用 APK 内置的轻量模型。 */
@@ -56,6 +49,8 @@ sealed interface EngineState {
 
 data class TableUiState(
     val engine: EngineState = EngineState.Loading(),
+    /** 是否要弹「用移动数据下载」确认框（不影响已就绪的引擎）。 */
+    val downloadPrompt: Boolean = false,
     val original: Bitmap? = null,
     val processed: Bitmap? = null,
     val overlay: Bitmap? = null,
@@ -92,64 +87,6 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
         loadEngine()
     }
 
-    /**
-     * 尝试把高精度模型下载下来；任何一步不满足就返回 null，让调用方用内置模型。
-     * 不抛异常——下载失败不应该让整个识别功能不可用。
-     */
-    /** 用户等得不耐烦时点「转到后台下载」：前台立刻收工，后台继续。 */
-    fun switchToBackground() {
-        val app = getApplication<Application>()
-        foregroundDownload?.cancel()
-        foregroundDownload = null
-        _state.update {
-            it.copy(engine = EngineState.Loading("已转到后台下载，本次先用内置模型"))
-        }
-        ModelDownloadManager.startBackground(app)
-    }
-
-    private suspend fun tryDownloadModels(app: Application): File? = coroutineScope {
-        if (!NetworkStatus.isOnline(app)) {
-            // 没网：转后台等网络恢复，前台直接用内置模型。
-            ModelDownloadManager.startBackground(app)
-            _state.update { it.copy(engine = EngineState.Loading("没有网络，先用内置轻量模型")) }
-            return@coroutineScope null
-        }
-        if (NetworkStatus.isMetered(app) && !awaitDownloadApproval()) {
-            ModelDownloadManager.startBackground(app)
-            return@coroutineScope null
-        }
-
-        val job = async(Dispatchers.IO) {
-            ModelRepository.ensure(app) { percent, text ->
-                ModelDownloadManager.reportDownloading(percent, text)
-                _state.update {
-                    it.copy(
-                        engine = EngineState.Loading(
-                            message = text,
-                            progress = (percent / 100f).coerceIn(0f, 1f),
-                        ),
-                    )
-                }
-            }
-        }
-        foregroundDownload = job
-        try {
-            val dir = job.await()
-            ModelDownloadManager.reportReady()
-            dir
-        } catch (c: CancellationException) {
-            // 用户主动转后台：本次用内置模型，后台接着下。
-            null
-        } catch (t: Throwable) {
-            ModelDownloadManager.afterForegroundAttempt(app, success = false, message = t.message)
-            null
-        } finally {
-            foregroundDownload = null
-        }
-    }
-
-    private var foregroundDownload: Job? = null
-
     private var downloadApproval: CompletableDeferred<Boolean>? = null
 
     /** 用户在确认框里点了「继续下载」。 */
@@ -166,17 +103,16 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
     private suspend fun awaitDownloadApproval(): Boolean {
         val deferred = CompletableDeferred<Boolean>()
         downloadApproval = deferred
-        _state.update {
-            it.copy(engine = EngineState.AwaitingDownload("首次使用需下载约 140 MB 模型，当前是移动数据"))
-        }
+        _state.update { it.copy(downloadPrompt = true) }
         val approved = deferred.await()
         downloadApproval = null
+        _state.update { it.copy(downloadPrompt = false) }
         return approved
     }
 
     private fun loadEngine() {
         engineDeferred = CompletableDeferred()
-        _state.update { it.copy(engine = EngineState.Loading("正在准备识别模型"), message = null) }
+        _state.update { it.copy(engine = EngineState.Loading("正在加载模型"), message = null) }
 
         viewModelScope.launch {
             val app = getApplication<Application>()
@@ -186,48 +122,29 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
                     error("OpenCV 初始化失败")
                 }
                 val config = PaddleOCRConfig(recScoreThresh = 0f, recBatchSize = 1)
+                val downloaded = ModelRepository.downloadedProfile(app)
 
-                // 高精度模型优先：已下载就直接用；没下载就按网络情况尝试下载；
-                // 下载失败、没网、用户选择不烧流量，都退回 APK 内置的轻量模型。
-                val modelDir = if (ModelRepository.isReady(app)) {
-                    ModelRepository.modelDir(app)
-                } else {
-                    tryDownloadModels(app)
-                }
-
-                _state.update {
-                    it.copy(
-                        engine = EngineState.Loading(
-                            message = if (modelDir == null) "正在加载内置轻量模型" else "正在加载识别模型",
-                        ),
-                        message = null,
-                    )
-                }
-
+                // 先用手上有的模型把引擎拉起来，绝不让下载卡住启动。
                 val created = withContext(Dispatchers.IO) {
-                    if (modelDir != null) {
-                        PaddleOCR.createWithModels(
-                            context = app,
-                            modelDir = modelDir,
-                            config = config,
-                        )
+                    if (downloaded != null) {
+                        PaddleOCR.createWithModels(app, ModelRepository.modelDir(app), config)
                     } else {
                         PaddleOCR.create(context = app, config = config)
                     }
                 }
                 engine = created
                 engineDeferred.complete(created)
-                if (modelDir == null) {
-                    // 这次用内置模型顶着，后台继续尝试下高精度模型。
-                    ModelDownloadManager.startBackground(app)
-                }
                 _state.update {
                     it.copy(
                         engine = EngineState.Ready(
                             loadTimeMs = created.coldLoadTimeMs,
-                            builtIn = modelDir == null,
+                            builtIn = downloaded == null,
                         ),
                     )
+                }
+
+                if (downloaded == null) {
+                    startModelDownload(app, config)
                 }
             } catch (t: Throwable) {
                 engineDeferred.completeExceptionally(t)
@@ -236,6 +153,44 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
                 }
             }
         }
+    }
+
+    /** 下载高精度模型：能下就下，下完热切换；失败只影响状态行，不影响识别。 */
+    private fun startModelDownload(app: Application, config: PaddleOCRConfig) {
+        viewModelScope.launch {
+            if (!NetworkStatus.isOnline(app)) {
+                ModelDownloadManager.startBackground(app)
+                return@launch
+            }
+            if (NetworkStatus.isMetered(app)) {
+                if (!awaitDownloadApproval()) {
+                    ModelDownloadManager.startBackground(app)
+                    return@launch
+                }
+                ModelDownloadManager.setAllowMetered(true)
+            }
+            val dir = ModelDownloadManager.downloadForeground(app) { _, _ -> }
+            if (dir != null) {
+                upgradeEngine(app, dir, config)
+            }
+        }
+    }
+
+    private suspend fun upgradeEngine(app: Application, modelDir: File, config: PaddleOCRConfig) {
+        // 正在识别时不换引擎，等下次启动自然用上高精度模型。
+        if (_state.value.phase != TableUiState.Phase.IDLE) return
+        val upgraded = withContext(Dispatchers.IO) {
+            PaddleOCR.createWithModels(app, modelDir, config)
+        }
+        val previous = engine
+        engine = upgraded
+        val deferred = CompletableDeferred<PaddleOCR>()
+        deferred.complete(upgraded)
+        engineDeferred = deferred
+        _state.update {
+            it.copy(engine = EngineState.Ready(upgraded.coldLoadTimeMs, builtIn = false))
+        }
+        runCatching { previous?.release() }
     }
 
     fun onImagePicked(uri: Uri) {

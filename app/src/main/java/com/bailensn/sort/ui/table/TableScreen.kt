@@ -163,13 +163,7 @@ fun TableScreen(
             )
 
             when (val engine = state.engine) {
-                is EngineState.Loading -> LoadingBlock(
-                    message = engine.message,
-                    progress = engine.progress,
-                    onSendToBackground = if (engine.progress != null) viewModel::switchToBackground else null,
-                )
-
-                is EngineState.AwaitingDownload -> LoadingBlock(engine.message)
+                is EngineState.Loading -> LoadingBlock(engine.message, engine.progress)
 
                 is EngineState.Failed -> MessageBlock(
                     title = "模型加载失败",
@@ -185,7 +179,7 @@ fun TableScreen(
         }
     }
 
-    if (state.engine is EngineState.AwaitingDownload) {
+    if (state.downloadPrompt) {
         AlertDialog(
             onDismissRequest = viewModel::declineDownload,
             title = { Text("用移动数据下载模型？") },
