@@ -43,6 +43,8 @@ object TablePipeline {
         val cellMs: Long = 0L,
         /** 整图检测耗时（和逐格识别并行跑）。 */
         val detectMs: Long = 0L,
+        /** 增强后的灰度图：二遍识别的输入，也拿来给用户看。 */
+        val enhanced: Bitmap? = null,
     ) {
         /** 除识别以外的耗时：纠偏、线检测、切格、画网格。 */
         val structureMs: Long get() = (elapsedMs - cellMs).coerceAtLeast(0L)
@@ -80,6 +82,9 @@ object TablePipeline {
             }
         }
 
+        // 二遍识别和界面预览都用这张：照度压平 + 拉对比度后的灰度图。
+        val enhanced = runCatching { ImageEnhancer.enhance(working) }.getOrNull()
+
         onStage(Stage.SEGMENT)
         // 用二值图逐条边界确认有没有画线：没画线的地方就是合并单元格。
         val probe = PixelBorderProbe.from(working)
@@ -102,7 +107,7 @@ object TablePipeline {
         var detectMs = 0L
 
         if (cellGrid.cells.isNotEmpty()) {
-            val pass = recognizeByCells(ocr, working, cellGrid, borderInset, onStage)
+            val pass = recognizeByCells(ocr, working, enhanced, cellGrid, borderInset, onStage)
             grid = pass.grid
             correctedCells = pass.corrected
             cellMs = pass.cellMs
@@ -132,6 +137,7 @@ object TablePipeline {
             cellCount = cellCount,
             cellMs = cellMs,
             detectMs = detectMs,
+            enhanced = enhanced,
         )
     }
 
@@ -145,6 +151,7 @@ object TablePipeline {
     private suspend fun recognizeByCells(
         ocr: PaddleOCR,
         bitmap: Bitmap,
+        enhanced: Bitmap?,
         cellGrid: CellGrid,
         borderInset: Int,
         onStage: (Stage) -> Unit,
@@ -173,23 +180,60 @@ object TablePipeline {
         }
         var recognized: List<CellReading> = recognizedResult.getOrThrow()
 
-        // 逐格结果里置信度偏低的格子，换个尺度再认一次，取置信度高的那个：
-        // 小字号、贴边的数字第一次常常认得不稳，这一遍能救回不少。
-        val retryIndices = recognized.indices.filter { index ->
+        // 第二遍：最严厉的那一遍。
+        // 第一遍是原图、原尺寸的「初步识别」；凡是有墨迹但置信度没到 0.9 的格子，
+        // 一律换增强图（压平光照 + CLAHE）再放大 2 倍重认，两边取更可信的那个。
+        // 两遍都认成同一串字时给一点置信度加成——独立两次都一致，基本就是对的。
+        val strictIndices = recognized.indices.filter { index ->
             val reading = recognized[index]
-            reading.hasInk && reading.confidence < RETRY_CONFIDENCE
+            reading.hasInk && reading.confidence < STRICT_CONFIDENCE
         }
-        if (retryIndices.isNotEmpty()) {
-            val retry = runCatching {
-                ocr.recognizeCells(bitmap, retryIndices.map { rects[it] }, scale = RETRY_SCALE)
+        if (strictIndices.isNotEmpty()) {
+            val strictSource = enhanced ?: bitmap
+            val strict = runCatching {
+                ocr.recognizeCells(strictSource, strictIndices.map { rects[it] }, scale = STRICT_SCALE)
             }.getOrNull()
-            if (retry != null) {
+            if (strict != null) {
                 val merged = recognized.toMutableList()
-                retryIndices.forEachIndexed { position, index ->
-                    val candidate = retry.getOrNull(position) ?: return@forEachIndexed
-                    if (candidate.confidence > recognized[index].confidence) {
-                        merged[index] = candidate
+                strictIndices.forEachIndexed { position, index ->
+                    val candidate = strict.getOrNull(position) ?: return@forEachIndexed
+                    val current = recognized[index]
+                    merged[index] = when {
+                        candidate.text.isNotBlank() && candidate.text == current.text ->
+                            CellReading(current.text, minOf(1f, maxOf(current.confidence, candidate.confidence) + AGREE_BONUS), true)
+
+                        candidate.confidence > current.confidence -> candidate
+                        else -> current
                     }
+                }
+                recognized = merged
+            }
+        }
+
+        // 第三遍：极限精度。二遍之后还不到 0.9 的格子，用 3 倍放大各认一次增强图和原图，
+        // 连同前两遍的结果一起投票：两次认成同一串字的优先，其次比置信度。
+        // 注意 rec 会把裁图统一缩到 48 高，放大只是改善重采样，推理开销几乎不变。
+        val thirdIndices = recognized.indices.filter { index ->
+            val reading = recognized[index]
+            reading.hasInk && reading.confidence < THIRD_CONFIDENCE
+        }
+        if (thirdIndices.isNotEmpty()) {
+            val rects3 = thirdIndices.map { rects[it] }
+            val fromEnhanced = runCatching {
+                ocr.recognizeCells(enhanced ?: bitmap, rects3, scale = THIRD_SCALE)
+            }.getOrNull()
+            val fromOriginal = runCatching {
+                ocr.recognizeCells(bitmap, rects3, scale = THIRD_SCALE)
+            }.getOrNull()
+            if (fromEnhanced != null || fromOriginal != null) {
+                val merged = recognized.toMutableList()
+                thirdIndices.forEachIndexed { position, index ->
+                    val candidates = listOfNotNull(
+                        recognized[index],
+                        fromEnhanced?.getOrNull(position),
+                        fromOriginal?.getOrNull(position),
+                    )
+                    merged[index] = pickBest(candidates)
                 }
                 recognized = merged
             }
@@ -346,11 +390,41 @@ object TablePipeline {
 
     private const val MIN_FILL_CONFIDENCE = 0.6f
 
-    /** 低于这个置信度的格子会换尺度重认一次。 */
-    private const val RETRY_CONFIDENCE = 0.85f
+    /** 低于这个置信度就进第二遍（最严厉的那遍）。 */
+    private const val STRICT_CONFIDENCE = 0.9f
 
-    /** 重认时的放大倍率。 */
-    private const val RETRY_SCALE = 1.6f
+    /** 第二遍的放大倍率：小字号、贴边的数字靠这一步救回来。 */
+    private const val STRICT_SCALE = 2.0f
+
+    /** 两遍认出来的字一致时，给置信度的加成。 */
+    private const val AGREE_BONUS = 0.05f
+
+    /** 第三遍的门槛：二遍之后还低于它就再极限认一次。 */
+    private const val THIRD_CONFIDENCE = 0.9f
+
+    /** 第三遍的放大倍率。 */
+    private const val THIRD_SCALE = 3.0f
+
+    /** 三遍投票时，「多一遍认成同样的字」值多少置信度。 */
+    private const val VOTE_BONUS = 0.12f
+
+    /**
+     * 多遍结果里挑一个：同文本出现次数多的优先，其次看置信度。
+     * 空文本永远排最后——宁可空着，也别把噪声填进格子。
+     */
+    private fun pickBest(candidates: List<CellReading>): CellReading {
+        if (candidates.isEmpty()) return CellReading("", 0f, hasInk = false)
+        if (candidates.size == 1) return candidates[0]
+        val grouped = candidates
+            .filter { it.text.isNotBlank() }
+            .groupBy { it.text }
+            .mapValues { (_, group) -> group.maxByOrNull { it.confidence }!! }
+        if (grouped.isEmpty()) return candidates.maxByOrNull { it.confidence }!!
+        return grouped.maxByOrNull { (text, reading) ->
+            val votes = candidates.count { it.text == text }
+            reading.confidence + VOTE_BONUS * (votes - 1)
+        }!!.value
+    }
 
     private fun detectSafely(bitmap: Bitmap): LineDetection =
         runCatching { TableLineDetector.detect(bitmap) }.getOrElse {

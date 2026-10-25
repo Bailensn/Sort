@@ -77,7 +77,7 @@ fun TableScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
-    var showOriginal by rememberSaveable { mutableStateOf(false) }
+    var viewMode by rememberSaveable { mutableStateOf(0) }
 
     val picker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
@@ -89,7 +89,7 @@ fun TableScreen(
     }
 
     LaunchedEffect(state.original) {
-        showOriginal = false
+        viewMode = 0
     }
 
     LaunchedEffect(viewModel) {
@@ -158,8 +158,8 @@ fun TableScreen(
 
                 is EngineState.Ready -> ReadyContent(
                     state = state,
-                    showOriginal = showOriginal,
-                    onToggleOriginal = { showOriginal = !showOriginal },
+                    viewMode = viewMode,
+                    onCycleView = { viewMode = (viewMode + 1) % 3 },
                 )
             }
         }
@@ -170,8 +170,8 @@ fun TableScreen(
 @Composable
 private fun ReadyContent(
     state: TableUiState,
-    showOriginal: Boolean,
-    onToggleOriginal: () -> Unit,
+    viewMode: Int,
+    onCycleView: () -> Unit,
 ) {
 
     val original = state.original
@@ -192,8 +192,8 @@ private fun ReadyContent(
 
     ImageBlock(
         state = state,
-        showOriginal = showOriginal,
-        onToggleOriginal = onToggleOriginal,
+        viewMode = viewMode,
+        onCycleView = onCycleView,
     )
 
     when (state.phase) {
@@ -232,13 +232,14 @@ private fun ReadyContent(
 @Composable
 private fun ImageBlock(
     state: TableUiState,
-    showOriginal: Boolean,
-    onToggleOriginal: () -> Unit,
+    viewMode: Int,
+    onCycleView: () -> Unit,
 ) {
-    val bitmap: Bitmap? = if (showOriginal || state.overlay == null) {
-        state.original
-    } else {
-        state.overlay
+    // 0=网格（画了检测线的处理图） 1=原图 2=增强图（二遍识别看到的那张灰度图）
+    val bitmap: Bitmap? = when (viewMode) {
+        1 -> state.original
+        2 -> state.enhanced ?: state.original
+        else -> state.overlay ?: state.original
     }
     val canToggle = state.overlay != null && state.original != null
 
@@ -261,11 +262,15 @@ private fun ImageBlock(
                 )
                 if (canToggle) {
                     TextButton(
-                        onClick = onToggleOriginal,
+                        onClick = onCycleView,
                         modifier = Modifier.heightIn(min = 48.dp),
                     ) {
                         Text(
-                            text = if (showOriginal) "看网格" else "看原图",
+                            text = when (viewMode) {
+                                0 -> "看原图"
+                                1 -> "看增强"
+                                else -> "看网格"
+                            },
                             style = MaterialTheme.typography.labelMedium,
                         )
                     }
@@ -275,7 +280,11 @@ private fun ImageBlock(
             if (bitmap != null) {
                 Image(
                     bitmap = bitmap.asImageBitmap(),
-                    contentDescription = if (showOriginal) "原始表格图片" else "表格识别网格",
+                    contentDescription = when (viewMode) {
+                        1 -> "原始表格图片"
+                        2 -> "增强后的表格图片"
+                        else -> "表格识别网格"
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .heightIn(max = 320.dp)

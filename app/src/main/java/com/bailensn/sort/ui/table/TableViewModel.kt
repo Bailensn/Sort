@@ -55,6 +55,7 @@ data class TableUiState(
     val cellCount: Int = 0,
     val cellMs: Long = 0L,
     val detectMs: Long = 0L,
+    val enhanced: Bitmap? = null,
 ) {
     enum class Phase { IDLE, RECOGNIZING, DONE, ERROR }
 }
@@ -187,6 +188,7 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
                         cellCount = analysis.cellCount,
                         cellMs = analysis.cellMs,
                         detectMs = analysis.detectMs,
+                        enhanced = analysis.enhanced,
                     )
                 }
             } else {
@@ -206,6 +208,7 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
                         cellCount = analysis.cellCount,
                         cellMs = analysis.cellMs,
                         detectMs = analysis.detectMs,
+                        enhanced = analysis.enhanced,
                     )
                 }
             }
