@@ -15,7 +15,7 @@
 | 组件 | 版本 | 说明 |
 | --- | --- | --- |
 | AGP | **9.4.1** | 最高支持 API 37；最低要求 Gradle 9.6.0 / JDK 17 |
-| Gradle | **9.8.0** | 见 `gradle/wrapper/gradle-wrapper.properties` |
+| Gradle | **9.8.2** | 见 `gradle/wrapper/gradle-wrapper.properties` |
 | Kotlin | **2.4.21** | 用 buildscript classpath 覆盖 AGP 自带的 KGP 2.2.10 |
 | JDK | **21** | `compileOptions` 与 Kotlin `jvmTarget` 都是 21 |
 | compileSdk / targetSdk | **37** | Android 17 |
