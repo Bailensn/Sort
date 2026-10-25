@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="action_change_image">換一張</string>
+    <string name="action_retry">重新辨識</string>
+    <string name="action_export">匯出 Excel</string>
+    <string name="share_chooser">匯出表格</string>
+
+    <string name="empty_title">選擇一張表格圖片</string>
+    <string name="empty_hint">有框線的成績單、報表辨識最準。</string>
+
+    <string name="label_scope">辨識範圍</string>
+    <string name="view_grid">看網格</string>
+    <string name="view_original">看原圖</string>
+    <string name="view_enhanced">看增強</string>
+    <string name="content_original">原始表格圖片</string>
+    <string name="content_enhanced">增強後的表格圖片</string>
+    <string name="content_grid">表格辨識網格</string>
+
+    <string name="preview_title">表格預覽</string>
+    <string name="preview_meta">%1$d 列 %2$d 欄</string>
+    <string name="preview_limit">僅預覽前 %1$d 列，匯出包含全部 %2$d 列</string>
+
+    <string name="stats_corrected">回讀修正</string>
+    <string name="stats_elapsed">耗時</string>
+    <string name="stats_rectified">已做透視校正</string>
+    <string name="stats_deskew">已校正 %1$s°</string>
+    <string name="stats_structure">橫線 %1$d · 豎線 %2$d · 格子 %3$d</string>
+    <string name="stats_timing">逐格 %1$s · 整圖偵測 %2$s · 結構 %3$s</string>
+    <string name="stats_confidence">平均信賴度 %1$s · 低於 98%% 的格子 %2$d 個</string>
+
+    <string name="error_title">辨識失敗</string>
+    <string name="error_hint">換一張清晰的照片試試。</string>
+
+    <string name="stage_rectify">正在校正圖片</string>
+    <string name="stage_segment">正在切分表格</string>
+    <string name="stage_recognize">正在辨識文字</string>
+    <string name="stage_verify">正在回讀核對</string>
+    <string name="stage_idle">正在處理</string>
+
+    <string name="model_loading">正在載入辨識模型</string>
+    <string name="model_failed_title">模型載入失敗</string>
+</resources>

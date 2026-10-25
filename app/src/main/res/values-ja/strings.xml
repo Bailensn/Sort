@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="action_change_image">画像を変更</string>
+    <string name="action_retry">再認識</string>
+    <string name="action_export">Excel に出力</string>
+    <string name="share_chooser">表を出力</string>
+
+    <string name="empty_title">表の画像を選択</string>
+    <string name="empty_hint">罫線のある成績表や帳票が最も正確です。</string>
+
+    <string name="label_scope">認識範囲</string>
+    <string name="view_grid">グリッド</string>
+    <string name="view_original">元画像</string>
+    <string name="view_enhanced">補正後</string>
+    <string name="content_original">元の表画像</string>
+    <string name="content_enhanced">補正後の表画像</string>
+    <string name="content_grid">認識グリッド</string>
+
+    <string name="preview_title">プレビュー</string>
+    <string name="preview_meta">%1$d 行 %2$d 列</string>
+    <string name="preview_limit">先頭 %1$d 行のみ表示。出力は全 %2$d 行です</string>
+
+    <string name="stats_corrected">読み直し補正</string>
+    <string name="stats_elapsed">所要時間</string>
+    <string name="stats_rectified">台形補正済み</string>
+    <string name="stats_deskew">傾き補正 %1$s°</string>
+    <string name="stats_structure">横線 %1$d · 縦線 %2$d · セル %3$d</string>
+    <string name="stats_timing">セル %1$s · 全体検出 %2$s · 構造 %3$s</string>
+    <string name="stats_confidence">平均信頼度 %1$s · 98%% 未満のセル %2$d 個</string>
+
+    <string name="error_title">認識できませんでした</string>
+    <string name="error_hint">より鮮明な写真でお試しください。</string>
+
+    <string name="stage_rectify">画像を補正中</string>
+    <string name="stage_segment">表を分割中</string>
+    <string name="stage_recognize">文字を認識中</string>
+    <string name="stage_verify">読み直し中</string>
+    <string name="stage_idle">処理中</string>
+
+    <string name="model_loading">認識モデルを読み込み中</string>
+    <string name="model_failed_title">モデルの読み込みに失敗</string>
+</resources>

@@ -6,7 +6,15 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.StartOffset
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -26,13 +34,13 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -49,16 +57,22 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.bailensn.sort.R
 import com.bailensn.sort.table.TableGrid
 import com.bailensn.sort.table.TablePipeline
 import com.bailensn.sort.ui.theme.SortTheme
@@ -96,7 +110,9 @@ fun TableScreen(
         viewModel.exported.collect { exported ->
             runCatching {
                 context.startActivity(
-                    Intent.createChooser(XlsxExporter.shareIntent(exported), "导出表格"),
+                    Intent.createChooser(XlsxExporter.shareIntent(exported),
+                        context.getString(R.string.share_chooser),
+                    ),
                 )
             }
         }
@@ -109,7 +125,7 @@ fun TableScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "Sort",
+                        text = stringResource(R.string.app_name),
                         style = MaterialTheme.typography.titleLarge,
                     )
                 },
@@ -117,9 +133,14 @@ fun TableScreen(
                     if (state.original != null) {
                         TextButton(
                             onClick = viewModel::reset,
+                            // 识别过程中禁掉，免得手滑把正在跑的这张换走。
+                            enabled = state.phase != TableUiState.Phase.RECOGNIZING,
                             modifier = Modifier.heightIn(min = 48.dp),
                         ) {
-                            Text("换一张", style = MaterialTheme.typography.labelLarge)
+                            Text(
+                                text = stringResource(R.string.action_change_image),
+                                style = MaterialTheme.typography.labelLarge,
+                            )
                         }
                     }
                 },
@@ -152,7 +173,7 @@ fun TableScreen(
                 is EngineState.Loading -> LoadingBlock(engine.message)
 
                 is EngineState.Failed -> MessageBlock(
-                    title = "模型加载失败",
+                    title = stringResource(R.string.model_failed_title),
                     message = engine.message,
                 )
 
@@ -178,11 +199,11 @@ private fun ReadyContent(
     if (original == null) {
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(
-                text = "选择一张表格图片",
+                text = stringResource(R.string.empty_title),
                 style = MaterialTheme.typography.titleLarge,
             )
             Text(
-                text = "有框线的成绩单、报表识别最准。",
+                text = stringResource(R.string.empty_hint),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -199,11 +220,7 @@ private fun ReadyContent(
     when (state.phase) {
         TableUiState.Phase.RECOGNIZING -> {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                LinearProgressIndicator(
-                    modifier = Modifier.fillMaxWidth().height(2.dp),
-                    color = MaterialTheme.colorScheme.primary,
-                    trackColor = MaterialTheme.colorScheme.outlineVariant,
-                )
+                SortProgressBar()
                 Text(
                     text = stageLabel(state.stage),
                     style = MaterialTheme.typography.bodySmall,
@@ -221,12 +238,78 @@ private fun ReadyContent(
         }
 
         TableUiState.Phase.ERROR -> MessageBlock(
-            title = "识别失败",
-            message = state.message ?: "换一张清晰的照片试试",
+            title = stringResource(R.string.error_title),
+            message = state.message ?: stringResource(R.string.error_hint),
         )
 
         TableUiState.Phase.IDLE -> Unit
     }
+}
+
+/**
+ * 分段式进度条：两条圆头色带错位循环，主色 + 琥珀色（数据色）。
+ *
+ * material3 1.4.0 还没有 WavyProgressIndicator，这里用 Canvas 画同色系版本：
+ * 圆头、8dp 高、带一点错位叠影，比经典 2dp 细线更有 Expressive 的分量感。
+ */
+@Composable
+private fun SortProgressBar(modifier: Modifier = Modifier) {
+    val transition = rememberInfiniteTransition(label = "progress")
+    // 两段的相位差半圈，看起来像一条波在流动。
+    val lead by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1400, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart,
+        ),
+        label = "lead",
+    )
+    val trail by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1400, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart,
+            initialStartOffset = StartOffset(700),
+        ),
+        label = "trail",
+    )
+    val primary = MaterialTheme.colorScheme.primary
+    val accent = MaterialTheme.colorScheme.tertiary
+    val track = MaterialTheme.colorScheme.outlineVariant
+
+    Canvas(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(8.dp),
+    ) {
+        val radius = size.height / 2f
+        drawRoundRect(
+            color = track.copy(alpha = 0.5f),
+            cornerRadius = CornerRadius(radius, radius),
+        )
+        // 主色带：占轨道 45%，从左侧滑出、从右侧滑入。
+        val leadStart = (lead * 1.6f - 0.45f).coerceIn(-0.45f, 1f)
+        drawSegment(primary, leadStart, 0.45f, radius)
+        // 琥珀色带：滞后半拍，稍短、稍淡，形成叠影。
+        val trailStart = (trail * 1.6f - 0.45f).coerceIn(-0.45f, 1f)
+        drawSegment(accent.copy(alpha = 0.55f), trailStart, 0.28f, radius)
+    }
+}
+
+private fun DrawScope.drawSegment(color: Color, startFraction: Float, widthFraction: Float, radius: Float) {
+    val left = size.width * startFraction
+    val right = left + size.width * widthFraction
+    val clampedLeft = left.coerceIn(0f, size.width)
+    val clampedRight = right.coerceIn(0f, size.width)
+    if (clampedRight <= clampedLeft) return
+    drawRoundRect(
+        color = color,
+        topLeft = Offset(clampedLeft, 0f),
+        size = Size(clampedRight - clampedLeft, size.height),
+        cornerRadius = CornerRadius(radius, radius),
+    )
 }
 
 @Composable
@@ -255,7 +338,7 @@ private fun ImageBlock(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = "识别范围",
+                    text = stringResource(R.string.label_scope),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.weight(1f),
@@ -266,11 +349,13 @@ private fun ImageBlock(
                         modifier = Modifier.heightIn(min = 48.dp),
                     ) {
                         Text(
-                            text = when (viewMode) {
-                                0 -> "看原图"
-                                1 -> "看增强"
-                                else -> "看网格"
-                            },
+                            text = stringResource(
+                                when (viewMode) {
+                                    0 -> R.string.view_original
+                                    1 -> R.string.view_enhanced
+                                    else -> R.string.view_grid
+                                },
+                            ),
                             style = MaterialTheme.typography.labelMedium,
                         )
                     }
@@ -280,11 +365,13 @@ private fun ImageBlock(
             if (bitmap != null) {
                 Image(
                     bitmap = bitmap.asImageBitmap(),
-                    contentDescription = when (viewMode) {
-                        1 -> "原始表格图片"
-                        2 -> "增强后的表格图片"
-                        else -> "表格识别网格"
-                    },
+                    contentDescription = stringResource(
+                        when (viewMode) {
+                            1 -> R.string.content_original
+                            2 -> R.string.content_enhanced
+                            else -> R.string.content_grid
+                        },
+                    ),
                     modifier = Modifier
                         .fillMaxWidth()
                         .heightIn(max = 320.dp)
@@ -300,9 +387,14 @@ private fun ImageBlock(
 @Composable
 private fun StatsBlock(state: TableUiState, grid: TableGrid) {
     val meta = buildList {
-        if (state.rectified) add("已做透视校正")
+        if (state.rectified) add(stringResource(R.string.stats_rectified))
         if (abs(state.deskewAngle) >= 0.2) {
-            add("已纠偏 " + String.format(Locale.US, "%.1f", state.deskewAngle) + "°")
+            add(
+                stringResource(
+                    R.string.stats_deskew,
+                    String.format(Locale.US, "%.1f", state.deskewAngle),
+                ),
+            )
         }
     }.joinToString("，")
 
@@ -310,11 +402,11 @@ private fun StatsBlock(state: TableUiState, grid: TableGrid) {
         Row(horizontalArrangement = Arrangement.spacedBy(32.dp)) {
             StatItem(
                 value = "${state.correctedCells} 处",
-                label = "回读纠正",
+                label = stringResource(R.string.stats_corrected),
             )
             StatItem(
                 value = String.format(Locale.US, "%.1f s", state.elapsedMs / 1000.0),
-                label = "用时",
+                label = stringResource(R.string.stats_elapsed),
             )
         }
         if (meta.isNotEmpty()) {
@@ -326,13 +418,22 @@ private fun StatsBlock(state: TableUiState, grid: TableGrid) {
         }
         // 识别不对劲时这几个数字最有用：先看有没有线，再看时间花在哪。
         Text(
-            text = "横线 ${state.horizontalLines} · 竖线 ${state.verticalLines} · 格子 ${state.cellCount}",
+            text = stringResource(
+                R.string.stats_structure,
+                state.horizontalLines,
+                state.verticalLines,
+                state.cellCount,
+            ),
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Text(
-            text = "逐格 ${seconds(state.cellMs)} · 整图检测 ${seconds(state.detectMs)} · " +
-                "结构 ${seconds(state.elapsedMs - state.cellMs)}",
+            text = stringResource(
+                R.string.stats_timing,
+                seconds(state.cellMs),
+                seconds(state.detectMs),
+                seconds(state.elapsedMs - state.cellMs),
+            ),
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -349,8 +450,11 @@ private fun StatsBlock(state: TableUiState, grid: TableGrid) {
         }
         // 置信度和低置信度格子数：98% 是「可信线」，低于它的格子更值得人工核对。
         Text(
-            text = "平均置信度 " + String.format(Locale.US, "%.1f%%", state.averageConfidence * 100) +
-                " · 低于 98% 的格子 ${state.lowConfidenceCells} 个",
+            text = stringResource(
+                R.string.stats_confidence,
+                String.format(Locale.US, "%.1f%%", state.averageConfidence * 100),
+                state.lowConfidenceCells,
+            ),
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -390,12 +494,12 @@ private fun TablePreviewCard(grid: TableGrid) {
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = "表格预览",
+                    text = stringResource(R.string.preview_title),
                     style = MaterialTheme.typography.labelLarge,
                     modifier = Modifier.weight(1f),
                 )
                 Text(
-                    text = "${grid.rowCount} 行 ${grid.columnCount} 列",
+                    text = stringResource(R.string.preview_meta, grid.rowCount, grid.columnCount),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -440,7 +544,7 @@ private fun TablePreviewCard(grid: TableGrid) {
 
             if (grid.rowCount > PREVIEW_ROW_LIMIT) {
                 Text(
-                    text = "仅预览前 $PREVIEW_ROW_LIMIT 行，导出包含全部 ${grid.rowCount} 行",
+                    text = stringResource(R.string.preview_limit, PREVIEW_ROW_LIMIT, grid.rowCount),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -509,10 +613,11 @@ private fun BottomActionBar(
 
         state.phase == TableUiState.Phase.RECOGNIZING -> null
 
-        state.phase == TableUiState.Phase.ERROR -> PrimaryAction("重新识别", onRetryRecognition)
+        state.phase == TableUiState.Phase.ERROR ->
+            PrimaryAction(stringResource(R.string.action_retry), onRetryRecognition)
 
         state.grid != null -> PrimaryAction(
-            label = "导出 Excel",
+            label = stringResource(R.string.action_export),
             onClick = onExport,
             enabled = !state.exporting,
             loading = state.exporting,
@@ -557,13 +662,16 @@ private fun BottomActionBar(
     }
 }
 
-private fun stageLabel(stage: TablePipeline.Stage?): String = when (stage) {
-    TablePipeline.Stage.RECTIFY -> "正在矫正图片"
-    TablePipeline.Stage.SEGMENT -> "正在切分表格"
-    TablePipeline.Stage.RECOGNIZE -> "正在识别文字"
-    TablePipeline.Stage.VERIFY -> "正在回读核对"
-    null -> "正在处理"
-}
+@Composable
+private fun stageLabel(stage: TablePipeline.Stage?): String = stringResource(
+    when (stage) {
+        TablePipeline.Stage.RECTIFY -> R.string.stage_rectify
+        TablePipeline.Stage.SEGMENT -> R.string.stage_segment
+        TablePipeline.Stage.RECOGNIZE -> R.string.stage_recognize
+        TablePipeline.Stage.VERIFY -> R.string.stage_verify
+        null -> R.string.stage_idle
+    },
+)
 
 @Preview(showBackground = true, backgroundColor = 0xFFF7F6F3)
 @Composable

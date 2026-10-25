@@ -56,13 +56,16 @@ private val DarkColors = darkColorScheme(
     onErrorContainer = Color(0xFFF9DEDC),
 )
 
-/** 内外圆角保持同心：16 的外层配 8 的内层（差一个 8dp padding）。 */
+/**
+ * Expressive 的圆角尺度：比经典 M3 更圆一档，但保持同心
+ * （外层 16 配内层 8，差一个 8dp padding）。
+ */
 private val SortShapes = Shapes(
-    extraSmall = RoundedCornerShape(6.dp),
-    small = RoundedCornerShape(10.dp),
-    medium = RoundedCornerShape(12.dp),
-    large = RoundedCornerShape(16.dp),
-    extraLarge = RoundedCornerShape(24.dp),
+    extraSmall = RoundedCornerShape(8.dp),
+    small = RoundedCornerShape(12.dp),
+    medium = RoundedCornerShape(16.dp),
+    large = RoundedCornerShape(20.dp),
+    extraLarge = RoundedCornerShape(28.dp),
 )
 
 @Composable
@@ -70,6 +73,8 @@ fun SortTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit,
 ) {
+    // material3 1.4.0 把 MaterialExpressiveTheme / MotionScheme 标成了 internal，
+    // 用不了；先只取 Expressive 的形状尺度（更圆一档），配色和字体不变。
     MaterialTheme(
         colorScheme = if (darkTheme) DarkColors else LightColors,
         typography = SortTypography,

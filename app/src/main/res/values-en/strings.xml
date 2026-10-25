@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="action_change_image">Change</string>
+    <string name="action_retry">Retry</string>
+    <string name="action_export">Export Excel</string>
+    <string name="share_chooser">Export table</string>
+
+    <string name="empty_title">Pick a table image</string>
+    <string name="empty_hint">Score sheets and reports with ruled lines work best.</string>
+
+    <string name="label_scope">Detected area</string>
+    <string name="view_grid">Grid</string>
+    <string name="view_original">Original</string>
+    <string name="view_enhanced">Enhanced</string>
+    <string name="content_original">Original table image</string>
+    <string name="content_enhanced">Enhanced table image</string>
+    <string name="content_grid">Detected grid</string>
+
+    <string name="preview_title">Preview</string>
+    <string name="preview_meta">%1$d rows × %2$d columns</string>
+    <string name="preview_limit">Showing first %1$d rows; export includes all %2$d rows</string>
+
+    <string name="stats_corrected">Read-back fixes</string>
+    <string name="stats_elapsed">Time</string>
+    <string name="stats_rectified">Perspective corrected</string>
+    <string name="stats_deskew">Deskewed %1$s°</string>
+    <string name="stats_structure">%1$d h-lines · %2$d v-lines · %3$d cells</string>
+    <string name="stats_timing">cells %1$s · full-page %2$s · structure %3$s</string>
+    <string name="stats_confidence">Avg confidence %1$s · %2$d cells below 98%%</string>
+
+    <string name="error_title">Recognition failed</string>
+    <string name="error_hint">Try a sharper photo.</string>
+
+    <string name="stage_rectify">Straightening image</string>
+    <string name="stage_segment">Splitting table</string>
+    <string name="stage_recognize">Reading text</string>
+    <string name="stage_verify">Cross-checking</string>
+    <string name="stage_idle">Working</string>
+
+    <string name="model_loading">Loading models</string>
+    <string name="model_failed_title">Failed to load models</string>
+</resources>

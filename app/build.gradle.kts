@@ -5,7 +5,7 @@ buildscript {
     }
     dependencies {
         // 构建期把模型压成 .xz（LZMA2），比 zip 再小一截。
-        classpath("org.tukaani:xz:1.10")
+        classpath("org.tukaani:xz:1.12")
     }
 }
 
@@ -212,7 +212,7 @@ dependencies {
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.exifinterface)
     implementation(libs.kotlinx.coroutines.android)
-    implementation("org.tukaani:xz:1.10")
+    implementation("org.tukaani:xz:1.12")
 
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.graphics)

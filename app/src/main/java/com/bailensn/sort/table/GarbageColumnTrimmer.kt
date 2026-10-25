@@ -26,6 +26,12 @@ object GarbageColumnTrimmer {
     /** 右侧列：这一比例的值是「字母连串」就当噪声。 */
     private const val JUNK_VALUE_RATIO = 0.2
 
+    /**
+     * 右侧列：长度 ≥2 的值里，含字母的占比到这么高就丢（哪怕列填得很满）。
+     * 只统计长度 ≥2 的值，是为了保住等级列（A/B/C 全是单字母，那是真数据）。
+     */
+    private const val LETTER_COLUMN_RATIO = 0.5
+
     fun trim(rows: List<List<String>>): List<List<String>> {
         if (rows.isEmpty()) return rows
         val width = rows.maxOfOrNull { it.size } ?: return rows
@@ -61,7 +67,20 @@ object GarbageColumnTrimmer {
             val emptyRatio = 1.0 - values.size.toDouble() / grid.size
             val noCjk = values.all(::noChinese)
             val junkRatio = values.count(::looksLikeBackgroundText).toDouble() / values.size
-            if (noCjk && (emptyRatio >= MAX_EMPTY_RATIO || junkRatio >= JUNK_VALUE_RATIO)) {
+            val substantial = values.filter { it.length >= 2 }
+            val letterRatio = if (substantial.isEmpty()) {
+                0.0
+            } else {
+                substantial.count { value -> value.any { it.isLetter() } }.toDouble() / substantial.size
+            }
+            // 有些垃圾列填得挺满（背景文字被整列识别出来），但里面全是字母连串，
+            // 这种也要丢：真数据列里不会有一半以上的值是拉丁字母。
+            if (noCjk && (
+                emptyRatio >= MAX_EMPTY_RATIO ||
+                    junkRatio >= JUNK_VALUE_RATIO ||
+                    letterRatio >= LETTER_COLUMN_RATIO
+                )
+            ) {
                 end--
                 continue
             }

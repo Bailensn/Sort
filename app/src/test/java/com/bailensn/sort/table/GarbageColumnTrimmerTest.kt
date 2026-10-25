@@ -170,4 +170,22 @@ class GarbageColumnTrimmerTest {
         assertEquals("赵六合", cleaned[2][2])
         assertEquals("87.5", cleaned[2][3])
     }
+
+    @Test
+    fun dropsFullyFilledTrailingColumnOfLatinNoise() {
+        // 实测：右边多出一列，大半行都有值（背景文字），但值几乎都是字母串。
+        val rows = listOf(
+            listOf("14", "24", "张三丰", "329.5", "cananaaelowb"),
+            listOf("14", "25", "李四海", "334.5", "H80926861"),
+            listOf("14", "26", "王五岳", "411.5", "P"),
+            listOf("14", "27", "赵六合", "388", "202"),
+            listOf("14", "28", "钱七曜", "396", "E"),
+            listOf("14", "29", "孙八荒", "301", "qwe"),
+        )
+
+        val trimmed = GarbageColumnTrimmer.trim(rows)
+
+        assertEquals(4, trimmed.first().size)
+        assertEquals("329.5", trimmed.first().last())
+    }
 }
