@@ -40,4 +40,13 @@
 
     <string name="model_loading">正在載入辨識模型</string>
     <string name="model_failed_title">模型載入失敗</string>
+    <string name="action_history">歷史</string>
+    <string name="action_save">儲存</string>
+    <string name="action_cancel">取消</string>
+    <string name="action_close">關閉</string>
+    <string name="edit_title">修改第 %1$d 列第 %2$d 欄</string>
+    <string name="edit_suggestions">記憶中的人名</string>
+    <string name="history_title">辨識歷史</string>
+    <string name="history_empty">尚無紀錄</string>
+    <string name="history_entry">%1$s · %2$d 列 %3$d 欄</string>
 </resources>

@@ -116,4 +116,20 @@ class TableGridBuilderTest {
 
     private fun region(text: String, left: Float, top: Float, right: Float, bottom: Float) =
         TextRegion(left = left, top = top, right = right, bottom = bottom, text = text)
+
+    @Test
+    fun keepsCutTopRowInsteadOfDroppingItSilently() {
+        // 最上面那行被画面边缘切了一半，一个字都没认出来——但行要留住，
+        // 否则整表少一行，后面全部错位。
+        val cells = listOf(
+            listOf("", "", ""),
+            listOf("14", "24", "张三丰"),
+            listOf("14", "25", "李四海"),
+        )
+
+        val grid = TableGridBuilder.normalize(cells, TableGrid.Mode.GRID_LINES)
+
+        assertEquals(3, grid!!.rows.size)
+        assertEquals("张三丰", grid.rows[1][2])
+    }
 }

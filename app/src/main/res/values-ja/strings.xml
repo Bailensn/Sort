@@ -40,4 +40,13 @@
 
     <string name="model_loading">認識モデルを読み込み中</string>
     <string name="model_failed_title">モデルの読み込みに失敗</string>
+    <string name="action_history">履歴</string>
+    <string name="action_save">保存</string>
+    <string name="action_cancel">キャンセル</string>
+    <string name="action_close">閉じる</string>
+    <string name="edit_title">%1$d 行 %2$d 列を編集</string>
+    <string name="edit_suggestions">記憶した氏名</string>
+    <string name="history_title">認識履歴</string>
+    <string name="history_empty">記録はまだありません</string>
+    <string name="history_entry">%1$s · %2$d 行 %3$d 列</string>
 </resources>

@@ -13,6 +13,9 @@ import com.paddle.ocr.model.OCRBox
  */
 object TableGridBuilder {
 
+    /** 开头最多保留几行空白（可能是被截断的首行）。 */
+    private const val MAX_LEADING_BLANK_ROWS = 2
+
     fun regionOf(box: OCRBox, text: String): TextRegion {
         val xs = box.points.map { it.x }
         val ys = box.points.map { it.y }
@@ -158,8 +161,12 @@ object TableGridBuilder {
         val leading = padded.indexOfFirst { row -> row.any { it.isNotBlank() } }
         if (leading < 0) return null
 
+        // 开头留最多 MAX_LEADING_BLANK_ROWS 行空白：最上面那行常常被画面边缘切掉一半，
+        // 字认不出来但行是真实存在的。全丢会让整张表少一行、后面全错位；
+        // 留一个空行至少能让你看出「这里缺一行」。
+        val leadingKept = maxOf(0, leading - MAX_LEADING_BLANK_ROWS)
         val trimmedRows = padded
-            .drop(leading)
+            .drop(leadingKept)
             .dropLastWhile { row -> row.all { it.isBlank() } }
         if (trimmedRows.isEmpty()) return null
 
