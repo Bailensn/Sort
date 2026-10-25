@@ -205,31 +205,33 @@ object TablePipeline {
             }
         }
 
-        // 第二遍：最严厉的那一遍。
-        // 第一遍是原图、原尺寸的「初步识别」；凡是有墨迹但置信度没到 0.9 的格子，
-        // 一律换增强图（压平光照 + CLAHE）再放大 2 倍重认，两边取更可信的那个。
-        // 两遍都认成同一串字时给一点置信度加成——独立两次都一致，基本就是对的。
+        // 第二遍：增强图（压平光照 + CLAHE）放大 2 倍。
+        // 两个模型一起上：v6 medium 主认，v5 server 复核，加上第一遍共三路投票。
+        // 认成同一串字的两路会得到加成——独立两次都一致，基本就是对的。
         val strictIndices = recognized.indices.filter { index ->
             val reading = recognized[index]
             reading.hasInk && reading.confidence < TRUSTED_CONFIDENCE
         }
         if (strictIndices.isNotEmpty()) {
             val strictSource = enhanced ?: bitmap
+            val strictRects = strictIndices.map { rects[it] }
+            // 串行跑：两个会话共享同一个 ORT 环境，并发调用没在真机上验证过，
+            // 宁可慢一点，也不要拿不确定的线程安全去换时间。
             val strict = runCatching {
-                ocr.recognizeCells(strictSource, strictIndices.map { rects[it] }, scale = STRICT_SCALE)
+                ocr.recognizeCells(strictSource, strictRects, scale = STRICT_SCALE)
             }.getOrNull()
-            if (strict != null) {
+            val referee = runCatching {
+                ocr.recognizeCellsReferee(strictSource, strictRects, scale = REFEREE_SCALE)
+            }.getOrNull()
+            if (strict != null || referee != null) {
                 val merged = recognized.toMutableList()
                 strictIndices.forEachIndexed { position, index ->
-                    val candidate = strict.getOrNull(position) ?: return@forEachIndexed
-                    val current = recognized[index]
-                    merged[index] = when {
-                        candidate.text.isNotBlank() && candidate.text == current.text ->
-                            CellReading(current.text, minOf(1f, maxOf(current.confidence, candidate.confidence) + AGREE_BONUS), true)
-
-                        candidate.confidence > current.confidence -> candidate
-                        else -> current
-                    }
+                    val candidates = listOfNotNull(
+                        recognized[index],
+                        strict?.getOrNull(position),
+                        referee?.getOrNull(position),
+                    )
+                    if (candidates.size > 1) merged[index] = pickBest(candidates)
                 }
                 recognized = merged
             }
@@ -486,7 +488,7 @@ object TablePipeline {
         if (grouped.isEmpty()) return candidates.maxByOrNull { it.confidence }!!
         return grouped.maxByOrNull { (text, reading) ->
             val votes = candidates.count { it.text == text }
-            reading.confidence + VOTE_BONUS * (votes - 1)
+            (reading.confidence + VOTE_BONUS * (votes - 1)).coerceAtMost(1f)
         }!!.value
     }
 
