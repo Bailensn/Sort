@@ -138,6 +138,14 @@
 没有抽成 composite action——这样哪一步挂掉，run 页面的注解会直接点名是哪一步，
 而不是笼统地报在 "Android environment" 上。NDK 与 CMake 只装进需要它们的两个 job。
 
+缓存（每次跑 CI 直接复用，省几分钟）：
+
+- `gradle/actions/setup-gradle` 缓存 Gradle Home（依赖、wrapper、构建缓存），并开启每周清理；
+- `Cache Android SDK platform` 缓存 `platforms/android-37.0` 与 `build-tools/36.0.0`（5 个 job 都用）；
+- `Cache NDK and CMake` 只给需要它们的 3 个 job，避免 1 GB 的解压浪费；
+- `Cache bundled OCR models` 缓存构建期下载的 31 MB 轻量模型；
+- Gradle 命令统一带 `--build-cache`，配置缓存由 `gradle.properties` 打开。
+
 失败时不用下载任何东西：构建步骤会在同一个 step 里直接把错误打出来——
 
 - `::group::构建错误` 里是 Kotlin/Java 错误、失败的 Task、Gradle 的 `What went wrong`；
