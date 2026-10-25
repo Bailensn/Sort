@@ -21,9 +21,11 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         ndk {
-            // 只构建 64 位 ABI：Play 要求 64 位，CI 也能快一半。
-            // 需要 32 位设备时把 "armeabi-v7a" / "x86" 加回来。
-            abiFilters += listOf("arm64-v8a", "x86_64")
+            // 只出 arm64-v8a：x86_64 只有模拟器用得上，却要让每个 .so 多带一份，
+            // APK 直接大十几 MB。以后真要支持模拟器，用下面的 splits 拆成独立包，
+            // 不要塞进同一个 APK：
+            //   splits { abi { isEnable = true; reset(); include("arm64-v8a", "x86_64"); isUniversalApk = false } }
+            abiFilters += listOf("arm64-v8a")
         }
     }
 
@@ -60,6 +62,75 @@ android {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// 内置「轻量」模型：medium 下载失败时的兜底，所以 small 必须随 APK 走。
+// 下载到 build/generated/ocrModels/models/，由 AGP 当作生成的 assets 目录并入。
+// ---------------------------------------------------------------------------
+val bundledOcrModels = mapOf(
+    "det/inference.onnx" to
+        "https://huggingface.co/PaddlePaddle/PP-OCRv6_small_det_onnx/resolve/main/inference.onnx",
+    "rec/inference.onnx" to
+        "https://huggingface.co/PaddlePaddle/PP-OCRv6_small_rec_onnx/resolve/main/inference.onnx",
+    "rec/inference.yml" to
+        "https://huggingface.co/PaddlePaddle/PP-OCRv6_small_rec_onnx/resolve/main/inference.yml",
+)
+
+abstract class BundleOcrModelsTask : DefaultTask() {
+
+    @get:OutputDirectory
+    abstract val outputDir: DirectoryProperty
+
+    @get:Input
+    abstract val urls: MapProperty<String, String>
+
+    @TaskAction
+    fun download() {
+        val root = File(outputDir.get().asFile, "models")
+        urls.get().forEach { (relativePath, url) ->
+            val target = File(root, relativePath)
+            if (target.isFile && target.length() > 1024L) return@forEach
+            target.parentFile?.mkdirs()
+            val temp = File(target.parentFile, "${target.name}.part")
+            var failure: Exception? = null
+            for (attempt in 1..3) {
+                try {
+                    java.net.URI(url).toURL().openStream().use { input ->
+                        temp.outputStream().use { output -> input.copyTo(output) }
+                    }
+                    failure = null
+                    break
+                } catch (e: Exception) {
+                    failure = e
+                    temp.delete()
+                    Thread.sleep(1_000L * attempt)
+                }
+            }
+            if (failure != null) {
+                throw GradleException("下载内置模型失败：$url（${failure.message}）")
+            }
+            if (!temp.renameTo(target)) {
+                throw GradleException("无法写入模型文件：${target.absolutePath}")
+            }
+        }
+    }
+}
+
+val bundleOcrModels = tasks.register<BundleOcrModelsTask>("bundleOcrModels") {
+    group = "ocr"
+    description = "下载轻量 OCR 模型，作为 medium 下载失败时的内置兜底"
+    outputDir.set(layout.buildDirectory.dir("generated/ocrModels"))
+    urls.set(bundledOcrModels)
+}
+
+androidComponents {
+    onVariants { variant ->
+        variant.sources.assets?.addGeneratedSourceDirectory(
+            bundleOcrModels,
+            BundleOcrModelsTask::outputDir,
+        )
     }
 }
 

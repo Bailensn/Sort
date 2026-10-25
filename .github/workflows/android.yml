@@ -48,6 +48,13 @@ jobs:
             echo "::error::SDK 组件安装失败：$(tail -3 sdk-install.log | tr '\n' ' ')"
             exit 1
           fi
+      # 构建期要下载约 31 MB 的内置模型，缓存后不用每次拉。
+      - name: Cache bundled OCR models
+        continue-on-error: true
+        uses: actions/cache@v6
+        with:
+          path: app/build/generated/ocrModels
+          key: ocr-models-small-v4
       - name: Make gradlew executable
         run: chmod +x ./gradlew
       - name: Assemble debug
@@ -102,6 +109,13 @@ jobs:
             echo "::error::SDK 组件安装失败：$(tail -3 sdk-install.log | tr '\n' ' ')"
             exit 1
           fi
+      # 构建期要下载约 31 MB 的内置模型，缓存后不用每次拉。
+      - name: Cache bundled OCR models
+        continue-on-error: true
+        uses: actions/cache@v6
+        with:
+          path: app/build/generated/ocrModels
+          key: ocr-models-small-v4
       - name: Make gradlew executable
         run: chmod +x ./gradlew
       - name: Assemble release
@@ -156,6 +170,13 @@ jobs:
             echo "::error::SDK 组件安装失败：$(tail -3 sdk-install.log | tr '\n' ' ')"
             exit 1
           fi
+      # 构建期要下载约 31 MB 的内置模型，缓存后不用每次拉。
+      - name: Cache bundled OCR models
+        continue-on-error: true
+        uses: actions/cache@v6
+        with:
+          path: app/build/generated/ocrModels
+          key: ocr-models-small-v4
       - name: Make gradlew executable
         run: chmod +x ./gradlew
       - name: Lint debug
@@ -201,6 +222,13 @@ jobs:
             echo "::error::SDK 组件安装失败：$(tail -3 sdk-install.log | tr '\n' ' ')"
             exit 1
           fi
+      # 构建期要下载约 31 MB 的内置模型，缓存后不用每次拉。
+      - name: Cache bundled OCR models
+        continue-on-error: true
+        uses: actions/cache@v6
+        with:
+          path: app/build/generated/ocrModels
+          key: ocr-models-small-v4
       - name: Make gradlew executable
         run: chmod +x ./gradlew
       - name: Run JVM unit tests
@@ -246,6 +274,13 @@ jobs:
             echo "::error::SDK 组件安装失败：$(tail -3 sdk-install.log | tr '\n' ' ')"
             exit 1
           fi
+      # 构建期要下载约 31 MB 的内置模型，缓存后不用每次拉。
+      - name: Cache bundled OCR models
+        continue-on-error: true
+        uses: actions/cache@v6
+        with:
+          path: app/build/generated/ocrModels
+          key: ocr-models-small-v4
       - name: Make gradlew executable
         run: chmod +x ./gradlew
       - name: Assemble instrumentation APK

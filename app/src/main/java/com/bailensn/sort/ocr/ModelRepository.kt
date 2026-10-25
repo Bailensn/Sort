@@ -47,14 +47,6 @@ object ModelRepository {
         recConfig = FileSpec("rec/inference.yml", "PP-OCRv6_medium_rec_onnx", 100_000),
     )
 
-    private val LITE = Profile(
-        id = "small",
-        label = "轻量模型",
-        det = FileSpec("det/inference.onnx", "PP-OCRv6_small_det_onnx", 8_000_000),
-        rec = FileSpec("rec/inference.onnx", "PP-OCRv6_small_rec_onnx", 15_000_000),
-        recConfig = FileSpec("rec/inference.yml", "PP-OCRv6_small_rec_onnx", 100_000),
-    )
-
     /**
      * 都是 HF 的 `/<repo>/resolve/main/<file>` 路径结构，ModelScope 也兼容。
      * 前三个是国内源，最后一个是海外源；运行时按实测速度排序。
@@ -70,7 +62,7 @@ object ModelRepository {
     fun modelDir(context: Context): File = File(context.filesDir, "ocr-models")
 
     fun downloadedProfile(context: Context): Profile? =
-        listOf(ACCURATE, LITE).firstOrNull { profile ->
+        ACCURATE.takeIf { profile ->
             profile.files.all { spec ->
                 val file = File(modelDir(context), spec.path)
                 file.isFile && file.length() >= spec.minBytes
@@ -97,15 +89,13 @@ object ModelRepository {
         val mirrors = rankMirrors()
         var lastError: Throwable? = null
 
-        for (profile in listOf(ACCURATE, LITE)) {
-            for (mirror in mirrors) {
-                try {
-                    downloadProfile(dir, profile, mirror, onProgress)
-                    onProgress(100, "${profile.label}已就绪")
-                    return@withContext dir
-                } catch (t: Throwable) {
-                    lastError = t
-                }
+        for (mirror in mirrors) {
+            try {
+                downloadProfile(dir, ACCURATE, mirror, onProgress)
+                onProgress(100, "${ACCURATE.label}已就绪")
+                return@withContext dir
+            } catch (t: Throwable) {
+                lastError = t
             }
         }
         throw IOException("模型下载失败：${lastError?.message ?: "未知错误"}")
@@ -141,7 +131,11 @@ object ModelRepository {
                 val percent = ((done / totalBytes) * 100).toInt().coerceIn(0, 100)
                 val seconds = ((System.currentTimeMillis() - startedAt) / 1000.0).coerceAtLeast(0.1)
                 val speed = done / seconds / (1024 * 1024)
-                onProgress(percent, "正在下载${profile.label} $percent%（%.1f MB/s）".format(speed))
+                val host = mirror.removePrefix("https://").substringBefore('/')
+                onProgress(
+                    percent,
+                    "正在从 $host 下载${profile.label} $percent%（%.1f MB/s）".format(speed),
+                )
             }
             completed += target.length()
         }

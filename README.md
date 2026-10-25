@@ -29,7 +29,7 @@
 | OCR 模型 | PP-OCRv6 small | det 约 9.9 MB，rec 约 21 MB |
 | NDK | **30.0.16248370 (r30)** | sysroot 到 API 37 |
 | CMake | **3.22.1** | AGP 9.4 能驱动的最高 SDK CMake 版本 |
-| ABI | arm64-v8a、x86_64 | 需要 32 位时自行加回 |
+| ABI | arm64-v8a | 模拟器用的 x86_64 默认不打，需要时用 ABI splits 出独立包 |
 
 ## 目录结构
 
@@ -91,16 +91,19 @@
 
 ## 模型从哪来
 
-模型**不内嵌 APK**，首次使用时下载到内部存储（`files/ocr-models/`），之后完全离线：
+分两层：
 
-- 默认下 **PP-OCRv6 medium**（det 62 MB + rec 76 MB + 字符表 150 KB），比 small 明显准；
-- medium 失败（没网、空间不足、镜像挂）自动退回 **small**（约 31 MB），保证能用；
+- **APK 内置 small**（约 31 MB，构建期下载），保证任何情况下都能离线识别；
+- 首次使用再尝试下载 **PP-OCRv6 medium**（det 62 MB + rec 76 MB + 字符表 150 KB）到
+  `files/ocr-models/`，明显更准；没网、下载失败、用户选择不烧流量时，
+  自动退回内置 small，界面会提示「当前使用内置轻量模型」。
 - 内置 5 个镜像，启动时并行测速按快慢排序，取最快的下载，失败自动换下一个：
   `modelscope.cn`（阿里云）、`hf-mirror.com`、`hf-mirror.net`、`aifasthub.com`、`huggingface.co`；
 - 五个都是 HF 的 `/<repo>/resolve/main/<file>` 路径结构，ModelScope 也兼容这个路径；
 - 下载有进度（百分比 + MB/s），完成后不再联网；
 - **默认只在 Wi-Fi 下自动下载**：当前是移动数据时会弹确认框，选「继续下载」才走流量，
-  选「连 Wi-Fi 再下」则暂停，等连上 Wi-Fi 点重试即可。
+  选「连 Wi-Fi 再下」就直接用内置 small；
+- 下载界面是确定进度条，显示镜像、百分比和实时速度。
 
 换模型改 `ModelRepository` 里的 `Profile` 即可；`ModelRepository.clear(context)` 可清掉已下载的模型。
 
