@@ -98,4 +98,29 @@ class TableSelfCheckTest {
         assertTrue(result.report.suspiciousRows.contains(3))
         assertTrue(result.report.summary.contains("学号"))
     }
+
+    @Test
+    fun recomputesTotalWhenNoSingleCellFixWorks() {
+        // 总分和六科差得太多（改一位补不回来），但六科都在 → 用求和覆盖总分。
+        val broken = clean.mapIndexed { index, row ->
+            if (index == 4) row.toMutableList().also { it[10] = "391" } else row
+        }
+        val result = TableSelfCheck.check(broken, confidences(mapOf((4 to 10) to 0.5f)))
+
+        assertEquals(1, result.report.correctedCells)
+        assertEquals("396", result.rows[4][10])
+    }
+
+    @Test
+    fun keepsPrintedTotalWhenConfidenceIsHigh() {
+        // 总分那格很确信（0.99），即使对不上也不覆盖——可能错的是某个科目。
+        val broken = clean.mapIndexed { index, row ->
+            if (index == 4) row.toMutableList().also { it[10] = "391" } else row
+        }
+        val result = TableSelfCheck.check(broken, confidences())
+
+        assertEquals(0, result.report.correctedCells)
+        assertEquals("391", result.rows[4][10])
+        assertTrue(result.report.suspiciousRows.contains(4))
+    }
 }

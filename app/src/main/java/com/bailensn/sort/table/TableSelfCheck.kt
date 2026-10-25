@@ -34,6 +34,9 @@ object TableSelfCheck {
     /** 总分列几乎每行都该有值。 */
     private const val MIN_TOTAL_FILL = 0.85
 
+    /** 总分这格置信度低于这个值、又和求和对不上时，直接用求和的数覆盖。 */
+    private const val RECOMPUTE_TOTAL_CONFIDENCE = 0.9f
+
     data class Report(
         /** 自检结果的一句话摘要，直接显示在结果页。 */
         val summary: String = "",
@@ -98,6 +101,17 @@ object TableSelfCheck {
                 val fixed = fixSingleCell(row, index, subjectColumns, totalColumn, sum, value, confidences)
                 if (fixed != null) {
                     row[fixed.first] = fixed.second
+                    corrected++
+                    return@forEachIndexed
+                }
+                // 单格反推不出来，但六科都在：总分是可以算出来的，用它覆盖那格。
+                // 前提是总分这格本身不够有把握，否则宁可相信印出来的数字。
+                val allSubjectsPresent = subjectColumns.all { column ->
+                    parseNumber(row.getOrNull(column)) != null
+                }
+                val totalConfidence = confidences?.getOrNull(index)?.getOrNull(totalColumn) ?: 0f
+                if (allSubjectsPresent && totalConfidence < RECOMPUTE_TOTAL_CONFIDENCE) {
+                    row[totalColumn] = formatNumber(sum)
                     corrected++
                 } else {
                     suspicious.add(index)
@@ -266,6 +280,12 @@ object TableSelfCheck {
         val values = rows.mapNotNull { row -> row.getOrNull(column)?.trim()?.takeIf(String::isNotEmpty) }
         if (values.size < rows.size * 0.7) return false
         return values.all { value -> value.length >= 8 && value.all { it in '0'..'9' } }
+    }
+
+    /** 329.5 → "329.5"，396.0 → "396"。 */
+    private fun formatNumber(value: Double): String {
+        val rounded = Math.round(value * 10.0) / 10.0
+        return if (rounded == Math.floor(rounded)) rounded.toLong().toString() else rounded.toString()
     }
 
     private fun parseNumber(raw: String?): Double? =

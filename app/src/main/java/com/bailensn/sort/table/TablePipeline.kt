@@ -390,7 +390,9 @@ object TablePipeline {
         val selfCheck = selfCheckResult.report
 
         // 空列里冒出来的短噪声（1/161/N/wa）先清掉；再裁两侧被背景带出来的垃圾列。
-        val cleaned = GarbageColumnTrimmer.cleanNoisyColumns(selfCheckResult.rows)
+        // 先按业务规则清坏列（非数字多、又不像中文），再清空列噪声、裁两侧垃圾列。
+        val withoutBadColumns = GarbageColumnTrimmer.cleanBadColumns(selfCheckResult.rows)
+        val cleaned = GarbageColumnTrimmer.cleanNoisyColumns(withoutBadColumns)
         val trimmed = GarbageColumnTrimmer.trim(cleaned)
         // 分数列里 5→S、0→O 这类错字按列纠正：整列大多是数字时才动手。
         val repaired = NumericColumnRepair.repair(trimmed)

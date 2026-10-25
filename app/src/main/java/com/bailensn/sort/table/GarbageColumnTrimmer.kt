@@ -155,6 +155,60 @@ object GarbageColumnTrimmer {
         }
     }
 
+    /**
+     * 「坏列」判定（按业务经验给的硬规则）：
+     * **非数字值占比 > 7%，且含中文的值占比 < 80%** → 整列清空。
+     *
+     * 依据：成绩单里每一列要么是数字（班级/序号/学号/分数/总分），要么是中文（姓名）。
+     * 一列里既塞不进数字、又不是中文，只可能是背景噪声或线头。
+     *
+     * 保护：全表中文占比最高的那一列（姓名列）永远不动——哪怕它被认花了，
+     * 保留原文也比清空强。
+     */
+    private const val MAX_NON_NUMERIC_RATIO = 0.07
+    private const val MIN_CHINESE_RATIO = 0.8
+
+    fun cleanBadColumns(rows: List<List<String>>): List<List<String>> {
+        if (rows.isEmpty()) return rows
+        val width = rows.maxOfOrNull { it.size } ?: return rows
+        if (width <= 1) return rows
+
+        val stats = (0 until width).map { column ->
+            val values = rows.mapNotNull { row -> row.getOrNull(column)?.takeIf(String::isNotBlank) }
+            val filled = values.size.toDouble() / rows.size
+            val numeric = values.count { NUMBER.matches(it) }
+            val chinese = values.count { value -> value.any { it.code > 0x2E80 && !isLineLike(it) } }
+            ColumnStats(filled, numeric, chinese, values.size)
+        }
+        val nameColumn = stats.indices.maxByOrNull { stats[it].chinese } ?: return rows
+
+        val bad = BooleanArray(width) { column ->
+            val stat = stats[column]
+            if (column == nameColumn || stat.filled < 0.05 || stat.count == 0) return@BooleanArray false
+            val nonNumericRatio = 1.0 - stat.numeric.toDouble() / stat.count
+            val chineseRatio = stat.chinese.toDouble() / stat.count
+            nonNumericRatio > MAX_NON_NUMERIC_RATIO && chineseRatio < MIN_CHINESE_RATIO
+        }
+        if (bad.none { it }) return rows
+
+        return rows.map { row ->
+            row.toMutableList().also { cells ->
+                bad.forEachIndexed { column, isBad ->
+                    if (isBad && column < cells.size) cells[column] = ""
+                }
+            }
+        }
+    }
+
+    private data class ColumnStats(
+        val filled: Double,
+        val numeric: Int,
+        val chinese: Int,
+        val count: Int,
+    )
+
+    private val NUMBER = Regex("""^\d+(\.\d+)?$""")
+
     private fun noChinese(raw: String): Boolean {
         val value = raw.filterNot(::isLineLike)
         return value.none { it.code > 0x2E80 }
