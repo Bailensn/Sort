@@ -89,13 +89,20 @@ android {
 // 内置「高精度」模型（PP-OCRv6 medium）：不再运行时下载，APK 自带。
 // 下载到 build/generated/ocrModels/models/，由 AGP 当作生成的 assets 目录并入。
 // ---------------------------------------------------------------------------
+// 每个文件给国内/海外两个源：CI 在海外，本机在国内，谁通用谁。
 val bundledOcrModels = mapOf(
-    "det/inference.onnx" to
+    "det/inference.onnx" to listOf(
+        "https://huggingface.co/PaddlePaddle/PP-OCRv6_medium_det_onnx/resolve/main/inference.onnx",
         "https://modelscope.cn/models/PaddlePaddle/PP-OCRv6_medium_det_onnx/resolve/main/inference.onnx",
-    "rec/inference.onnx" to
+    ),
+    "rec/inference.onnx" to listOf(
+        "https://huggingface.co/PaddlePaddle/PP-OCRv6_medium_rec_onnx/resolve/main/inference.onnx",
         "https://modelscope.cn/models/PaddlePaddle/PP-OCRv6_medium_rec_onnx/resolve/main/inference.onnx",
-    "rec/inference.yml" to
+    ),
+    "rec/inference.yml" to listOf(
+        "https://huggingface.co/PaddlePaddle/PP-OCRv6_medium_rec_onnx/resolve/main/inference.yml",
         "https://modelscope.cn/models/PaddlePaddle/PP-OCRv6_medium_rec_onnx/resolve/main/inference.yml",
+    ),
 )
 
 abstract class BundleOcrModelsTask : DefaultTask() {
@@ -107,17 +114,17 @@ abstract class BundleOcrModelsTask : DefaultTask() {
     abstract val rawDir: DirectoryProperty
 
     @get:Input
-    abstract val urls: MapProperty<String, String>
+    abstract val urls: MapProperty<String, List<String>>
 
     @TaskAction
     fun bundle() {
         val assetsRoot = File(outputDir.get().asFile, "models")
         val rawRoot = rawDir.get().asFile
 
-        urls.get().forEach { (relativePath, url) ->
+        urls.get().forEach { (relativePath, candidates) ->
             val raw = File(rawRoot, relativePath)
             if (!raw.isFile || raw.length() < 1024L) {
-                download(raw, url)
+                download(raw, candidates)
             }
             val packed = File(assetsRoot, "$relativePath.xz")
             if (packed.isFile && packed.length() > 1024L) return@forEach
@@ -126,29 +133,29 @@ abstract class BundleOcrModelsTask : DefaultTask() {
         }
     }
 
-    private fun download(target: File, url: String) {
+    private fun download(target: File, candidates: List<String>) {
         target.parentFile?.mkdirs()
         val temp = File(target.parentFile, "${target.name}.part")
         var failure: Exception? = null
-        for (attempt in 1..3) {
-            try {
-                URI(url).toURL().openStream().use { input ->
-                    temp.outputStream().use { output -> input.copyTo(output) }
+        for (url in candidates) {
+            for (attempt in 1..2) {
+                try {
+                    URI(url).toURL().openStream().use { input ->
+                        temp.outputStream().use { output -> input.copyTo(output) }
+                    }
+                    failure = null
+                    if (!temp.renameTo(target)) {
+                        throw GradleException("无法写入模型文件：${target.absolutePath}")
+                    }
+                    return
+                } catch (e: Exception) {
+                    failure = e
+                    temp.delete()
+                    Thread.sleep(1_000L * attempt)
                 }
-                failure = null
-                break
-            } catch (e: Exception) {
-                failure = e
-                temp.delete()
-                Thread.sleep(1_000L * attempt)
             }
         }
-        if (failure != null) {
-            throw GradleException("下载内置模型失败：$url（${failure.message}）")
-        }
-        if (!temp.renameTo(target)) {
-            throw GradleException("无法写入模型文件：${target.absolutePath}")
-        }
+        throw GradleException("下载内置模型失败：${failure?.message}")
     }
 
     /** LZMA2 最高压缩预设（9 | EXTREME）。ONNX 权重压不太动，但能省一点是一点。 */
