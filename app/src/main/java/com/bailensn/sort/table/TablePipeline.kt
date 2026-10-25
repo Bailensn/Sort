@@ -224,7 +224,9 @@ object TablePipeline {
             matrix[cell.row][cell.column] = chosen
         }
 
-        val grid = TableGridBuilder.normalize(matrix, TableGrid.Mode.GRID_LINES, cellGrid.merges)
+        // 分数列里 5→S、0→O 这类错字按列纠正：整列大多是数字时才动手。
+        val repaired = NumericColumnRepair.repair(matrix)
+        val grid = TableGridBuilder.normalize(repaired, TableGrid.Mode.GRID_LINES, cellGrid.merges)
             ?: TableGrid(emptyList(), TableGrid.Mode.GRID_LINES)
         return CellPass(grid, corrected)
     }
