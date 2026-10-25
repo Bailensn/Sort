@@ -27,7 +27,8 @@ jobs:
         run: |
           set -o pipefail
           ./gradlew --stacktrace --warning-mode=all \
-            :app:assembleDebug :app:assembleRelease 2>&1 | tee build.log
+            :app:assembleDebug :app:assembleRelease 2>&1 | tee build.log \
+            || { bash .github/scripts/print-errors.sh build.log; exit 1; }
       - name: Upload APKs
         if: success()
         uses: actions/upload-artifact@v7
@@ -38,15 +39,6 @@ jobs:
             app/build/outputs/apk/release/*.apk
           if-no-files-found: warn
           retention-days: 14
-      - name: Upload build log
-        if: failure()
-        uses: actions/upload-artifact@v7
-        with:
-          name: build-log-assemble
-          path: build.log
-          if-no-files-found: warn
-          retention-days: 7
-
   lint:
     name: Lint
     runs-on: ubuntu-latest
@@ -57,16 +49,8 @@ jobs:
       - name: Lint debug
         run: |
           set -o pipefail
-          ./gradlew --stacktrace --warning-mode=all :app:lintDebug 2>&1 | tee build.log
-      - name: Upload build log
-        if: failure()
-        uses: actions/upload-artifact@v7
-        with:
-          name: build-log-lint
-          path: build.log
-          if-no-files-found: warn
-          retention-days: 7
-
+          ./gradlew --stacktrace --warning-mode=all :app:lintDebug 2>&1 | tee build.log \
+            || { bash .github/scripts/print-errors.sh build.log; exit 1; }
   unit-test:
     name: Unit tests
     runs-on: ubuntu-latest
@@ -77,16 +61,8 @@ jobs:
       - name: Run JVM unit tests
         run: |
           set -o pipefail
-          ./gradlew --stacktrace --warning-mode=all :app:testDebugUnitTest 2>&1 | tee build.log
-      - name: Upload build log
-        if: failure()
-        uses: actions/upload-artifact@v7
-        with:
-          name: build-log-unit-test
-          path: build.log
-          if-no-files-found: warn
-          retention-days: 7
-
+          ./gradlew --stacktrace --warning-mode=all :app:testDebugUnitTest 2>&1 | tee build.log \
+            || { bash .github/scripts/print-errors.sh build.log; exit 1; }
   android-test:
     name: Instrumentation APK
     runs-on: ubuntu-latest
@@ -99,12 +75,5 @@ jobs:
       - name: Assemble instrumentation APK
         run: |
           set -o pipefail
-          ./gradlew --stacktrace --warning-mode=all :app:assembleDebugAndroidTest 2>&1 | tee build.log
-      - name: Upload build log
-        if: failure()
-        uses: actions/upload-artifact@v7
-        with:
-          name: build-log-android-test
-          path: build.log
-          if-no-files-found: warn
-          retention-days: 7
+          ./gradlew --stacktrace --warning-mode=all :app:assembleDebugAndroidTest 2>&1 | tee build.log \
+            || { bash .github/scripts/print-errors.sh build.log; exit 1; }

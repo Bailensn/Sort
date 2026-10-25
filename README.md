@@ -126,8 +126,14 @@
 公共环境在 `.github/actions/android-env/action.yml`：JDK 21、Android SDK、
 `platforms;android-37.0` / `build-tools;36.0.0`，NDK 与 CMake 只给需要它们的 job。
 
-失败时每个 job 只做一件事：把 `build.log` 作为 `build-log-<job>` artifact 传上去（保留 7 天），
-点进 run 页面下载即可，不再往提交里写评论、也不再生成额外的报告文件。
+失败时不用下载任何东西：构建步骤会在同一个 step 里直接把错误打出来——
+
+- `::group::构建错误` 里是 Kotlin/Java 错误、失败的 Task、Gradle 的 `What went wrong`；
+- 带文件行号的错误同时生成 `::error file=...,line=...` 注解，run 页面和 PR 页面能直接点；
+- 解析不到结构化错误时，退化成打印 `What went wrong` 和日志末尾 30 行。
+
+实现是一个 30 行的脚本 `.github/scripts/print-errors.sh`，四个 job 的 gradle 步骤失败时调用它，
+不写评论、不需要 token、不需要 artifact。
 
 > `gradlew` 的可执行位在共享存储/Windows 上容易丢，composite action 里有
 > `chmod +x ./gradlew` 兜底。
