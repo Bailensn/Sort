@@ -78,6 +78,12 @@ fun TableScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
     var showOriginal by rememberSaveable { mutableStateOf(false) }
+    var showModelStatus by rememberSaveable { mutableStateOf(false) }
+
+    if (showModelStatus) {
+        ModelStatusScreen(onBack = { showModelStatus = false })
+        return
+    }
 
     val picker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
@@ -114,6 +120,12 @@ fun TableScreen(
                     )
                 },
                 actions = {
+                    TextButton(
+                        onClick = { showModelStatus = true },
+                        modifier = Modifier.heightIn(min = 48.dp),
+                    ) {
+                        Text("模型", style = MaterialTheme.typography.labelLarge)
+                    }
                     if (state.original != null) {
                         TextButton(
                             onClick = viewModel::reset,
@@ -149,7 +161,7 @@ fun TableScreen(
             verticalArrangement = Arrangement.spacedBy(20.dp),
         ) {
             when (val engine = state.engine) {
-                is EngineState.Loading -> LoadingBlock(engine.message)
+                is EngineState.Loading -> LoadingBlock(engine.message, engine.progress)
 
                 is EngineState.AwaitingDownload -> LoadingBlock(engine.message)
 
@@ -197,6 +209,14 @@ private fun ReadyContent(
     showOriginal: Boolean,
     onToggleOriginal: () -> Unit,
 ) {
+    if ((state.engine as? EngineState.Ready)?.builtIn == true) {
+        Text(
+            text = "当前使用内置轻量模型，联网后可下载更高精度的模型。",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+
     val original = state.original
     if (original == null) {
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -430,16 +450,25 @@ private fun TablePreviewCard(grid: TableGrid) {
 }
 
 @Composable
-private fun LoadingBlock(message: String) {
+private fun LoadingBlock(message: String, progress: Float? = null) {
     Column(
         modifier = Modifier.fillMaxWidth().padding(top = 40.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        CircularProgressIndicator(
-            modifier = Modifier.size(24.dp),
-            strokeWidth = 2.dp,
-        )
+        if (progress == null) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(24.dp),
+                strokeWidth = 2.dp,
+            )
+        } else {
+            LinearProgressIndicator(
+                progress = { progress },
+                modifier = Modifier.fillMaxWidth().height(2.dp),
+                color = MaterialTheme.colorScheme.primary,
+                trackColor = MaterialTheme.colorScheme.outlineVariant,
+            )
+        }
         Text(
             text = message,
             style = MaterialTheme.typography.bodySmall,
