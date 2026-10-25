@@ -9,10 +9,6 @@ on:
 permissions:
   contents: read
 
-env:
-  # setup-android 默认装到这个路径；这里显式声明，缓存步骤的 ${{ env.ANDROID_SDK_ROOT }} 才有值。
-  ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
-
 concurrency:
   group: android-ci-${{ github.ref }}
   cancel-in-progress: true
@@ -36,22 +32,6 @@ jobs:
         with:
           # 缓存按周清理一次，避免 Gradle Home 越滚越大。
           cache-cleanup: on-success
-      - name: Cache Android SDK platform
-        continue-on-error: true
-        uses: actions/cache@v6
-        with:
-          path: |
-            ${{ env.ANDROID_SDK_ROOT }}/platforms/android-37.0
-            ${{ env.ANDROID_SDK_ROOT }}/build-tools/36.0.0
-          key: android-sdk-platform37-bt36
-      - name: Cache NDK and CMake
-        continue-on-error: true
-        uses: actions/cache@v6
-        with:
-          path: |
-            ${{ env.ANDROID_SDK_ROOT }}/ndk/30.0.16248370
-            ${{ env.ANDROID_SDK_ROOT }}/cmake/3.22.1
-          key: android-ndk30-cmake322
       - name: Install SDK components
         run: |
           set -o pipefail
@@ -116,22 +96,6 @@ jobs:
         with:
           # 缓存按周清理一次，避免 Gradle Home 越滚越大。
           cache-cleanup: on-success
-      - name: Cache Android SDK platform
-        continue-on-error: true
-        uses: actions/cache@v6
-        with:
-          path: |
-            ${{ env.ANDROID_SDK_ROOT }}/platforms/android-37.0
-            ${{ env.ANDROID_SDK_ROOT }}/build-tools/36.0.0
-          key: android-sdk-platform37-bt36
-      - name: Cache NDK and CMake
-        continue-on-error: true
-        uses: actions/cache@v6
-        with:
-          path: |
-            ${{ env.ANDROID_SDK_ROOT }}/ndk/30.0.16248370
-            ${{ env.ANDROID_SDK_ROOT }}/cmake/3.22.1
-          key: android-ndk30-cmake322
       - name: Install SDK components
         run: |
           set -o pipefail
@@ -196,14 +160,6 @@ jobs:
         with:
           # 缓存按周清理一次，避免 Gradle Home 越滚越大。
           cache-cleanup: on-success
-      - name: Cache Android SDK platform
-        continue-on-error: true
-        uses: actions/cache@v6
-        with:
-          path: |
-            ${{ env.ANDROID_SDK_ROOT }}/platforms/android-37.0
-            ${{ env.ANDROID_SDK_ROOT }}/build-tools/36.0.0
-          key: android-sdk-platform37-bt36
       - name: Install SDK components
         run: |
           set -o pipefail
@@ -259,14 +215,6 @@ jobs:
         with:
           # 缓存按周清理一次，避免 Gradle Home 越滚越大。
           cache-cleanup: on-success
-      - name: Cache Android SDK platform
-        continue-on-error: true
-        uses: actions/cache@v6
-        with:
-          path: |
-            ${{ env.ANDROID_SDK_ROOT }}/platforms/android-37.0
-            ${{ env.ANDROID_SDK_ROOT }}/build-tools/36.0.0
-          key: android-sdk-platform37-bt36
       - name: Install SDK components
         run: |
           set -o pipefail
@@ -322,22 +270,6 @@ jobs:
         with:
           # 缓存按周清理一次，避免 Gradle Home 越滚越大。
           cache-cleanup: on-success
-      - name: Cache Android SDK platform
-        continue-on-error: true
-        uses: actions/cache@v6
-        with:
-          path: |
-            ${{ env.ANDROID_SDK_ROOT }}/platforms/android-37.0
-            ${{ env.ANDROID_SDK_ROOT }}/build-tools/36.0.0
-          key: android-sdk-platform37-bt36
-      - name: Cache NDK and CMake
-        continue-on-error: true
-        uses: actions/cache@v6
-        with:
-          path: |
-            ${{ env.ANDROID_SDK_ROOT }}/ndk/30.0.16248370
-            ${{ env.ANDROID_SDK_ROOT }}/cmake/3.22.1
-          key: android-ndk30-cmake322
       - name: Install SDK components
         run: |
           set -o pipefail
