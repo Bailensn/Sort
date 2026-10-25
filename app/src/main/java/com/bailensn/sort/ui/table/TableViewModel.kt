@@ -5,6 +5,8 @@ import android.graphics.Bitmap
 import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.bailensn.sort.data.HistoryStore
+import com.bailensn.sort.data.NameMemory
 import com.bailensn.sort.table.TableGrid
 import com.bailensn.sort.table.TablePipeline
 import com.bailensn.sort.ui.table.TableUiState.Phase
@@ -71,6 +73,9 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _exported = MutableSharedFlow<ExportedFile>(extraBufferCapacity = 1)
     val exported: SharedFlow<ExportedFile> = _exported.asSharedFlow()
+
+    private val _history = MutableStateFlow<List<HistoryStore.Entry>>(emptyList())
+    val history: StateFlow<List<HistoryStore.Entry>> = _history.asStateFlow()
 
     private var engine: PaddleOCR? = null
     private var engineDeferred = CompletableDeferred<PaddleOCR>()
@@ -208,11 +213,14 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
                     )
                 }
             } else {
+                val polished = applyNameMemory(analysis.grid)
+                HistoryStore.save(getApplication(), polished.rows)
+                _history.value = HistoryStore.list(getApplication())
                 _state.update {
                     it.copy(
                         phase = Phase.DONE,
                         stage = null,
-                        grid = analysis.grid,
+                        grid = polished,
                         processed = analysis.bitmap,
                         overlay = analysis.overlay,
                         elapsedMs = analysis.elapsedMs,
@@ -239,8 +247,74 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /**
+     * 人名记忆：认出来的姓名如果和记忆里只差一个字，就改成记忆里的写法。
+     * 只对「含中文的列」生效，数字列一律不动。
+     */
+    private fun applyNameMemory(grid: TableGrid): TableGrid {
+        if (grid.rows.isEmpty()) return grid
+        val memory = NameMemory.load(getApplication())
+        if (memory.isEmpty()) return grid
+        val width = grid.columnCount
+        val nameColumns = (0 until width).filter { column ->
+            val values = grid.rows.mapNotNull { row -> row.getOrNull(column)?.takeIf(String::isNotBlank) }
+            values.isNotEmpty() && values.count { value -> value.any { it.code > 0x2E80 } } >= values.size * 0.6
+        }
+        if (nameColumns.isEmpty()) return grid
+        val rows = grid.rows.map { it.toMutableList() }
+        nameColumns.forEach { column ->
+            rows.forEach { row ->
+                val value = row.getOrNull(column)?.trim().orEmpty()
+                if (value.length !in 2..4) return@forEach
+                val match = NameMemory.nearest(value, memory) ?: return@forEach
+                if (match != value) row[column] = match
+            }
+        }
+        return grid.copy(rows = rows)
+    }
+
+    /** 单格手改：用户在预览里点开某一格改字，直接作用于当前结果。 */
+    fun updateCell(row: Int, column: Int, text: String) {
+        val grid = _state.value.grid ?: return
+        if (row !in grid.rows.indices) return
+        val newRows = grid.rows.map { it.toMutableList() }
+        if (column !in newRows[row].indices) return
+        newRows[row][column] = text.trim()
+        _state.update { it.copy(grid = grid.copy(rows = newRows)) }
+        // 改对了的名字记下来，下次自动纠。
+        val value = text.trim()
+        if (value.length in 2..4 && value.all { it.code > 0x2E80 }) {
+            NameMemory.remember(getApplication(), listOf(value))
+        }
+    }
+
+    fun refreshHistory() {
+        _history.value = HistoryStore.list(getApplication())
+    }
+
+    fun openHistory(entry: HistoryStore.Entry) {
+        val rows = HistoryStore.rows(getApplication(), entry)
+        if (rows.isEmpty()) return
+        _state.update {
+            it.copy(
+                grid = TableGrid(rows, TableGrid.Mode.GRID_LINES),
+                phase = Phase.DONE,
+                stage = null,
+                message = null,
+            )
+        }
+    }
+
+    fun memoryNames(): List<String> = NameMemory.load(getApplication())
+
     fun exportXlsx() {
         val grid = _state.value.grid ?: return
+        runCatching {
+            val names = grid.rows.flatMap { row ->
+                row.filter { it.length in 2..4 && it.all { character -> character.code > 0x2E80 } }
+            }
+            if (names.isNotEmpty()) NameMemory.remember(getApplication(), names)
+        }
         viewModelScope.launch {
             _state.update { it.copy(exporting = true) }
             try {

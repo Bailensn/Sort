@@ -18,6 +18,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -42,6 +43,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -52,6 +54,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -73,6 +76,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.bailensn.sort.R
+import com.bailensn.sort.data.HistoryStore
 import com.bailensn.sort.table.TableGrid
 import com.bailensn.sort.table.TablePipeline
 import com.bailensn.sort.ui.theme.SortTheme
@@ -93,6 +97,9 @@ fun TableScreen(
     // 在组合里取文案，不要用 LocalContext.current.getString：
     // AGP 9.4 的 lint 会把后者判成「不感知配置变化」，直接报 Error。
     val chooserTitle = stringResource(R.string.share_chooser)
+    var editingCell by remember { mutableStateOf<CellEdit?>(null) }
+    var showHistory by remember { mutableStateOf(false) }
+    val history by viewModel.history.collectAsStateWithLifecycle()
     val context = LocalContext.current
     var viewMode by rememberSaveable { mutableStateOf(0) }
 
@@ -121,6 +128,29 @@ fun TableScreen(
         }
     }
 
+    editingCell?.let { cell ->
+        CellEditDialog(
+            cell = cell,
+            suggestions = viewModel.memoryNames(),
+            onDismiss = { editingCell = null },
+            onConfirm = { text ->
+                viewModel.updateCell(cell.row, cell.column, text)
+                editingCell = null
+            },
+        )
+    }
+
+    if (showHistory) {
+        HistoryDialog(
+            entries = history,
+            onDismiss = { showHistory = false },
+            onOpen = { entry ->
+                viewModel.openHistory(entry)
+                showHistory = false
+            },
+        )
+    }
+
     Scaffold(
         modifier = modifier.fillMaxSize(),
         containerColor = MaterialTheme.colorScheme.background,
@@ -133,6 +163,18 @@ fun TableScreen(
                     )
                 },
                 actions = {
+                    TextButton(
+                        onClick = {
+                            viewModel.refreshHistory()
+                            showHistory = true
+                        },
+                        modifier = Modifier.heightIn(min = 48.dp),
+                    ) {
+                        Text(
+                            text = stringResource(R.string.action_history),
+                            style = MaterialTheme.typography.labelLarge,
+                        )
+                    }
                     if (state.original != null) {
                         TextButton(
                             onClick = viewModel::reset,
@@ -184,6 +226,7 @@ fun TableScreen(
                     state = state,
                     viewMode = viewMode,
                     onCycleView = { viewMode = (viewMode + 1) % 3 },
+                    onCellClick = { row, column, value -> editingCell = CellEdit(row, column, value) },
                 )
             }
         }
@@ -191,11 +234,100 @@ fun TableScreen(
 
 }
 
+private data class CellEdit(val row: Int, val column: Int, val value: String)
+
+@Composable
+private fun CellEditDialog(
+    cell: CellEdit,
+    suggestions: List<String>,
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit,
+) {
+    var text by remember { mutableStateOf(cell.value) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.edit_title, cell.row + 1, cell.column + 1)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(
+                    value = text,
+                    onValueChange = { text = it },
+                    singleLine = true,
+                )
+                if (suggestions.isNotEmpty()) {
+                    Text(
+                        text = stringResource(R.string.edit_suggestions),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Row(
+                        modifier = Modifier.horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        suggestions.take(12).forEach { name ->
+                            TextButton(onClick = { text = name }) { Text(name) }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(text) }) { Text(stringResource(R.string.action_save)) }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
+        },
+    )
+}
+
+@Composable
+private fun HistoryDialog(
+    entries: List<HistoryStore.Entry>,
+    onDismiss: () -> Unit,
+    onOpen: (HistoryStore.Entry) -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.history_title)) },
+        text = {
+            if (entries.isEmpty()) {
+                Text(stringResource(R.string.history_empty))
+            } else {
+                Column(
+                    modifier = Modifier.verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    entries.forEach { entry ->
+                        TextButton(
+                            onClick = { onOpen(entry) },
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Text(
+                                text = stringResource(
+                                    R.string.history_entry,
+                                    HistoryStore.formatTime(entry.timestamp),
+                                    entry.rowCount,
+                                    entry.columnCount,
+                                ),
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_close)) }
+        },
+    )
+}
+
 @Composable
 private fun ReadyContent(
     state: TableUiState,
     viewMode: Int,
     onCycleView: () -> Unit,
+    onCellClick: (row: Int, column: Int, value: String) -> Unit,
 ) {
 
     val original = state.original
@@ -236,7 +368,7 @@ private fun ReadyContent(
             val grid = state.grid
             if (grid != null) {
                 StatsBlock(state = state, grid = grid)
-                TablePreviewCard(grid = grid)
+                TablePreviewCard(grid = grid, onCellClick = onCellClick)
             }
         }
 
@@ -484,7 +616,10 @@ private fun StatItem(value: String, label: String) {
 }
 
 @Composable
-private fun TablePreviewCard(grid: TableGrid) {
+private fun TablePreviewCard(
+    grid: TableGrid,
+    onCellClick: (row: Int, column: Int, value: String) -> Unit,
+) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -528,13 +663,14 @@ private fun TablePreviewCard(grid: TableGrid) {
                             },
                         ),
                     ) {
-                        row.forEach { cell ->
+                        row.forEachIndexed { columnIndex, cell ->
                             Text(
                                 text = cell.ifBlank { " " },
                                 modifier = Modifier
                                     .width(CELL_WIDTH)
                                     .heightIn(min = 36.dp)
                                     .border(0.5.dp, MaterialTheme.colorScheme.outlineVariant)
+                                    .clickable { onCellClick(rowIndex, columnIndex, cell) }
                                     .padding(horizontal = 8.dp, vertical = 6.dp),
                                 style = MaterialTheme.typography.bodySmall,
                                 maxLines = 4,
@@ -691,6 +827,7 @@ private fun TablePreviewSample() {
                     ),
                     mode = TableGrid.Mode.GRID_LINES,
                 ),
+                onCellClick = { _, _, _ -> },
             )
         }
     }

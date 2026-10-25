@@ -40,4 +40,13 @@
 
     <string name="model_loading">Loading models</string>
     <string name="model_failed_title">Failed to load models</string>
+    <string name="action_history">History</string>
+    <string name="action_save">Save</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_close">Close</string>
+    <string name="edit_title">Edit row %1$d, column %2$d</string>
+    <string name="edit_suggestions">Remembered names</string>
+    <string name="history_title">History</string>
+    <string name="history_empty">No records yet</string>
+    <string name="history_entry">%1$s · %2$d rows %3$d cols</string>
 </resources>
