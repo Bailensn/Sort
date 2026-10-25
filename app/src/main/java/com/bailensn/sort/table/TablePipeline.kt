@@ -33,6 +33,12 @@ object TablePipeline {
         val rectified: Boolean,
         val correctedCells: Int,
         val elapsedMs: Long,
+        /** 诊断用：检测到的横线条数。 */
+        val horizontalLines: Int,
+        /** 诊断用：检测到的竖线条数。 */
+        val verticalLines: Int,
+        /** 诊断用：线切出来的单元格数。 */
+        val cellCount: Int,
     )
 
     suspend fun analyze(
@@ -61,6 +67,7 @@ object TablePipeline {
         onStage(Stage.SEGMENT)
         // 用二值图逐条边界确认有没有画线：没画线的地方就是合并单元格。
         val probe = PixelBorderProbe.from(working)
+        var cellCount = 0
         val cellGrid: CellGrid
         val borderInset: Int
         try {
@@ -68,6 +75,7 @@ object TablePipeline {
             // 表格线宽估计 + 1px，用于裁格时把线整个切掉：
             // 残留的线头会被识别成 "1" 或 "|"，这是空白格里出现 1 的主要原因。
             borderInset = (probe?.maxThickness ?: 2) + 1
+            cellCount = cellGrid.cells.size
         } finally {
             probe?.release()
         }
@@ -99,6 +107,9 @@ object TablePipeline {
             rectified = rectified,
             correctedCells = correctedCells,
             elapsedMs = SystemClock.elapsedRealtime() - start,
+            horizontalLines = detection.horizontal.size,
+            verticalLines = detection.vertical.size,
+            cellCount = cellCount,
         )
     }
 

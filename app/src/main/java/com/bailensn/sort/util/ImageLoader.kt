@@ -3,6 +3,8 @@ package com.bailensn.sort.util
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Canvas
+import android.graphics.Color
 import android.graphics.Matrix
 import android.net.Uri
 import androidx.exifinterface.media.ExifInterface
@@ -38,7 +40,24 @@ object ImageLoader {
             )
         }.getOrDefault(ExifInterface.ORIENTATION_NORMAL)
 
-        return applyOrientation(decoded, orientation)
+        return flattenOnWhite(applyOrientation(decoded, orientation))
+    }
+
+    /**
+     * 把可能带透明通道的图压到底色上。
+     *
+     * 微信保存的截图常带一圈 alpha=0（裁圆角、悬浮窗）。解码后这些像素的 RGB 是黑的，
+     * 线检测会把整条黑边当成表格竖线；透视校正后那块区域又是透明的，屏幕上看着就是一片白。
+     * 先铺白底，这两个问题一起消失。
+     */
+    private fun flattenOnWhite(bitmap: Bitmap): Bitmap {
+        if (!bitmap.hasAlpha()) return bitmap
+        val flattened = Bitmap.createBitmap(bitmap.width, bitmap.height, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(flattened)
+        canvas.drawColor(Color.WHITE)
+        canvas.drawBitmap(bitmap, 0f, 0f, null)
+        if (flattened !== bitmap) bitmap.recycle()
+        return flattened
     }
 
     private fun applyOrientation(bitmap: Bitmap, orientation: Int): Bitmap {

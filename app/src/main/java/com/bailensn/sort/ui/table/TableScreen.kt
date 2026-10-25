@@ -315,6 +315,12 @@ private fun StatsBlock(state: TableUiState, grid: TableGrid) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
+        // 识别不对劲时这三个数字最有用：先看有没有线，再看切出多少格。
+        Text(
+            text = "横线 ${state.horizontalLines} · 竖线 ${state.verticalLines} · 格子 ${state.cellCount}",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 

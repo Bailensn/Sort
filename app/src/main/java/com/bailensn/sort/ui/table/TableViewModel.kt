@@ -50,6 +50,9 @@ data class TableUiState(
     val rectified: Boolean = false,
     val correctedCells: Int = 0,
     val exporting: Boolean = false,
+    val horizontalLines: Int = 0,
+    val verticalLines: Int = 0,
+    val cellCount: Int = 0,
 ) {
     enum class Phase { IDLE, RECOGNIZING, DONE, ERROR }
 }
@@ -159,17 +162,27 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
                 }
             }
 
-            if (analysis.grid.isEmpty) {
+            // 一行都没读到也是失败：界面上会摆出一张空表，看着像「渲染成空白」。
+            val blank = analysis.grid.isEmpty || analysis.grid.filledCellCount == 0
+            if (blank) {
+                val hint = if (analysis.cellCount == 0) {
+                    "没找到表格线（横线 ${analysis.horizontalLines}、竖线 ${analysis.verticalLines}）"
+                } else {
+                    "切出 ${analysis.cellCount} 个格子但一个字都没认出来"
+                }
                 _state.update {
                     it.copy(
                         phase = Phase.ERROR,
                         stage = null,
-                        message = "没有识别到表格，换一张清晰的照片试试",
+                        message = "这张图识别不出表格：$hint。换一张、或点「看网格」看看校正结果。",
                         processed = analysis.bitmap,
                         overlay = analysis.overlay,
                         elapsedMs = analysis.elapsedMs,
                         deskewAngle = analysis.deskewAngle,
                         rectified = analysis.rectified,
+                        horizontalLines = analysis.horizontalLines,
+                        verticalLines = analysis.verticalLines,
+                        cellCount = analysis.cellCount,
                     )
                 }
             } else {
@@ -184,6 +197,9 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
                         deskewAngle = analysis.deskewAngle,
                         rectified = analysis.rectified,
                         correctedCells = analysis.correctedCells,
+                        horizontalLines = analysis.horizontalLines,
+                        verticalLines = analysis.verticalLines,
+                        cellCount = analysis.cellCount,
                     )
                 }
             }
