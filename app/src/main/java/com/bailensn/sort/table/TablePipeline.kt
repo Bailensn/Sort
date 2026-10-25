@@ -64,7 +64,10 @@ object TablePipeline {
         val start = SystemClock.elapsedRealtime()
 
         onStage(Stage.RECTIFY)
-        val deskewed = Deskewer.deskew(source)
+        // 第一步就把画面裁到有内容的那块：大片桌面、黑边、灰底在这里就被扔掉，
+        // 后面的纠偏和线检测不会被它们带偏。
+        val cropped = ContentCropper.crop(source)
+        val deskewed = Deskewer.deskew(cropped)
         var working = deskewed.bitmap
         var detection = detectSafely(working)
         var rectified = false

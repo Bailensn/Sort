@@ -29,10 +29,10 @@ object TableSelfCheck {
     private const val MIN_SUM_AGREEMENT = 0.75
 
     /** 科目列至少要有这么多行填了值：垃圾列通常只填了一半。 */
-    private const val MIN_SUBJECT_FILL = 0.6
+    private const val MIN_SUBJECT_FILL = 0.75
 
     /** 总分列几乎每行都该有值。 */
-    private const val MIN_TOTAL_FILL = 0.8
+    private const val MIN_TOTAL_FILL = 0.85
 
     data class Report(
         /** 自检结果的一句话摘要，直接显示在结果页。 */
