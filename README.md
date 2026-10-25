@@ -123,8 +123,9 @@
 | `unit-test` | `testDebugUnitTest` |
 | `android-test` | `assembleDebugAndroidTest`（只编译，不跑） |
 
-公共环境在 `.github/actions/android-env/action.yml`：JDK 21、Android SDK、
-`platforms;android-37.0` / `build-tools;36.0.0`，NDK 与 CMake 只给需要它们的 job。
+每个 job 开头各自跑一遍公共环境（JDK 21、Android SDK、Gradle、SDK 组件、模型缓存），
+没有抽成 composite action——这样哪一步挂掉，run 页面的注解会直接点名是哪一步，
+而不是笼统地报在 "Android environment" 上。NDK 与 CMake 只装进需要它们的两个 job。
 
 失败时不用下载任何东西：构建步骤会在同一个 step 里直接把错误打出来——
 
@@ -135,7 +136,7 @@
 实现是一个 30 行的脚本 `.github/scripts/print-errors.sh`，四个 job 的 gradle 步骤失败时调用它，
 不写评论、不需要 token、不需要 artifact。
 
-> `gradlew` 的可执行位在共享存储/Windows 上容易丢，composite action 里有
+> `gradlew` 的可执行位在共享存储/Windows 上容易丢，每个 job 里都有
 > `chmod +x ./gradlew` 兜底。
 
 ## 已知限制
