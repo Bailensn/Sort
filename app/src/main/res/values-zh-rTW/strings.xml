@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="app_name">Sort</string>
     <string name="action_change_image">換一張</string>
     <string name="action_retry">重新辨識</string>
     <string name="action_export">匯出 Excel</string>

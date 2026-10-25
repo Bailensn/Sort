@@ -35,6 +35,16 @@ while IFS= read -r line; do
   [[ $emitted -ge 10 ]] && break
 done < <(grep -E '^e: (file://)?[^ ]+:[0-9]+:[0-9]+ ' "$LOG" || true)
 
+# 顺手把每个错误位置前后的日志打出来：Kotlin 2.4 只给 Location 不给消息，
+# 只有上下文能看出到底是什么错。
+while IFS= read -r loc; do
+  path="${loc#Location: }"
+  echo "--- $path 附近 ---"
+  grep -n -F "$path" "$LOG" | head -1 | cut -d: -f1 | while read -r ln; do
+    sed -n "$((ln > 3 ? ln - 3 : 1)),$((ln + 3))p" "$LOG"
+  done
+done < <(grep -oE 'Location: [^ ]+\.(kt|java):[0-9]+' "$LOG" | sort -u | head -3 || true)
+
 # Kotlin 2.4 的 Build Tools API 只给 Location，没有消息文本。
 while IFS= read -r loc; do
   [[ -z "$loc" ]] && continue
@@ -65,3 +75,8 @@ if [[ $emitted -eq 0 ]]; then
 else
   echo "::error::构建失败，$emitted 处错误已标注到文件行"
 fi
+
+# 无论走哪条分支，都留一份日志末尾，方便判断是编译错误还是 lint 错误。
+echo "::group::日志末尾"
+tail -40 "$LOG"
+echo "::endgroup::"

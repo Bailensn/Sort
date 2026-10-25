@@ -129,6 +129,17 @@ jobs:
           set -o pipefail
           ./gradlew --stacktrace --warning-mode=all --build-cache :app:lintDebug 2>&1 | tee build.log \
             || { bash .github/scripts/print-errors.sh build.log; exit 1; }
+      # lint 的结论在报告里，失败时也得能拿到，否则只知道红了不知道为什么。
+      - name: Upload lint report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: lint-report
+          path: |
+            app/build/reports/lint-results-*.html
+            app/build/reports/lint-results-*.xml
+          if-no-files-found: warn
+          retention-days: 7
       - name: Diagnose failure
         if: failure()
         run: |

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="app_name">Sort</string>
     <string name="action_change_image">画像を変更</string>
     <string name="action_retry">再認識</string>
     <string name="action_export">Excel に出力</string>

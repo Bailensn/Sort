@@ -90,6 +90,9 @@ fun TableScreen(
     viewModel: TableViewModel = viewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    // 在组合里取文案，不要用 LocalContext.current.getString：
+    // AGP 9.4 的 lint 会把后者判成「不感知配置变化」，直接报 Error。
+    val chooserTitle = stringResource(R.string.share_chooser)
     val context = LocalContext.current
     var viewMode by rememberSaveable { mutableStateOf(0) }
 
@@ -111,7 +114,7 @@ fun TableScreen(
             runCatching {
                 context.startActivity(
                     Intent.createChooser(XlsxExporter.shareIntent(exported),
-                        context.getString(R.string.share_chooser),
+                        chooserTitle,
                     ),
                 )
             }
