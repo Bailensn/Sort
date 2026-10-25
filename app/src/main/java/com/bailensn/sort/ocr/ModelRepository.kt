@@ -2,7 +2,11 @@ package com.bailensn.sort.ocr
 
 import android.content.Context
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
@@ -51,8 +55,15 @@ object ModelRepository {
         recConfig = FileSpec("rec/inference.yml", "PP-OCRv6_small_rec_onnx", 100_000),
     )
 
+    /**
+     * 都是 HF 的 `/<repo>/resolve/main/<file>` 路径结构，ModelScope 也兼容。
+     * 前三个是国内源，最后一个是海外源；运行时按实测速度排序。
+     */
     private val MIRRORS = listOf(
+        "https://modelscope.cn/models/PaddlePaddle",
         "https://hf-mirror.com/PaddlePaddle",
+        "https://hf-mirror.net/PaddlePaddle",
+        "https://aifasthub.com/PaddlePaddle",
         "https://huggingface.co/PaddlePaddle",
     )
 
@@ -174,19 +185,23 @@ object ModelRepository {
         }
     }
 
-    /** 按探测速度给镜像排序；都不通时按原顺序。 */
-    private fun rankMirrors(): List<String> {
+    /** 并行探测各镜像，按耗时排序；都不通时按原顺序。 */
+    private suspend fun rankMirrors(): List<String> = coroutineScope {
         val timings = MIRRORS.map { mirror ->
-            mirror to probe(mirror)
-        }
-        return timings.sortedBy { it.second }.map { it.first }
+            async(Dispatchers.IO) { mirror to probe(mirror) }
+        }.awaitAll()
+        timings.sortedBy { it.second }.map { it.first }
     }
 
-    /** 用字符表这个 150 KB 的小文件测首包时间。 */
+    /** 用字符表这个 150 KB 的小文件测首包时间；4 秒没响应就当不可用。 */
     private fun probe(mirror: String): Long {
         val startedAt = System.currentTimeMillis()
         return try {
-            val connection = open("$mirror/PP-OCRv6_small_rec_onnx/resolve/main/inference.yml")
+            val connection = open(
+                "$mirror/PP-OCRv6_small_rec_onnx/resolve/main/inference.yml",
+                connectTimeoutMs = 4_000,
+                readTimeoutMs = 4_000,
+            )
             try {
                 connection.setRequestProperty("Range", "bytes=0-131071")
                 connection.inputStream.use { input ->
@@ -202,13 +217,17 @@ object ModelRepository {
         }
     }
 
-    private fun open(url: String): HttpURLConnection {
+    private fun open(
+        url: String,
+        connectTimeoutMs: Int = 15_000,
+        readTimeoutMs: Int = 30_000,
+    ): HttpURLConnection {
         var current = url
         var redirects = 0
         while (true) {
             val connection = URL(current).openConnection() as HttpURLConnection
-            connection.connectTimeout = 15_000
-            connection.readTimeout = 30_000
+            connection.connectTimeout = connectTimeoutMs
+            connection.readTimeout = readTimeoutMs
             connection.instanceFollowRedirects = false
             connection.setRequestProperty("User-Agent", "Sort-Android")
             val code = connection.responseCode

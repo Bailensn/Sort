@@ -32,6 +32,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -150,6 +151,8 @@ fun TableScreen(
             when (val engine = state.engine) {
                 is EngineState.Loading -> LoadingBlock(engine.message)
 
+                is EngineState.AwaitingDownload -> LoadingBlock(engine.message)
+
                 is EngineState.Failed -> MessageBlock(
                     title = "模型加载失败",
                     message = engine.message,
@@ -162,6 +165,29 @@ fun TableScreen(
                 )
             }
         }
+    }
+
+    if (state.engine is EngineState.AwaitingDownload) {
+        AlertDialog(
+            onDismissRequest = viewModel::declineDownload,
+            title = { Text("用移动数据下载模型？") },
+            text = {
+                Text(
+                    text = "首次使用需要下载约 140 MB 的识别模型。建议连上 Wi-Fi 再下，下完就能离线用。",
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = viewModel::approveDownload) {
+                    Text("继续下载")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = viewModel::declineDownload) {
+                    Text("连 Wi-Fi 再下")
+                }
+            },
+        )
     }
 }
 

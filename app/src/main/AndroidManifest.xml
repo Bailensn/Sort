@@ -3,6 +3,8 @@
 
     <!-- 模型改为首次运行时下载，需要网络；下载完成后离线可用。 -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- 判断当前是不是移动数据，决定要不要弹「用流量下载」的确认框。 -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <application
         android:allowBackup="true"

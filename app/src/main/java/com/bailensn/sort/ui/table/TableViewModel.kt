@@ -9,6 +9,7 @@ import com.bailensn.sort.table.TableGrid
 import com.bailensn.sort.table.TablePipeline
 import com.bailensn.sort.ui.table.TableUiState.Phase
 import com.bailensn.sort.ocr.ModelRepository
+import com.bailensn.sort.util.NetworkStatus
 import com.bailensn.sort.util.ImageLoader
 import com.bailensn.sort.xlsx.ExportedFile
 import com.bailensn.sort.xlsx.XlsxExporter
@@ -32,6 +33,9 @@ import kotlinx.coroutines.withContext
 sealed interface EngineState {
     /** 首次启动会先下载模型（约 140 MB），[message] 用于展示进度。 */
     data class Loading(val message: String = "正在加载识别模型") : EngineState
+
+    /** 当前是移动数据，等用户确认是否继续下载模型。 */
+    data class AwaitingDownload(val message: String) : EngineState
     data class Ready(val loadTimeMs: Long) : EngineState
     data class Failed(val message: String) : EngineState
 }
@@ -74,6 +78,29 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
         loadEngine()
     }
 
+    private var downloadApproval: CompletableDeferred<Boolean>? = null
+
+    /** 用户在确认框里点了「继续下载」。 */
+    fun approveDownload() {
+        downloadApproval?.complete(true)
+    }
+
+    /** 用户选择「连 Wi-Fi 再下」。 */
+    fun declineDownload() {
+        downloadApproval?.complete(false)
+    }
+
+    private suspend fun awaitDownloadApproval(): Boolean {
+        val deferred = CompletableDeferred<Boolean>()
+        downloadApproval = deferred
+        _state.update {
+            it.copy(engine = EngineState.AwaitingDownload("首次使用需下载约 140 MB 模型，当前是移动数据"))
+        }
+        val approved = deferred.await()
+        downloadApproval = null
+        return approved
+    }
+
     private fun loadEngine() {
         engineDeferred = CompletableDeferred()
         _state.update { it.copy(engine = EngineState.Loading("正在准备识别模型"), message = null) }
@@ -85,8 +112,19 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
                     error("OpenCV 初始化失败")
                 }
                 // 模型不再内嵌 APK：首次使用先下载（带进度），之后离线可用。
-                val modelDir = ModelRepository.ensure(app) { percent, text ->
-                    _state.update { it.copy(engine = EngineState.Loading(text), message = null) }
+                // 默认只在 Wi-Fi 下自动下；走流量会先弹确认框。
+                val modelDir = if (ModelRepository.isReady(app)) {
+                    ModelRepository.modelDir(app)
+                } else {
+                    if (!NetworkStatus.isOnline(app)) {
+                        error("首次使用需要联网下载模型，请连接网络后重试")
+                    }
+                    if (NetworkStatus.isMetered(app) && !awaitDownloadApproval()) {
+                        error("已暂停下载模型，连接 Wi-Fi 后点重试")
+                    }
+                    ModelRepository.ensure(app) { percent, text ->
+                        _state.update { it.copy(engine = EngineState.Loading(text), message = null) }
+                    }
                 }
                 _state.update { it.copy(engine = EngineState.Loading("正在加载识别模型")) }
                 val created = withContext(Dispatchers.IO) {

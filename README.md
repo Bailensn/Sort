@@ -95,9 +95,12 @@
 
 - 默认下 **PP-OCRv6 medium**（det 62 MB + rec 76 MB + 字符表 150 KB），比 small 明显准；
 - medium 失败（没网、空间不足、镜像挂）自动退回 **small**（约 31 MB），保证能用；
-- 下载前用字符表做一次测速，**国内 `hf-mirror.com` 与海外 `huggingface.co` 谁快用谁**，
-  下载中途失败会自动换另一个镜像重试；
-- 下载有进度（百分比 + MB/s），完成后不再联网。
+- 内置 5 个镜像，启动时并行测速按快慢排序，取最快的下载，失败自动换下一个：
+  `modelscope.cn`（阿里云）、`hf-mirror.com`、`hf-mirror.net`、`aifasthub.com`、`huggingface.co`；
+- 五个都是 HF 的 `/<repo>/resolve/main/<file>` 路径结构，ModelScope 也兼容这个路径；
+- 下载有进度（百分比 + MB/s），完成后不再联网；
+- **默认只在 Wi-Fi 下自动下载**：当前是移动数据时会弹确认框，选「继续下载」才走流量，
+  选「连 Wi-Fi 再下」则暂停，等连上 Wi-Fi 点重试即可。
 
 换模型改 `ModelRepository` 里的 `Profile` 即可；`ModelRepository.clear(context)` 可清掉已下载的模型。
 
