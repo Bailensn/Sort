@@ -104,9 +104,10 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
                         modelDir = modelDir,
                         config = PaddleOCRConfig(
                             recScoreThresh = 0f,
-                            recBatchSize = 1,
-                            // 整图检测只用来给逐格结果做校对，不需要全分辨率：
-                            // 1920 宽缩到 1024 以内，检测从 37 s 降到几秒，校对精度几乎不变。
+                            // 整图那条路每张图有几百行文字，批 1 等于几百次推理；
+                            // 批 16 之后耗时从 30 s 掉到个位数，结果不打折。
+                            recBatchSize = 16,
+                            // 整图检测只用来给逐格结果做校对，不需要全分辨率。
                             detMaxSideLimit = 1024,
                         ),
                     )

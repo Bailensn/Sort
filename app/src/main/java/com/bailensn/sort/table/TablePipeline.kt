@@ -91,6 +91,9 @@ object TablePipeline {
         // 二遍识别和界面预览都用这张：照度压平 + 拉对比度后的灰度图。
         val enhanced = runCatching { ImageEnhancer.enhance(working) }.getOrNull()
 
+        // 被画面边缘截断的首/末行：补一条虚拟线，否则整行会被当成表格外面而丢掉。
+        detection = TableEdgeLines.extend(working, detection)
+
         onStage(Stage.SEGMENT)
         // 用二值图逐条边界确认有没有画线：没画线的地方就是合并单元格。
         val probe = PixelBorderProbe.from(working)
