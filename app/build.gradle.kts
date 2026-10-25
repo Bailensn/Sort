@@ -66,10 +66,9 @@ android {
 }
 
 // ---------------------------------------------------------------------------
-// PP-OCRv6 small ONNX 模型：构建期下载到 assets，避免把 30 MB 二进制塞进 git。
-// 已经存在（本地或 CI 缓存）就跳过；下载失败会重试 3 次。
+// PP-OCRv6 small ONNX 模型：构建期下载，避免把 30 MB 二进制塞进 git。
+// 目标是 build/generated/ocrModels，由 AGP 当作生成的 assets 目录并入 APK。
 // ---------------------------------------------------------------------------
-val ocrModelDir = layout.projectDirectory.dir("src/main/assets/models")
 val ocrModels = mapOf(
     "det/inference.onnx" to
         "https://huggingface.co/PaddlePaddle/PP-OCRv6_small_det_onnx/resolve/main/inference.onnx",
@@ -81,14 +80,19 @@ val ocrModels = mapOf(
         "https://huggingface.co/PaddlePaddle/PP-OCRv6_small_rec_onnx/resolve/main/inference.yml",
 )
 
-val downloadOcrModels = tasks.register("downloadOcrModels") {
-    group = "ocr"
-    description = "下载 PP-OCRv6 small ONNX 模型到 app/src/main/assets/models"
-    outputs.dir(ocrModelDir)
+/** 下载 PP-OCRv6 small 的 4 个文件到输出目录；已存在且非空则跳过。 */
+abstract class DownloadOcrModelsTask : DefaultTask() {
 
-    doLast {
-        val root = ocrModelDir.asFile
-        ocrModels.forEach { (relativePath, url) ->
+    @get:OutputDirectory
+    abstract val outputDir: DirectoryProperty
+
+    @get:Input
+    abstract val urls: MapProperty<String, String>
+
+    @TaskAction
+    fun download() {
+        val root = outputDir.get().asFile
+        urls.get().forEach { (relativePath, url) ->
             val target = File(root, relativePath)
             if (target.isFile && target.length() > 1024L) {
                 return@forEach
@@ -119,8 +123,23 @@ val downloadOcrModels = tasks.register("downloadOcrModels") {
     }
 }
 
-tasks.matching { it.name.startsWith("merge") && it.name.endsWith("Assets") }.configureEach {
-    dependsOn(downloadOcrModels)
+// 作为「生成型 assets 源目录」注册给 AGP，而不是依赖任务名匹配：
+// 打包、lint、单元测试等所有消费 assets 的任务都会自动带上这个依赖，
+// 不会再出现 Gradle 的 “uses this output without declaring a dependency” 校验错误。
+val downloadOcrModels = tasks.register<DownloadOcrModelsTask>("downloadOcrModels") {
+    group = "ocr"
+    description = "下载 PP-OCRv6 small ONNX 模型到生成的 assets 目录"
+    outputDir.set(layout.buildDirectory.dir("generated/ocrModels"))
+    urls.set(ocrModels)
+}
+
+androidComponents {
+    onVariants { variant ->
+        variant.sources.assets?.addGeneratedSourceDirectory(
+            downloadOcrModels,
+            DownloadOcrModelsTask::outputDir,
+        )
+    }
 }
 
 dependencies {
