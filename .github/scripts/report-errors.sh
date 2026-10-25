@@ -26,6 +26,15 @@ if [[ ! -f "$LOG" ]]; then
     echo "| job | \`${GITHUB_JOB:-unknown}\` |"
     echo "| runner | \`${ImageOS:-unknown} ${ImageVersion:-}\` |"
     echo "| 日志 | 需要登录 GitHub 才能看该 job 的原始日志 |"
+    echo
+    for f in ci-report/*.log; do
+      [[ -f "$f" ]] || continue
+      echo "**${f##*/}（末尾 30 行）**"
+      echo '```text'
+      tail -30 "$f"
+      echo '```'
+      echo
+    done
   } > "$REPORT"
   if [[ -n "${GITHUB_STEP_SUMMARY:-}" ]]; then
     cat "$REPORT" >> "$GITHUB_STEP_SUMMARY"

@@ -56,7 +56,7 @@ jobs:
           name: log-assemble
           path: |
             build.log
-            ci-report/errors.md
+            ci-report/
           if-no-files-found: warn
           retention-days: 7
 
@@ -96,7 +96,7 @@ jobs:
           name: log-lint
           path: |
             build.log
-            ci-report/errors.md
+            ci-report/
           if-no-files-found: warn
           retention-days: 7
 
@@ -138,7 +138,7 @@ jobs:
           name: log-unit-test
           path: |
             build.log
-            ci-report/errors.md
+            ci-report/
           if-no-files-found: warn
           retention-days: 7
 
@@ -180,7 +180,7 @@ jobs:
           name: log-android-test
           path: |
             build.log
-            ci-report/errors.md
+            ci-report/
           if-no-files-found: warn
           retention-days: 7
 

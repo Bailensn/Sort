@@ -25,10 +25,16 @@ runs:
     - name: Install SDK components
       shell: bash
       run: |
+        mkdir -p ci-report
         # composite action 的 shell: bash 带 -eo pipefail：sdkmanager 读够后退出，
         # yes 会收到 SIGPIPE（141），整条管道就判失败。所以这里必须 || true 兜住。
         yes | sdkmanager --licenses > /dev/null || true
-        sdkmanager --install ${{ inputs.sdk-packages }}
+        # 把安装输出留下来：这一步失败时 build.log 还不存在，
+        # 报告脚本会把这个文件的末尾贴进提交评论，省得去翻需要登录的原始日志。
+        if ! sdkmanager --install ${{ inputs.sdk-packages }} 2>&1 | tee ci-report/sdkmanager.log; then
+          echo "SDK 组件安装失败，末尾输出见 ci-report/sdkmanager.log"
+          exit 1
+        fi
 
     # OCR 模型约 31 MB，由 :app:downloadOcrModels 在构建期下载。
     - name: Cache OCR models
