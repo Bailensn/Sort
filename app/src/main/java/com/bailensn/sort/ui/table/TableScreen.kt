@@ -62,6 +62,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.bailensn.sort.table.TableGrid
 import com.bailensn.sort.table.TablePipeline
 import com.bailensn.sort.ui.theme.SortTheme
+import com.bailensn.sort.ocr.ModelDownloadManager
 import com.bailensn.sort.xlsx.XlsxExporter
 import java.util.Locale
 import kotlin.math.abs
@@ -76,6 +77,7 @@ fun TableScreen(
     viewModel: TableViewModel = viewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val downloadState by ModelDownloadManager.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
     var showOriginal by rememberSaveable { mutableStateOf(false) }
     var showModelStatus by rememberSaveable { mutableStateOf(false) }
@@ -120,12 +122,6 @@ fun TableScreen(
                     )
                 },
                 actions = {
-                    TextButton(
-                        onClick = { showModelStatus = true },
-                        modifier = Modifier.heightIn(min = 48.dp),
-                    ) {
-                        Text("模型", style = MaterialTheme.typography.labelLarge)
-                    }
                     if (state.original != null) {
                         TextButton(
                             onClick = viewModel::reset,
@@ -160,8 +156,18 @@ fun TableScreen(
                 .animateContentSize(),
             verticalArrangement = Arrangement.spacedBy(20.dp),
         ) {
+            ModelStatusRow(
+                state = downloadState,
+                builtIn = (state.engine as? EngineState.Ready)?.builtIn == true,
+                onClick = { showModelStatus = true },
+            )
+
             when (val engine = state.engine) {
-                is EngineState.Loading -> LoadingBlock(engine.message, engine.progress)
+                is EngineState.Loading -> LoadingBlock(
+                    message = engine.message,
+                    progress = engine.progress,
+                    onSendToBackground = if (engine.progress != null) viewModel::switchToBackground else null,
+                )
 
                 is EngineState.AwaitingDownload -> LoadingBlock(engine.message)
 
@@ -367,6 +373,7 @@ private fun StatItem(value: String, label: String) {
         Text(
             text = value,
             style = MaterialTheme.typography.titleLarge,
+            color = MaterialTheme.colorScheme.tertiary,
         )
         Text(
             text = label,
@@ -450,7 +457,11 @@ private fun TablePreviewCard(grid: TableGrid) {
 }
 
 @Composable
-private fun LoadingBlock(message: String, progress: Float? = null) {
+private fun LoadingBlock(
+    message: String,
+    progress: Float? = null,
+    onSendToBackground: (() -> Unit)? = null,
+) {
     Column(
         modifier = Modifier.fillMaxWidth().padding(top = 40.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -472,6 +483,38 @@ private fun LoadingBlock(message: String, progress: Float? = null) {
         Text(
             text = message,
             style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        if (onSendToBackground != null) {
+            TextButton(onClick = onSendToBackground, modifier = Modifier.heightIn(min = 48.dp)) {
+                Text("转到后台下载", style = MaterialTheme.typography.labelLarge)
+            }
+        }
+    }
+}
+
+/** 模型状态行：只在「没在用好模型」或「正在下载」时出现，平时不占位。 */
+@Composable
+private fun ModelStatusRow(
+    state: ModelDownloadManager.State,
+    builtIn: Boolean,
+    onClick: () -> Unit,
+) {
+    val label = when (state) {
+        is ModelDownloadManager.State.Downloading ->
+            "高精度模型下载中 ${state.percent}%"
+        ModelDownloadManager.State.Ready -> if (builtIn) "内置轻量模型 · 查看" else return
+        ModelDownloadManager.State.WaitingForWifi -> "高精度模型等待 Wi-Fi"
+        is ModelDownloadManager.State.Failed -> "高精度模型下载失败"
+        ModelDownloadManager.State.Idle -> if (builtIn) "正在使用内置轻量模型" else return
+    }
+    TextButton(
+        onClick = onClick,
+        modifier = Modifier.heightIn(min = 48.dp),
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }

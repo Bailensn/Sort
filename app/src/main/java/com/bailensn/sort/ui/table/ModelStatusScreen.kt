@@ -5,9 +5,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.LinearProgressIndicator
@@ -26,7 +28,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bailensn.sort.ocr.ModelDownloadManager
 import com.bailensn.sort.util.NetworkStatus
 
-/** 高精度模型的下载状态页：进度、镜像、重试与清理。 */
+/**
+ * 高精度模型的下载状态页。
+ *
+ * 层级：标题 → 一句说明 → 当前状态（进度 / 原因）→ 唯一的主动作 → 次要的清除。
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ModelStatusScreen(
@@ -42,7 +48,7 @@ fun ModelStatusScreen(
         topBar = {
             TopAppBar(
                 title = { Text("模型", style = MaterialTheme.typography.titleLarge) },
-                actions = {
+                navigationIcon = {
                     TextButton(onClick = onBack, modifier = Modifier.height(48.dp)) {
                         Text("返回", style = MaterialTheme.typography.labelLarge)
                     }
@@ -58,17 +64,18 @@ fun ModelStatusScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
                 .verticalScroll(rememberScrollState())
+                .navigationBarsPadding()
                 .padding(horizontal = 20.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Text(
                 text = "高精度模型",
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Text(
-                text = "约 140 MB。下载完成后识别更准，下载期间和使用内置轻量模型都不影响使用。",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                text = "约 140 MB，下载后识别更准。没下完之前一直用内置轻量模型，不影响使用。",
+                style = MaterialTheme.typography.bodyMedium,
             )
 
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant, thickness = 0.5.dp)
@@ -93,46 +100,46 @@ fun ModelStatusScreen(
                     style = MaterialTheme.typography.bodyMedium,
                 )
 
-                is ModelDownloadManager.State.Failed -> {
-                    Text(
-                        text = "下载失败：${current.message}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.error,
-                    )
-                    TextButton(onClick = { ModelDownloadManager.startBackground(context) }) {
-                        Text("立即重试")
-                    }
-                }
+                is ModelDownloadManager.State.Failed -> Text(
+                    text = "上次下载失败：${current.message}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                )
 
-                ModelDownloadManager.State.WaitingForWifi -> {
-                    Text(
-                        text = if (NetworkStatus.isMetered(context)) {
-                            "当前是移动数据，已暂停。连上 Wi-Fi 会自动继续。"
-                        } else {
-                            "等待网络，恢复后会自动继续。"
-                        },
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    TextButton(
-                        onClick = {
-                            ModelDownloadManager.setAllowMetered(true)
-                            ModelDownloadManager.startBackground(context)
-                        },
-                    ) {
-                        Text("用移动数据下载")
-                    }
-                }
+                ModelDownloadManager.State.WaitingForWifi -> Text(
+                    text = if (NetworkStatus.isMetered(context)) {
+                        "当前是移动数据，已暂停。连上 Wi-Fi 会自动继续。"
+                    } else {
+                        "等待网络，恢复后会自动继续。"
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
 
-                ModelDownloadManager.State.Idle -> {
-                    Text(
-                        text = "尚未下载，当前使用内置轻量模型。",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    TextButton(onClick = { ModelDownloadManager.startBackground(context) }) {
-                        Text("开始下载")
-                    }
+                ModelDownloadManager.State.Idle -> Text(
+                    text = "尚未下载，当前使用内置轻量模型。",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
+            // 唯一的主动作：按状态给出下一步。
+            val primary: Pair<String, () -> Unit>? = when (state) {
+                ModelDownloadManager.State.Ready -> null
+                ModelDownloadManager.State.WaitingForWifi -> "用移动数据下载" to {
+                    ModelDownloadManager.setAllowMetered(true)
+                    ModelDownloadManager.startBackground(context)
+                }
+                else -> "下载高精度模型" to {
+                    ModelDownloadManager.startBackground(context)
+                }
+            }
+            if (primary != null) {
+                Button(
+                    onClick = primary.second,
+                    modifier = Modifier.fillMaxWidth().height(48.dp),
+                ) {
+                    Text(primary.first, style = MaterialTheme.typography.labelLarge)
                 }
             }
 
@@ -142,7 +149,11 @@ fun ModelStatusScreen(
                 onClick = { ModelDownloadManager.clear(context) },
                 modifier = Modifier.height(48.dp),
             ) {
-                Text("清除已下载的高精度模型", style = MaterialTheme.typography.labelLarge)
+                Text(
+                    text = "清除已下载的高精度模型",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.error,
+                )
             }
         }
     }

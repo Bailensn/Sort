@@ -19,8 +19,12 @@ import com.paddle.ocr.PaddleOCRConfig
 import com.paddle.ocr.util.OpenCVUtils
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -92,28 +96,59 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
      * 尝试把高精度模型下载下来；任何一步不满足就返回 null，让调用方用内置模型。
      * 不抛异常——下载失败不应该让整个识别功能不可用。
      */
-    private suspend fun tryDownloadModels(app: Application): File? {
+    /** 用户等得不耐烦时点「转到后台下载」：前台立刻收工，后台继续。 */
+    fun switchToBackground() {
+        val app = getApplication<Application>()
+        foregroundDownload?.cancel()
+        foregroundDownload = null
+        _state.update {
+            it.copy(engine = EngineState.Loading("已转到后台下载，本次先用内置模型"))
+        }
+        ModelDownloadManager.startBackground(app)
+    }
+
+    private suspend fun tryDownloadModels(app: Application): File? = coroutineScope {
         if (!NetworkStatus.isOnline(app)) {
             // 没网：转后台等网络恢复，前台直接用内置模型。
             ModelDownloadManager.startBackground(app)
             _state.update { it.copy(engine = EngineState.Loading("没有网络，先用内置轻量模型")) }
-            return null
+            return@coroutineScope null
         }
         if (NetworkStatus.isMetered(app) && !awaitDownloadApproval()) {
             ModelDownloadManager.startBackground(app)
-            return null
+            return@coroutineScope null
         }
-        return ModelDownloadManager.downloadForeground(app) { percent, text ->
-            _state.update {
-                it.copy(
-                    engine = EngineState.Loading(
-                        message = text,
-                        progress = (percent / 100f).coerceIn(0f, 1f),
-                    ),
-                )
+
+        val job = async(Dispatchers.IO) {
+            ModelRepository.ensure(app) { percent, text ->
+                ModelDownloadManager.reportDownloading(percent, text)
+                _state.update {
+                    it.copy(
+                        engine = EngineState.Loading(
+                            message = text,
+                            progress = (percent / 100f).coerceIn(0f, 1f),
+                        ),
+                    )
+                }
             }
         }
+        foregroundDownload = job
+        try {
+            val dir = job.await()
+            ModelDownloadManager.reportReady()
+            dir
+        } catch (c: CancellationException) {
+            // 用户主动转后台：本次用内置模型，后台接着下。
+            null
+        } catch (t: Throwable) {
+            ModelDownloadManager.afterForegroundAttempt(app, success = false, message = t.message)
+            null
+        } finally {
+            foregroundDownload = null
+        }
     }
+
+    private var foregroundDownload: Job? = null
 
     private var downloadApproval: CompletableDeferred<Boolean>? = null
 
