@@ -144,19 +144,21 @@ class TableSelfCheckTest {
     }
 
     @Test
-    fun doesNotTreatTrailingJunkColumnAsTotal() {
-        // 右边还有一列垃圾（背景文字）时，「最右一列是总分」不能命中它，
-        // 否则会把算出来的总分写进垃圾列，导出后出现两列一样的成绩。
+    fun junkColumnBeforeSelfCheckGetsDroppedNotKept() {
+        // 右侧字母垃圾列必须在进自检之前就被裁掉；自检只该看到干净的 11 列。
         val rows = listOf(
             listOf("14", "1", "900000000001", "张三丰", "94.5", "7", "88", "25", "59", "56", "329.5", "abcdef"),
-            listOf("14", "2", "900000000002", "李四海", "77.5", "24", "77", "30", "70", "56", "334.5", "ghij"),
-            listOf("14", "3", "900000000003", "王五岳", "95", "54", "60.5", "47", "72", "83", "411.5", "klmn"),
+            listOf("14", "2", "900000000002", "李四海", "77.5", "24", "77", "30", "70", "56", "334.5", "ghijkl"),
+            listOf("14", "3", "900000000003", "王五岳", "95", "54", "60.5", "47", "72", "83", "411.5", "mno"),
         )
 
-        val result = TableSelfCheck.check(rows, confidences())
+        val trimmed = GarbageColumnTrimmer.trimAligned(rows)
 
-        // 垃圾列保持原样，真实总分列也不该被改写
-        assertEquals("abcdef", result.rows[0][11])
+        assertEquals(11, trimmed.rows.first().size)
+        assertEquals("329.5", trimmed.rows[0][10])
+
+        val result = TableSelfCheck.check(trimmed.rows, confidences())
         assertEquals("329.5", result.rows[0][10])
+        assertEquals(0, result.report.correctedCells)
     }
 }
