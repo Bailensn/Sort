@@ -523,12 +523,13 @@ private fun stageLabel(stage: TablePipeline.Stage?): String = when (stage) {
 private fun TablePreviewSample() {
     SortTheme {
         Column(modifier = Modifier.padding(20.dp)) {
+            // 纯虚构示例，仅用于预览排版，不要放真实学生信息。
             TablePreviewCard(
                 TableGrid(
                     rows = listOf(
                         listOf("班级", "姓名", "语文", "数学"),
-                        listOf("14", "张源", "83", "51.5"),
-                        listOf("14", "陈洪远", "76", "78"),
+                        listOf("01", "示例甲", "83", "51.5"),
+                        listOf("01", "示例乙", "76", "78"),
                     ),
                     mode = TableGrid.Mode.GRID_LINES,
                 ),
