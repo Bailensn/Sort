@@ -208,55 +208,62 @@ class OCREngine(
     fun recognizeCells(bitmap: Bitmap, cells: List<Rect>, scale: Float = 1f): List<CellReading> {
         if (cells.isEmpty()) return emptyList()
         val src = BitmapUtils.bitmapToBGRMat(bitmap)
-        val output = ArrayList<CellReading>(cells.size)
-        var batch = ArrayList<Mat>()
-        var batchWidth = 0
-
-        fun flush() {
-            if (batch.isEmpty()) return
-            try {
-                output.addAll(
-                    recognitionEngine.recognize(batch).texts.map { (text, confidence) ->
-                        CellReading(CellText.clean(text), confidence, hasInk = true)
-                    },
-                )
-            } finally {
-                batch.forEach { it.release() }
-            }
-            batch = ArrayList()
-            batchWidth = 0
-        }
-
+        val output = arrayOfNulls<CellReading>(cells.size)
+        val pending = ArrayList<PendingCell>(cells.size)
         try {
-            for (cell in cells) {
+            cells.forEachIndexed { index, cell ->
                 val crop = cropCell(src, cell, scale)
                 if (crop == null) {
-                    output.add(CellReading("", 0f, hasInk = false))
-                    continue
+                    output[index] = CellReading("", 0f, hasInk = false)
+                    return@forEachIndexed
                 }
                 // 空白格直接跳过，避免模型在空框里“猜”出字。
                 if (!hasInk(crop)) {
                     crop.release()
-                    output.add(CellReading("", 0f, hasInk = false))
-                    continue
+                    output[index] = CellReading("", 0f, hasInk = false)
+                    return@forEachIndexed
                 }
                 val estimatedWidth = (CELL_INPUT_HEIGHT * crop.cols().toDouble() / crop.rows())
                     .toInt()
                     .coerceIn(16, 3200)
-                val tooLarge = (batchWidth + estimatedWidth) * CELL_INPUT_HEIGHT * 3 * 4 > MAX_CELL_BATCH_BYTES
-                if (batch.isNotEmpty() && (batch.size >= MAX_CELL_BATCH || tooLarge)) {
-                    flush()
-                }
-                batch.add(crop)
-                batchWidth += estimatedWidth
+                pending.add(PendingCell(index, crop, estimatedWidth))
             }
-            flush()
+
+            // 按估计宽度排序再分批：一批图会补齐到同宽，混进一个学号格会让整批多算好几倍。
+            // 排序只影响送算的先后，结果按 index 放回去，对外顺序不变。
+            pending.sortBy { it.width }
+            var start = 0
+            while (start < pending.size) {
+                var end = start
+                var batchWidth = 0
+                while (end < pending.size && end - start < MAX_CELL_BATCH) {
+                    val width = pending[end].width
+                    val exceedsBytes =
+                        (batchWidth + width) * CELL_INPUT_HEIGHT * 3 * 4 > MAX_CELL_BATCH_BYTES
+                    if (end > start && exceedsBytes) break
+                    batchWidth += width
+                    end++
+                }
+                val slice = pending.subList(start, end)
+                val texts = recognitionEngine.recognize(slice.map { it.crop }).texts
+                slice.forEachIndexed { offset, item ->
+                    val reading = texts.getOrNull(offset)
+                    output[item.index] = if (reading == null) {
+                        CellReading("", 0f, hasInk = true)
+                    } else {
+                        CellReading(CellText.clean(reading.first), reading.second, hasInk = true)
+                    }
+                }
+                start = end
+            }
         } finally {
-            batch.forEach { it.release() }
+            pending.forEach { runCatching { it.crop.release() } }
             src.release()
         }
-        return output
+        return cells.indices.map { output[it] ?: CellReading("", 0f, hasInk = false) }
     }
+
+    private class PendingCell(val index: Int, val crop: Mat, val width: Int)
 
     /**
      * 裁出单元格内部，去掉边框，再补白边，识别模型对留白更稳。

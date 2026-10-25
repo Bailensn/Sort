@@ -315,14 +315,23 @@ private fun StatsBlock(state: TableUiState, grid: TableGrid) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        // 识别不对劲时这三个数字最有用：先看有没有线，再看切出多少格。
+        // 识别不对劲时这几个数字最有用：先看有没有线，再看时间花在哪。
         Text(
             text = "横线 ${state.horizontalLines} · 竖线 ${state.verticalLines} · 格子 ${state.cellCount}",
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+        Text(
+            text = "逐格 ${seconds(state.cellMs)} · 整图检测 ${seconds(state.detectMs)} · " +
+                "结构 ${seconds(state.elapsedMs - state.cellMs)}",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
+
+private fun seconds(millis: Long): String =
+    String.format(Locale.US, "%.1fs", millis / 1000.0)
 
 @Composable
 private fun StatItem(value: String, label: String) {

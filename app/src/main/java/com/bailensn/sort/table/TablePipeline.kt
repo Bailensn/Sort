@@ -39,7 +39,14 @@ object TablePipeline {
         val verticalLines: Int,
         /** 诊断用：线切出来的单元格数。 */
         val cellCount: Int,
-    )
+        /** 逐格识别耗时（含低置信度重认）。 */
+        val cellMs: Long = 0L,
+        /** 整图检测耗时（和逐格识别并行跑）。 */
+        val detectMs: Long = 0L,
+    ) {
+        /** 除识别以外的耗时：纠偏、线检测、切格、画网格。 */
+        val structureMs: Long get() = (elapsedMs - cellMs).coerceAtLeast(0L)
+    }
 
     suspend fun analyze(
         ocr: PaddleOCR,
@@ -91,11 +98,15 @@ object TablePipeline {
 
         var grid = TableGrid(emptyList(), TableGrid.Mode.TEXT_CLUSTER)
         var correctedCells = 0
+        var cellMs = 0L
+        var detectMs = 0L
 
         if (cellGrid.cells.isNotEmpty()) {
             val pass = recognizeByCells(ocr, working, cellGrid, borderInset, onStage)
             grid = pass.grid
             correctedCells = pass.corrected
+            cellMs = pass.cellMs
+            detectMs = pass.detectMs
 
             if (grid.filledCellCount < 2) {
                 onStage(Stage.RECOGNIZE)
@@ -119,10 +130,17 @@ object TablePipeline {
             horizontalLines = detection.horizontal.size,
             verticalLines = detection.vertical.size,
             cellCount = cellCount,
+            cellMs = cellMs,
+            detectMs = detectMs,
         )
     }
 
-    private data class CellPass(val grid: TableGrid, val corrected: Int)
+    private data class CellPass(
+        val grid: TableGrid,
+        val corrected: Int,
+        val cellMs: Long = 0L,
+        val detectMs: Long = 0L,
+    )
 
     private suspend fun recognizeByCells(
         ocr: PaddleOCR,
@@ -134,7 +152,9 @@ object TablePipeline {
         onStage(Stage.RECOGNIZE)
         // 整图检测和逐格识别互不依赖，先并行开跑，最后再汇合。
         val detectionJob = async(kotlinx.coroutines.Dispatchers.Default) {
-            runCatching { ocr.recognize(bitmap) }.getOrNull()?.results.orEmpty()
+            val started = SystemClock.elapsedRealtime()
+            val results = runCatching { ocr.recognize(bitmap) }.getOrNull()?.results.orEmpty()
+            results to (SystemClock.elapsedRealtime() - started)
         }
         // 按线宽往内缩，把表格线挡在识别图之外；小格子再额外缩一点。
         val rects = cellGrid.cells.map { cell ->
@@ -146,6 +166,7 @@ object TablePipeline {
                 (cell.bottom - inset).coerceAtLeast(cell.top + 1),
             )
         }
+        val cellStarted = SystemClock.elapsedRealtime()
         val recognizedResult = runCatching { ocr.recognizeCells(bitmap, rects) }
         if (recognizedResult.isFailure) {
             return@coroutineScope CellPass(TableGrid(emptyList(), TableGrid.Mode.GRID_LINES), 0)
@@ -174,9 +195,11 @@ object TablePipeline {
             }
         }
 
+        val cellMs = SystemClock.elapsedRealtime() - cellStarted
+
         // 回读：整图再检测一遍，用它的结果和逐格结果互相校对。
         onStage(Stage.VERIFY)
-        val detections = detectionJob.await()
+        val (detections, detectMs) = detectionJob.await()
         val byCell = mutableMapOf<Int, Pair<String, Float>>()
 
         for (result in detections) {
@@ -258,7 +281,7 @@ object TablePipeline {
         val repaired = NumericColumnRepair.repair(trimmed)
         val grid = TableGridBuilder.normalize(repaired, TableGrid.Mode.GRID_LINES, cellGrid.merges)
             ?: TableGrid(emptyList(), TableGrid.Mode.GRID_LINES)
-        CellPass(grid, corrected)
+        CellPass(grid, corrected, cellMs, detectMs)
     }
 
     private suspend fun recognizeByDetection(ocr: PaddleOCR, bitmap: Bitmap): TableGrid {

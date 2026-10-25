@@ -53,6 +53,8 @@ data class TableUiState(
     val horizontalLines: Int = 0,
     val verticalLines: Int = 0,
     val cellCount: Int = 0,
+    val cellMs: Long = 0L,
+    val detectMs: Long = 0L,
 ) {
     enum class Phase { IDLE, RECOGNIZING, DONE, ERROR }
 }
@@ -183,6 +185,8 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
                         horizontalLines = analysis.horizontalLines,
                         verticalLines = analysis.verticalLines,
                         cellCount = analysis.cellCount,
+                        cellMs = analysis.cellMs,
+                        detectMs = analysis.detectMs,
                     )
                 }
             } else {
@@ -200,6 +204,8 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
                         horizontalLines = analysis.horizontalLines,
                         verticalLines = analysis.verticalLines,
                         cellCount = analysis.cellCount,
+                        cellMs = analysis.cellMs,
+                        detectMs = analysis.detectMs,
                     )
                 }
             }
