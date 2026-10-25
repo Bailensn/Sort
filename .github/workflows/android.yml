@@ -7,7 +7,8 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  # 失败时要往提交评论里写错误摘要，所以需要写权限
+  contents: write
 
 concurrency:
   group: android-${{ github.workflow }}-${{ github.ref }}
@@ -55,12 +56,31 @@ jobs:
 
       - name: Build, test and lint
         run: |
+          set -o pipefail
           ./gradlew --stacktrace --warning-mode=all \
             :app:assembleDebug \
             :app:assembleRelease \
             :app:assembleDebugAndroidTest \
             :app:testDebugUnitTest \
-            :app:lintDebug
+            :app:lintDebug 2>&1 | tee build.log
+
+      # 失败时把编译错误整理成 Job Summary + 行内注解，不用翻几万行日志。
+      - name: Report build errors
+        if: failure()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bash .github/scripts/report-errors.sh build.log
+
+      - name: Upload build log
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: build-log
+          path: |
+            build.log
+            ci-report/errors.md
+          if-no-files-found: warn
+          retention-days: 7
 
       - name: Upload APKs
         if: always()

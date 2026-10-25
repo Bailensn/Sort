@@ -113,6 +113,13 @@
 
 `.github/workflows/android.yml`：JDK 21 → setup-android → 装 `platforms;android-37.0`、`build-tools;36.0.0`、`cmake;3.22.1`、`ndk;30.0.16248370` → 缓存模型 → `assembleDebug`、`assembleRelease`、`assembleDebugAndroidTest`、`testDebugUnitTest`、`lintDebug` → 上传 APK 与失败报告。
 
+构建失败时会自动输出错误，不用翻几万行日志：
+
+- **Job Summary**：Kotlin/Java 编译错误、失败 Task、Gradle 失败原因、日志末尾；
+- **提交评论**：同一份报告自动贴到本次提交，公开仓库可直接读取（需要 `contents: write`，不需要就删掉这一步和权限）；
+- **行内注解**：编译错误生成 `::error file=...,line=...`，PR/commit 页面能直接点；
+- **artifact**：完整 `build.log` 与 `ci-report/errors.md` 保留 7 天。
+
 > `gradlew` 的可执行位在共享存储/Windows 上容易丢，workflow 里有 `chmod +x ./gradlew` 兜底。
 
 ## 已知限制
