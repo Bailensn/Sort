@@ -22,6 +22,7 @@ import com.paddle.ocr.engine.OCREngineResult
 import com.paddle.ocr.model.CellReading
 import com.paddle.ocr.model.OCRRunResult
 import com.paddle.ocr.model.OCRError
+import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -49,6 +50,20 @@ class PaddleOCR private constructor(
             val appContext = context.applicationContext
             return withContext(Dispatchers.IO) {
                 val engine = OCREngine(appContext, config, engineConfig)
+                PaddleOCR(engine)
+            }
+        }
+
+        /** 运行时下载到 [modelDir] 的模型（det/rec 的 inference.onnx + rec 的 inference.yml）。 */
+        suspend fun createWithModels(
+            context: Context,
+            modelDir: File,
+            config: PaddleOCRConfig = PaddleOCRConfig(),
+            engineConfig: EngineConfig = EngineConfig(),
+        ): PaddleOCR {
+            val appContext = context.applicationContext
+            return withContext(Dispatchers.IO) {
+                val engine = OCREngine(appContext, config, engineConfig, modelDir = modelDir)
                 PaddleOCR(engine)
             }
         }

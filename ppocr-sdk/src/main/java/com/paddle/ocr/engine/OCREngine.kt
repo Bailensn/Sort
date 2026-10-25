@@ -21,12 +21,14 @@ import com.paddle.ocr.EngineConfig
 import com.paddle.ocr.PaddleOCRConfig
 import com.paddle.ocr.model.CellReading
 import com.paddle.ocr.model.ModelConfig
+import com.paddle.ocr.model.ModelSource
 import com.paddle.ocr.model.OCRError
 import com.paddle.ocr.model.OCRResult
 import com.paddle.ocr.postprocess.BoxSorter
 import com.paddle.ocr.postprocess.CellText
 import com.paddle.ocr.postprocess.QuadTextCrop
 import com.paddle.ocr.util.BitmapUtils
+import java.io.File
 import org.opencv.core.Core
 import org.opencv.core.Mat
 import org.opencv.core.Scalar
@@ -40,6 +42,7 @@ class OCREngine(
     detModelAsset: String = "models/det/inference.onnx",
     recModelAsset: String = "models/rec/inference.onnx",
     recConfigAsset: String = "models/rec/inference.yml",
+    modelDir: File? = null,
 ) {
     private val ortManager = ORTSessionManager(context, engineConfig)
     private val detectionEngine: DetectionEngine
@@ -48,9 +51,20 @@ class OCREngine(
 
     init {
         val configured = try {
-            ortManager.loadModels(detModelAsset, recModelAsset)
-            val recModelConfig = ModelConfig.parse(context, recConfigAsset)
-            recModelConfig
+            if (modelDir != null) {
+                // 运行时下载的模型：直接读内部存储里的文件。
+                ortManager.loadModels(
+                    ModelSource.Local(File(modelDir, "det/inference.onnx")),
+                    ModelSource.Local(File(modelDir, "rec/inference.onnx")),
+                )
+                ModelConfig.parse(File(modelDir, "rec/inference.yml"))
+            } else {
+                ortManager.loadModels(
+                    ModelSource.Asset(context, detModelAsset),
+                    ModelSource.Asset(context, recModelAsset),
+                )
+                ModelConfig.parse(context, recConfigAsset)
+            }
         } catch (t: Throwable) {
             ortManager.release()
             throw t

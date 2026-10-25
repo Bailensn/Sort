@@ -19,6 +19,7 @@ import ai.onnxruntime.OrtEnvironment
 import ai.onnxruntime.OrtSession
 import android.content.Context
 import com.paddle.ocr.EngineConfig
+import com.paddle.ocr.model.ModelSource
 import com.paddle.ocr.model.OCRError
 import java.nio.FloatBuffer
 
@@ -34,7 +35,7 @@ class ORTSessionManager(
     var coldLoadTimeMs: Long = 0
         private set
 
-    fun loadModels(detAssetPath: String, recAssetPath: String) {
+    fun loadModels(detSource: ModelSource, recSource: ModelSource) {
         val loadStart = System.currentTimeMillis()
         env = OrtEnvironment.getEnvironment()
         val opts = OrtSession.SessionOptions().apply {
@@ -43,8 +44,8 @@ class ORTSessionManager(
         }
         try {
             val ortEnv = env ?: throw OCRError.ModelLoadFailed("OCR", Exception("Environment not initialized"))
-            val detBytes = readModelAsset(detAssetPath)
-            val recBytes = readModelAsset(recAssetPath)
+            val detBytes = readModel(detSource, "detection")
+            val recBytes = readModel(recSource, "recognition")
             try {
                 detSession = ortEnv.createSession(detBytes, opts)
             } catch (t: Throwable) {
@@ -104,11 +105,11 @@ class ORTSessionManager(
         }
     }
 
-    private fun readModelAsset(assetPath: String): ByteArray {
+    private fun readModel(source: ModelSource, name: String): ByteArray {
         return try {
-            context.assets.open(assetPath).use { it.readBytes() }
+            source.read()
         } catch (t: Throwable) {
-            throw OCRError.ModelNotFound(assetPath, t)
+            throw OCRError.ModelNotFound(name, t)
         }
     }
 

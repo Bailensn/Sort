@@ -27,6 +27,20 @@ data class ModelConfig(
             } catch (t: Throwable) {
                 throw OCRError.ConfigParseFailed(assetPath, t)
             }
+            return parseContent(content, assetPath)
+        }
+
+        /** 运行时下载到磁盘的配置。 */
+        fun parse(file: java.io.File): ModelConfig {
+            val content = try {
+                file.bufferedReader().use { it.readText() }
+            } catch (t: Throwable) {
+                throw OCRError.ConfigParseFailed(file.name, t)
+            }
+            return parseContent(content, file.name)
+        }
+
+        private fun parseContent(content: String, assetPath: String): ModelConfig {
             val characterDict = try {
                 extractCharacterDict(content, assetPath)
             } catch (e: OCRError.ConfigParseFailed) {
