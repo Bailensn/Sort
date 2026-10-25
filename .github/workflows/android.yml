@@ -129,9 +129,27 @@ jobs:
           set -o pipefail
           ./gradlew --stacktrace --warning-mode=all --build-cache :app:lintDebug 2>&1 | tee build.log \
             || { bash .github/scripts/print-errors.sh build.log; exit 1; }
-      # lint 的结论在报告里，失败时也得能拿到，否则只知道红了不知道为什么。
-      - name: Upload lint report
+      # 只有真正报了 Warning / Error 才上传报告：干净的 run 不该多一个产物。
+      - name: Check lint findings
+        id: lint-findings
         if: always()
+        run: |
+          xml=app/build/reports/lint-results-debug.xml
+          if [ ! -f "$xml" ]; then
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            echo "没有 lint 报告，跳过上传"
+            exit 0
+          fi
+          warnings=$(grep -c 'severity="Warning"' "$xml" || true)
+          errors=$(grep -c 'severity="Error"' "$xml" || true)
+          echo "Warning=$warnings Error=$errors"
+          if [ "$warnings" -gt 0 ] || [ "$errors" -gt 0 ]; then
+            echo "found=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "found=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Upload lint report
+        if: always() && steps.lint-findings.outputs.found == 'true'
         uses: actions/upload-artifact@v7
         with:
           name: lint-report
