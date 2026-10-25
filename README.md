@@ -91,23 +91,16 @@
 
 ## 模型从哪来
 
-分两层：
+模型**内置在 APK 里**，运行时不再联网下载：
 
-- **APK 内置 small**（约 31 MB，构建期下载），保证任何情况下都能离线识别；
-- 首次使用再尝试下载 **PP-OCRv6 medium**（det 62 MB + rec 76 MB + 字符表 150 KB）到
-  `files/ocr-models/`，明显更准；没网、下载失败、用户选择不烧流量时，
-  自动退回内置 small，界面会提示「当前使用内置轻量模型」。
-- 内置 5 个镜像，启动时并行测速按快慢排序，取最快的下载，失败自动换下一个：
-  `modelscope.cn`（阿里云）、`hf-mirror.com`、`hf-mirror.net`、`aifasthub.com`、`huggingface.co`；
-- 五个都是 HF 的 `/<repo>/resolve/main/<file>` 路径结构，ModelScope 也兼容这个路径；
-- **下载不阻塞启动**：先用内置模型把引擎拉起来，下载在后台跑；下完如果当前空闲，
-  直接热切换到高精度模型，否则下次启动生效；
-- 下载有进度（百分比 + MB/s），完成后不再联网；
-- **默认只在 Wi-Fi 下自动下载**：当前是移动数据时会弹确认框，选「继续下载」才走流量，
-  选「连 Wi-Fi 再下」就直接用内置 small；
-- 下载界面是确定进度条，显示镜像、百分比和实时速度。
+- 用的是 **PP-OCRv6 medium**（det 62 MB + rec 76 MB + 字符表 150 KB），比 small 准得多；
+- 构建期从 ModelScope 下载原始模型，再用 **XZ（LZMA2 预设 9e）** 压成 `.xz` 放进 assets，
+  首次启动解压到 `files/ocr-models/`，之后直接用文件加载；
+- 解压只做一次，带版本号（`medium-xz-1`），模型换了会自动重解压；
+- 实测压缩结果：det 62 MB → 32 MB（52%），rec 76.5 MB → 66 MB（86%），合计 133 MB → 94 MB；
+  `.xz` 设置了 `noCompress`，aapt 不会重复压。
 
-换模型改 `ModelRepository` 里的 `Profile` 即可；`ModelRepository.clear(context)` 可清掉已下载的模型。
+首次构建会下载约 133 MB 模型并压缩（本机约 4 分钟，XZ 9 预设比较吃 CPU），CI 用 `actions/cache` 缓存压缩产物。
 
 ## 构建
 
@@ -115,8 +108,8 @@
 # 模型在首次运行时下载，构建不再联网
 ./gradlew :app:assembleDebug
 
-# 更小的 release：不打 31 MB 内置模型（首次使用必须联网下）
-./gradlew :app:assembleRelease -PwithoutBundledModels
+# release 会做 R8 + 资源压缩
+./gradlew :app:assembleRelease
 
 # 单测 / lint
 ./gradlew :app:testDebugUnitTest :app:lintDebug
@@ -143,7 +136,7 @@
 - `gradle/actions/setup-gradle` 缓存 Gradle Home（依赖、wrapper、构建缓存），并开启每周清理；
 - `Cache Android SDK platform` 缓存 `platforms/android-37.0` 与 `build-tools/36.0.0`（5 个 job 都用）；
 - `Cache NDK and CMake` 只给需要它们的 3 个 job，避免 1 GB 的解压浪费；
-- `Cache bundled OCR models` 缓存构建期下载的 31 MB 轻量模型；
+- `Cache bundled OCR models` 缓存构建期下载并压缩好的内置模型（133 MB 原始模型压成 94 MB）；
 - Gradle 命令统一带 `--build-cache`，配置缓存由 `gradle.properties` 打开。
 
 失败时不用下载任何东西：构建步骤会在同一个 step 里直接把错误打出来——
