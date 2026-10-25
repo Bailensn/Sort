@@ -91,7 +91,7 @@ class TableSelfCheckTest {
     @Test
     fun flagsNonSequentialIdNumbers() {
         val broken = clean.mapIndexed { index, row ->
-            if (index == 3) row.toMutableList().also { it[2] = "900000000099" } else row
+            if (index == 3) row.toMutableList().also { it[2] = "900000000075" } else row
         }
         val result = TableSelfCheck.check(broken, confidences())
 
