@@ -108,7 +108,7 @@ fun TableScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "表格转 Excel",
+                        text = "Sort",
                         style = MaterialTheme.typography.titleLarge,
                     )
                 },

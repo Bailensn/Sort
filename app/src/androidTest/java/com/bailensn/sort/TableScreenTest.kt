@@ -20,6 +20,6 @@ class TableScreenTest {
 
     @Test
     fun showsTitle() {
-        composeRule.onNodeWithText("表格转 Excel").assertIsDisplayed()
+        composeRule.onNodeWithText("Sort").assertIsDisplayed()
     }
 }
