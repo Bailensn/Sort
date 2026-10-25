@@ -1,0 +1,43 @@
+[versions]
+# ---- 构建工具链 -------------------------------------------------------------
+agp = "9.4.1"
+kotlin = "2.4.21"
+# AGP 9.4 的 CMakeVersion 枚举里只有 3.6 / 3.10.2 / 3.22.1，3.22.1 是它能驱动的
+# 最高版本（SDK 里虽然有 3.30.3，但 AGP 不会用它）。不要随手改成 3.30.3。
+cmake = "3.22.1"
+# r30 的 sysroot 已经更新到 API 37，和 compileSdk 37 对齐。
+ndk = "30.0.16248370"
+
+# ---- AndroidX / Compose ----------------------------------------------------
+# Compose BOM 2026.09.00 是官方 Compose 文档当前推荐的版本。
+composeBom = "2026.09.00"
+coreKtx = "1.19.1"
+lifecycle = "2.11.0"
+activityCompose = "1.13.0"
+
+# ---- 测试 ------------------------------------------------------------------
+junit = "4.13.2"
+androidxJunit = "1.3.0"
+espresso = "3.7.0"
+
+[libraries]
+androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
+androidx-lifecycle-runtime-ktx = { module = "androidx.lifecycle:lifecycle-runtime-ktx", version.ref = "lifecycle" }
+androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activityCompose" }
+
+androidx-compose-bom = { module = "androidx.compose:compose-bom", version.ref = "composeBom" }
+androidx-compose-ui = { module = "androidx.compose.ui:ui" }
+androidx-compose-ui-graphics = { module = "androidx.compose.ui:ui-graphics" }
+androidx-compose-ui-tooling = { module = "androidx.compose.ui:ui-tooling" }
+androidx-compose-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview" }
+androidx-compose-ui-test-junit4 = { module = "androidx.compose.ui:ui-test-junit4" }
+androidx-compose-ui-test-manifest = { module = "androidx.compose.ui:ui-test-manifest" }
+androidx-compose-material3 = { module = "androidx.compose.material3:material3" }
+
+junit = { module = "junit:junit", version.ref = "junit" }
+androidx-junit = { module = "androidx.test.ext:junit", version.ref = "androidxJunit" }
+androidx-espresso-core = { module = "androidx.test.espresso:espresso-core", version.ref = "espresso" }
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }
+kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
