@@ -141,7 +141,7 @@ object Deskewer {
             matrix.get(0, 0, values)
             values[2] += (newWidth - bitmap.width) / 2.0
             values[5] += (newHeight - bitmap.height) / 2.0
-            matrix.put(0, 0, values)
+            matrix.put(0, 0, *values)
 
             Imgproc.warpAffine(
                 src,

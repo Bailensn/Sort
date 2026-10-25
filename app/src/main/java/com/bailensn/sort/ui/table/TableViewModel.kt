@@ -7,6 +7,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.bailensn.sort.table.TableGrid
 import com.bailensn.sort.table.TablePipeline
+import com.bailensn.sort.ui.table.TableUiState.Phase
 import com.bailensn.sort.util.ImageLoader
 import com.bailensn.sort.xlsx.ExportedFile
 import com.bailensn.sort.xlsx.XlsxExporter
