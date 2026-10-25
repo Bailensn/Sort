@@ -152,3 +152,20 @@
 - Kotlin：同时改 `libs.versions.toml` 的 `kotlin` 和根 `build.gradle.kts` 的 classpath；
 - AGP / Gradle：一起升，AGP 9.4 要求 Gradle ≥ 9.6.0；
 - OpenCV / ONNX Runtime：升大版本前确认 `Utils.bitmapToMat`、`OrtSession` 等 API 未变。
+
+## 许可证
+
+本项目采用 **Apache License 2.0**（SPDX：`Apache-2.0`），全文见 [LICENSE](LICENSE)。
+
+选它的理由：
+
+- **专利授权**：OCR、表格线拟合、透视校正这类东西容易踩到算法专利，Apache-2.0 第 3 条给了
+  明确的专利许可，MIT 没有；
+- **与依赖一致**：PaddleOCR、OpenCV、AndroidX/Compose 都是 Apache-2.0，ONNX Runtime 是 MIT，
+  Apache-2.0 可以把它们一起分发，不用做额外豁免；
+- **商用友好**：允许闭源分发和商用，只要求保留版权与 NOTICE，比 GPL 更适合一个要发给同学用的工具。
+
+> 想要最宽松、最短的协议就换 MIT；想让所有衍生作品必须开源就换 GPL-3.0。
+> 换之前记得同步 `LICENSE` 和本段。
+
+第三方组件与各自的许可见 [NOTICE](NOTICE)。

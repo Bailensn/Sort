@@ -1,0 +1,18 @@
+Sort
+Copyright 2026 Bailensn
+
+本产品包含以下第三方组件，分别遵循各自的许可协议：
+
+- AndroidX / Jetpack Compose
+  Apache License 2.0 — https://developer.android.com/jetpack
+
+- PaddleOCR PP-OCRv6 small（预训练模型与推理配置）
+  Apache License 2.0 — https://github.com/PaddlePaddle/PaddleOCR
+
+- ONNX Runtime
+  MIT License — https://github.com/microsoft/onnxruntime
+
+- OpenCV（4.5.0 起为 Apache License 2.0）
+  https://github.com/opencv/opencv
+
+上述组件的完整许可文本见各自分发的 AAR / 源码包。
