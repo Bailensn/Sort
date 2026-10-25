@@ -91,7 +91,9 @@ abstract class DownloadOcrModelsTask : DefaultTask() {
 
     @TaskAction
     fun download() {
-        val root = outputDir.get().asFile
+        // AGP 把这个目录当作 assets 的根，所以文件必须落到 models/ 下，
+        // 才能和 PaddleOCR 默认的 assets 路径 models/det/inference.onnx 对上。
+        val root = File(outputDir.get().asFile, ASSET_ROOT)
         urls.get().forEach { (relativePath, url) ->
             val target = File(root, relativePath)
             if (target.isFile && target.length() > 1024L) {
@@ -121,6 +123,11 @@ abstract class DownloadOcrModelsTask : DefaultTask() {
             }
         }
     }
+
+    private companion object {
+        /** 对应 PaddleOCR 的 assets 路径前缀。 */
+        const val ASSET_ROOT = "models"
+    }
 }
 
 // 作为「生成型 assets 源目录」注册给 AGP，而不是依赖任务名匹配：
@@ -128,7 +135,7 @@ abstract class DownloadOcrModelsTask : DefaultTask() {
 // 不会再出现 Gradle 的 “uses this output without declaring a dependency” 校验错误。
 val downloadOcrModels = tasks.register<DownloadOcrModelsTask>("downloadOcrModels") {
     group = "ocr"
-    description = "下载 PP-OCRv6 small ONNX 模型到生成的 assets 目录"
+    description = "下载 PP-OCRv6 small ONNX 模型到生成的 assets 目录（models/ 下）"
     outputDir.set(layout.buildDirectory.dir("generated/ocrModels"))
     urls.set(ocrModels)
 }
