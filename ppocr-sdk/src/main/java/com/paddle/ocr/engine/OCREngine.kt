@@ -236,7 +236,7 @@ class OCREngine(
         if (cells.isEmpty()) return emptyList()
         val src = BitmapUtils.bitmapToBGRMat(bitmap)
         val output = arrayOfNulls<CellReading>(cells.size)
-        val pending = ArrayList<PendingCell>(cells.size)
+        var pending = ArrayList<PendingCell>(CHUNK_CELLS)
         try {
             cells.forEachIndexed { index, cell ->
                 val crop = cropCell(src, cell, scale)
@@ -254,25 +254,49 @@ class OCREngine(
                     .toInt()
                     .coerceIn(16, 3200)
                 pending.add(PendingCell(index, crop, estimatedWidth))
+                // 攒够一块就先算掉：524 个格子全部留在内存里会吃掉几百 MB，
+                // 低端机会直接 OOM（曾经整张表退化成文字聚类）。
+                if (pending.size >= CHUNK_CELLS) {
+                    runBatch(output, pending, recEngine)
+                    pending = ArrayList(CHUNK_CELLS)
+                }
             }
 
-            // 按估计宽度排序再分批：一批图会补齐到同宽，混进一个学号格会让整批多算好几倍。
-            // 排序只影响送算的先后，结果按 index 放回去，对外顺序不变。
-            pending.sortBy { it.width }
+            runBatch(output, pending, recEngine)
+            pending = ArrayList(0)
+        } finally {
+            pending.forEach { runCatching { it.crop.release() } }
+            src.release()
+        }
+        return cells.indices.map { output[it] ?: CellReading("", 0f, hasInk = false) }
+    }
+
+    /**
+     * 把一块裁剪图算完：按估计宽度排序再分批，一批图会补齐到同宽，
+     * 混进一个学号格会让整批多算好几倍。排序只影响送算先后，结果按 index 放回。
+     */
+    private fun runBatch(
+        output: Array<CellReading?>,
+        cells: List<PendingCell>,
+        engine: RecognitionEngine,
+    ) {
+        if (cells.isEmpty()) return
+        try {
+            val sorted = cells.sortedBy { it.width }
             var start = 0
-            while (start < pending.size) {
+            while (start < sorted.size) {
                 var end = start
                 var batchWidth = 0
-                while (end < pending.size && end - start < MAX_CELL_BATCH) {
-                    val width = pending[end].width
+                while (end < sorted.size && end - start < MAX_CELL_BATCH) {
+                    val width = sorted[end].width
                     val exceedsBytes =
                         (batchWidth + width) * CELL_INPUT_HEIGHT * 3 * 4 > MAX_CELL_BATCH_BYTES
                     if (end > start && exceedsBytes) break
                     batchWidth += width
                     end++
                 }
-                val slice = pending.subList(start, end)
-                val texts = recEngine.recognize(slice.map { it.crop }).texts
+                val slice = sorted.subList(start, end)
+                val texts = engine.recognize(slice.map { it.crop }).texts
                 slice.forEachIndexed { offset, item ->
                     val reading = texts.getOrNull(offset)
                     output[item.index] = if (reading == null) {
@@ -284,10 +308,8 @@ class OCREngine(
                 start = end
             }
         } finally {
-            pending.forEach { runCatching { it.crop.release() } }
-            src.release()
+            cells.forEach { runCatching { it.crop.release() } }
         }
-        return cells.indices.map { output[it] ?: CellReading("", 0f, hasInk = false) }
     }
 
     private class PendingCell(val index: Int, val crop: Mat, val width: Int)
@@ -387,3 +409,6 @@ class OCREngine(
 private const val CELL_INPUT_HEIGHT = 48
 private const val MAX_CELL_BATCH = 16
 private const val MAX_CELL_BATCH_BYTES = 24 * 1024 * 1024
+
+/** 每次最多攒这么多裁剪图再算，控制峰值内存。 */
+private const val CHUNK_CELLS = 64

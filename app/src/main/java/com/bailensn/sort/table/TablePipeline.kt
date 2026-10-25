@@ -195,11 +195,15 @@ object TablePipeline {
             )
         }
         val cellStarted = SystemClock.elapsedRealtime()
+        // 逐格识别整批失败（曾经因为一次把所有裁剪图攒在内存里而 OOM）时，
+        // 先退回原尺寸再试一次；还不行就保留网格结构、留空，别退回文字聚类——
+        // 聚类出来的列数对不上，导出的表直接没法用。
         val recognizedResult = runCatching { ocr.recognizeCells(bitmap, rects) }
-        if (recognizedResult.isFailure) {
-            return@coroutineScope CellPass(TableGrid(emptyList(), TableGrid.Mode.GRID_LINES), 0)
+        var recognized: List<CellReading> = recognizedResult.getOrElse {
+            runCatching { ocr.recognizeCells(bitmap, rects, scale = 1f) }.getOrElse {
+                return@coroutineScope CellPass(TableGrid(emptyList(), TableGrid.Mode.GRID_LINES), 0)
+            }
         }
-        var recognized: List<CellReading> = recognizedResult.getOrThrow()
 
         // 第二遍：最严厉的那一遍。
         // 第一遍是原图、原尺寸的「初步识别」；凡是有墨迹但置信度没到 0.9 的格子，
@@ -440,10 +444,16 @@ object TablePipeline {
     private const val MIN_FILL_CONFIDENCE = 0.6f
 
     /**
-     * 可信线：rec 的置信度到这个数以上就不再往下过。
-     * 98% 是原版 OCR demo 里的经验值——低于它的格子即使字看着对，也常有单个数字认错。
+     * 精度至上：第二遍（增强图 2 倍）对所有有墨迹的格子都跑。
+     * 设成大于 1 的值等于「没有格子能免修」——宁可慢，也要让每格都有两次独立读数。
      */
-    private const val TRUSTED_CONFIDENCE = 0.98f
+    private const val TRUSTED_CONFIDENCE = 1.01f
+
+    /**
+     * 第三遍的门槛（3 倍 + 原图 + 复核模型四路投票）。
+     * 只对「两遍之后仍然拿不准」的格子跑：四路全跑一页要十分钟，没有实用价值。
+     */
+    private const val THIRD_CONFIDENCE = 0.98f
 
     /** 第二遍的放大倍率：小字号、贴边的数字靠这一步救回来。 */
     private const val STRICT_SCALE = 2.0f
@@ -451,8 +461,7 @@ object TablePipeline {
     /** 两遍认出来的字一致时，给置信度的加成。 */
     private const val AGREE_BONUS = 0.05f
 
-    /** 第三遍的门槛：二遍（含一致加成）之后还低于可信线，就再极限认一次。 */
-    private const val THIRD_CONFIDENCE = TRUSTED_CONFIDENCE
+
 
     /** 第三遍的放大倍率。 */
     private const val THIRD_SCALE = 3.0f
