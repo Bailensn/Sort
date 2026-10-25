@@ -16,12 +16,15 @@ if [[ ! -f "$LOG" ]]; then
 fi
 
 kotlin_errors="$(grep -E '^e: (file://)?[^ ]+:[0-9]+:[0-9]+ ' "$LOG" | head -60 || true)"
+# Kotlin 2.4 用 Build Tools API 报错时不再输出 e: 行，而是把位置单独写成
+# “Location: /路径/File.kt:行”。两种格式都要认。
+kotlin_locations="$(grep -oE 'Location: [^ ]+\.(kt|java):[0-9]+' "$LOG" | sed 's/^Location: //' | sort -u | head -40 || true)"
 java_errors="$(grep -E '\.java:[0-9]+: error: ' "$LOG" | head -40 || true)"
 failed_tasks="$(grep -E '^> Task .* FAILED' "$LOG" | head -20 || true)"
 toolchain="$(grep -E 'Could not (resolve|find|download)|No matching toolchains|Unsupported class file|Could not determine the dependencies' "$LOG" | head -20 || true)"
 gradle_block="$(awk '/^\* What went wrong:/{flag=1} flag{print} /^\* Try:/{if(flag) exit}' "$LOG" | head -50 || true)"
 
-count="$(printf '%s\n%s\n' "$kotlin_errors" "$java_errors" | grep -c '[^[:space:]]' || true)"
+count="$(printf '%s\n%s\n%s\n' "$kotlin_errors" "$kotlin_locations" "$java_errors" | grep -c '[^[:space:]]' || true)"
 
 workspace="${GITHUB_WORKSPACE:-}"
 repo="${GITHUB_REPOSITORY:-local}"
@@ -45,6 +48,16 @@ if [[ -n "$failed_tasks" ]]; then
     echo "### 失败的 Task"
     echo '```text'
     echo "$failed_tasks"
+    echo '```'
+    echo
+  } >> "$REPORT"
+fi
+
+if [[ -n "$kotlin_locations" ]]; then
+  {
+    echo "### Kotlin 错误位置"
+    echo '```text'
+    echo "$kotlin_locations"
     echo '```'
     echo
   } >> "$REPORT"
@@ -127,6 +140,17 @@ while IFS= read -r line; do
   fi
   [[ $i -ge 15 ]] && break
 done <<< "$kotlin_errors"
+
+# 新版 Kotlin 只给 Location，没有消息文本，用固定文案标注位置。
+while IFS= read -r loc; do
+  [[ -z "$loc" ]] && continue
+  rel="${loc#"$workspace"/}"
+  path="${rel%:[0-9]*}"
+  line_no="${rel##*:}"
+  echo "::error file=$path,line=$line_no::Kotlin 编译错误，详情见 Job Summary"
+  i=$((i + 1))
+  [[ $i -ge 15 ]] && break
+done <<< "$kotlin_locations"
 
 # 把报告贴到本次提交的评论里：公开仓库无需登录即可读取，Agent 和人都能直接看。
 if [[ -n "${GITHUB_TOKEN:-}" && -n "${GITHUB_REPOSITORY:-}" && -n "${GITHUB_SHA:-}" ]] && command -v python3 >/dev/null 2>&1; then
