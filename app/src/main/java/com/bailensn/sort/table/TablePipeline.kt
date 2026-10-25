@@ -220,16 +220,37 @@ object TablePipeline {
             val strict = runCatching {
                 ocr.recognizeCells(strictSource, strictRects, scale = STRICT_SCALE)
             }.getOrNull()
-            val referee = runCatching {
-                ocr.recognizeCellsReferee(strictSource, strictRects, scale = REFEREE_SCALE)
-            }.getOrNull()
+            // 复核模型只跑「有争议」的格子：两路 v6 认出来的字不一样，或者都不够有把握。
+            // 认得完全一致的格子再多一路投票不会改变结果，纯属白跑。
+            val refereePositions = strictIndices.indices.filter { position ->
+                val current = recognized[strictIndices[position]]
+                val candidate = strict?.getOrNull(position)
+                candidate == null ||
+                    candidate.text != current.text ||
+                    maxOf(candidate.confidence, current.confidence) < THIRD_CONFIDENCE
+            }
+            val referee = if (refereePositions.isEmpty()) {
+                null
+            } else {
+                val refereeRects = refereePositions.map { strictRects[it] }
+                runCatching {
+                    ocr.recognizeCellsReferee(strictSource, refereeRects, scale = REFEREE_SCALE)
+                }.getOrNull()?.let { readings ->
+                    // 放回原位，方便和另外两路对齐。
+                    val byPosition = HashMap<Int, CellReading>(readings.size)
+                    refereePositions.forEachIndexed { offset, position ->
+                        readings.getOrNull(offset)?.let { byPosition[position] = it }
+                    }
+                    byPosition
+                }
+            }
             if (strict != null || referee != null) {
                 val merged = recognized.toMutableList()
                 strictIndices.forEachIndexed { position, index ->
                     val candidates = listOfNotNull(
                         recognized[index],
                         strict?.getOrNull(position),
-                        referee?.getOrNull(position),
+                        referee?.get(position),
                     )
                     if (candidates.size > 1) merged[index] = pickBest(candidates)
                 }
@@ -237,8 +258,8 @@ object TablePipeline {
             }
         }
 
-        // 第三遍：极限精度。二遍之后还不到 0.9 的格子，用 3 倍放大各认一次增强图和原图，
-        // 连同前两遍的结果一起投票：两次认成同一串字的优先，其次比置信度。
+        // 第三遍：极限精度。二遍（含两套模型投票）之后还不到 98% 的格子，
+        // 用 3 倍放大再认一次原图，加上复核模型，与前几遍一起投票。
         // 注意 rec 会把裁图统一缩到 48 高，放大只是改善重采样，推理开销几乎不变。
         val thirdIndices = recognized.indices.filter { index ->
             val reading = recognized[index]
@@ -246,9 +267,8 @@ object TablePipeline {
         }
         if (thirdIndices.isNotEmpty()) {
             val rects3 = thirdIndices.map { rects[it] }
-            val fromEnhanced = runCatching {
-                ocr.recognizeCells(enhanced ?: bitmap, rects3, scale = THIRD_SCALE)
-            }.getOrNull()
+            // 二遍已经在增强图上跑过 2 倍，这里不再重复「增强图 3 倍」；
+            // 换成原图 3 倍 + 复核模型，保证三路来自不同的输入形态。
             val fromOriginal = runCatching {
                 ocr.recognizeCells(bitmap, rects3, scale = THIRD_SCALE)
             }.getOrNull()
@@ -256,12 +276,11 @@ object TablePipeline {
             val fromReferee = runCatching {
                 ocr.recognizeCellsReferee(enhanced ?: bitmap, rects3, scale = REFEREE_SCALE)
             }.getOrNull()?.takeIf { it.size == rects3.size }
-            if (fromEnhanced != null || fromOriginal != null || fromReferee != null) {
+            if (fromOriginal != null || fromReferee != null) {
                 val merged = recognized.toMutableList()
                 thirdIndices.forEachIndexed { position, index ->
                     val candidates = listOfNotNull(
                         recognized[index],
-                        fromEnhanced?.getOrNull(position),
                         fromOriginal?.getOrNull(position),
                         fromReferee?.getOrNull(position),
                     )

@@ -107,8 +107,9 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
                             // 整图那条路每张图有几百行文字，批 1 等于几百次推理；
                             // 批 16 之后耗时从 30 s 掉到个位数，结果不打折。
                             recBatchSize = 16,
-                            // 精度至上：整图检测也用全分辨率，校对时框更贴合。
-                            detMaxSideLimit = 4000,
+                            // 校对用的整图检测：1600 宽足够定位格子，比全分辨率(1920)省一截，
+                            // 框坐标会被引擎换算回原图，对校对结果没有实质影响。
+                            detMaxSideLimit = 1600,
                         ),
                     )
                 }
