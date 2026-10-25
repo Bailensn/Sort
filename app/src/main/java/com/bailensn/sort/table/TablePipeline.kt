@@ -293,7 +293,9 @@ object TablePipeline {
         // 统计用：只看有墨迹的格子，空白格不该拉低置信度。
         val scored = recognized.filter { it.hasInk }
         val averageConfidence = if (scored.isEmpty()) 0f else scored.sumOf { it.confidence.toDouble() }.toFloat() / scored.size
-        val lowConfidenceCells = scored.count { it.confidence < TRUSTED_CONFIDENCE }
+        // 展示用的门槛固定 98%：TRUSTED_CONFIDENCE 现在是 1.01（表示二遍全跑），
+        // 用它来数会把所有格子都算成「低置信度」。
+        val lowConfidenceCells = scored.count { it.confidence < DISPLAY_TRUSTED_CONFIDENCE }
 
         val cellMs = SystemClock.elapsedRealtime() - cellStarted
 
@@ -478,6 +480,9 @@ object TablePipeline {
 
     /** 第二遍的放大倍率：小字号、贴边的数字靠这一步救回来。 */
     private const val STRICT_SCALE = 2.0f
+
+    /** 结果页展示「低于多少算不确定」用的门槛。 */
+    private const val DISPLAY_TRUSTED_CONFIDENCE = 0.98f
 
     /** 两遍认出来的字一致时，给置信度的加成。 */
     private const val AGREE_BONUS = 0.05f

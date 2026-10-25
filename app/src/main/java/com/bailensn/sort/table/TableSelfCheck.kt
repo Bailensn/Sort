@@ -26,7 +26,13 @@ object TableSelfCheck {
     private const val NUMERIC_RATIO = 0.6
 
     /** 求和校验至少要这么多行对得上，才认这对「科目列 + 总列」。 */
-    private const val MIN_SUM_AGREEMENT = 0.6
+    private const val MIN_SUM_AGREEMENT = 0.75
+
+    /** 科目列至少要有这么多行填了值：垃圾列通常只填了一半。 */
+    private const val MIN_SUBJECT_FILL = 0.6
+
+    /** 总分列几乎每行都该有值。 */
+    private const val MIN_TOTAL_FILL = 0.8
 
     data class Report(
         /** 自检结果的一句话摘要，直接显示在结果页。 */
@@ -175,6 +181,9 @@ object TableSelfCheck {
         sequences: List<Boolean>,
         identifiers: List<Boolean>,
     ): Pair<Int, List<Int>>? {
+        val fillRatio = (0 until columns).map { column ->
+            rows.count { row -> row.getOrNull(column)?.isNotBlank() == true }.toDouble() / rows.size
+        }
         val candidates = (0 until columns).filter { column ->
             numeric[column] && !constant[column] && !sequences[column] && !identifiers[column]
         }
@@ -183,7 +192,9 @@ object TableSelfCheck {
         var best: Pair<Int, List<Int>>? = null
         var bestAgreement = 0.0
         for (totalColumn in candidates.drop(3)) {
-            val subjects = candidates.filter { it < totalColumn }
+            if (fillRatio[totalColumn] < MIN_TOTAL_FILL) continue
+            // 科目列要填得满：垃圾列往往只填了一半，混进求和会让「纠正」去改真实分数。
+            val subjects = candidates.filter { it < totalColumn && fillRatio[it] >= MIN_SUBJECT_FILL }
             if (subjects.size < 2) continue
             var agree = 0
             var compared = 0

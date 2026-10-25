@@ -20,6 +20,12 @@ object GarbageColumnTrimmer {
     /** 噪声列里几乎没有长值：长于 3 字符的占比不超过两成。 */
     private const val MAX_LONG_VALUE_RATIO = 0.2
 
+    /**
+     * 含拉丁字母的值占比到这么高，就直接判噪声列。
+     * 成绩单里姓名是中文、学号与分数是数字，字母只会来自背景或线头误识。
+     */
+    private const val MAX_NOISE_LETTER_RATIO = 0.15
+
     /** 右侧列：空到这种程度就当噪声。 */
     private const val MAX_EMPTY_RATIO = 0.6
 
@@ -112,7 +118,17 @@ object GarbageColumnTrimmer {
                 false
             } else {
                 val longValues = values.count { it.length > 3 }
-                values.all(::noChinese) && longValues <= values.size * MAX_LONG_VALUE_RATIO
+                val letterRatio = if (values.isEmpty()) {
+                    0.0
+                } else {
+                    values.count { value -> value.any { it in 'a'..'z' || it in 'A'..'Z' } }
+                        .toDouble() / values.size
+                }
+                // 成绩单这块业务里，拉丁字母只会是噪声：姓名是中文、学号是数字、分数是数字。
+                // 所以「含字母的比例够高」可以直接判噪声，不必要求整列都没有中文
+                // （横线碎片 `一` 这种会让「无中文」判定失效）。
+                (values.all(::noChinese) || letterRatio >= MAX_NOISE_LETTER_RATIO) &&
+                    longValues <= values.size * MAX_LONG_VALUE_RATIO
             }
         }
 
@@ -139,7 +155,20 @@ object GarbageColumnTrimmer {
         }
     }
 
-    private fun noChinese(value: String): Boolean = value.none { it.code > 0x2E80 }
+    private fun noChinese(raw: String): Boolean {
+        val value = raw.filterNot(::isLineLike)
+        return value.none { it.code > 0x2E80 }
+    }
+
+    /**
+     * 去掉「长得像线」的字符后再判断有没有中文。
+     *
+     * 横线碎片最常被认成 `一`、`丨`、`|`、`—`，它们确实是汉字/符号，但语义上就是一根线。
+     * 不排掉的话，整列噪声会因为一个 `一` 被当成「含中文的正常列」而保留下来。
+     */
+    private const val LINE_LIKE = "一二三十丨|｜—–-_.·''`"
+
+    private fun isLineLike(character: Char): Boolean = character in LINE_LIKE
 
     /** 长度很短、带非数字字符的碎片：`I`、`|`、`1l`。纯数字（`14`）不算，那可能是合并的班级号。 */
     private fun looksLikeStrayMark(value: String): Boolean =

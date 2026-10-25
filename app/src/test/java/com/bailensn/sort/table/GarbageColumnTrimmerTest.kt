@@ -188,4 +188,32 @@ class GarbageColumnTrimmerTest {
         assertEquals(4, trimmed.first().size)
         assertEquals("329.5", trimmed.first().last())
     }
+
+    @Test
+    fun treatsLineLikeCharactersAsNoiseNotChinese() {
+        // 实测：横线碎片常被认成「一」，不能让整列因为一个「一」被当成正常列。
+        // 三列噪声只填了不到一半的行，和真实数据一致。
+        val rows = listOf(
+            listOf("14", "24", "张三丰", "329.5", "1", "E", "13"),
+            listOf("14", "25", "李四海", "334.5", "1", "0", "10"),
+            listOf("14", "26", "王五岳", "411.5", "19", "0", "16"),
+            listOf("14", "27", "赵六合", "388", "161", "wa", "一"),
+            listOf("14", "28", "钱七曜", "396", "", "", "一"),
+            listOf("14", "29", "孙八荒", "301", "一", "", ""),
+            listOf("14", "30", "周九霄", "363", "", "", ""),
+            listOf("14", "31", "吴十方", "267.5", "", "", ""),
+            listOf("14", "32", "冯二虎", "301.5", "", "", ""),
+            listOf("14", "33", "郑一鸣", "319", "", "", ""),
+        )
+
+        val cleaned = GarbageColumnTrimmer.cleanNoisyColumns(rows)
+
+        assertEquals("", cleaned[0][4])
+        assertEquals("", cleaned[1][5])
+        assertEquals("", cleaned[2][6])
+        assertEquals("", cleaned[3][6])
+        // 总分列是真数据，必须留着
+        assertEquals("329.5", cleaned[0][3])
+        assertEquals("267.5", cleaned[7][3])
+    }
 }
