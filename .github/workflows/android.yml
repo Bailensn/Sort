@@ -7,80 +7,36 @@ on:
   workflow_dispatch:
 
 permissions:
-  # 失败时要往提交评论里写错误摘要，所以需要写权限
+  # 失败报告要写成提交评论，所以需要写权限；不想用就删掉 report job 和这一行。
   contents: write
 
 concurrency:
-  group: android-${{ github.workflow }}-${{ github.ref }}
+  group: android-ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  build:
-    name: Assemble / Test / Lint
+  assemble:
+    name: Assemble
     runs-on: ubuntu-latest
-    timeout-minutes: 60
-
+    timeout-minutes: 45
     steps:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Set up JDK 21
-        uses: actions/setup-java@v6
+      - name: Android environment
+        uses: ./.github/actions/android-env
         with:
-          distribution: temurin
-          java-version: "21"
+          sdk-packages: "platforms;android-37.0 build-tools;36.0.0 cmake;3.22.1 ndk;30.0.16248370"
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v4
-
-      - name: Install SDK components
-        run: |
-          sdkmanager --install \
-            "platforms;android-37.0" \
-            "build-tools;36.0.0" \
-            "cmake;3.22.1" \
-            "ndk;30.0.16248370"
-
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v6
-
-      # 约 31 MB，构建时由 :app:downloadOcrModels 下载；缓存后 CI 不再拉取。
-      - name: Cache OCR models
-        uses: actions/cache@v6
-        with:
-          path: app/src/main/assets/models
-          key: ocr-models-ppocrv6-small-v1
-
-      - name: Grant execute permission for gradlew
-        run: chmod +x ./gradlew
-
-      - name: Build, test and lint
+      - name: Assemble debug and release
         run: |
           set -o pipefail
           ./gradlew --stacktrace --warning-mode=all \
-            :app:assembleDebug \
-            :app:assembleRelease \
-            :app:assembleDebugAndroidTest \
-            :app:testDebugUnitTest \
-            :app:lintDebug 2>&1 | tee build.log
+            :app:assembleDebug :app:assembleRelease 2>&1 | tee build.log
 
-      # 失败时把编译错误整理成 Job Summary + 行内注解，不用翻几万行日志。
-      - name: Report build errors
+      - name: Report errors
         if: failure()
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: bash .github/scripts/report-errors.sh build.log
-
-      - name: Upload build log
-        if: failure()
-        uses: actions/upload-artifact@v7
-        with:
-          name: build-log
-          path: |
-            build.log
-            ci-report/errors.md
-          if-no-files-found: warn
-          retention-days: 7
+        run: bash .github/scripts/report-errors.sh build.log "Assemble"
 
       - name: Upload APKs
         if: always()
@@ -93,13 +49,158 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
-      - name: Upload reports on failure
+      - name: Upload error report
         if: failure()
         uses: actions/upload-artifact@v7
         with:
-          name: reports
+          name: log-assemble
           path: |
-            app/build/reports/**
-            app/build/test-results/**
-          if-no-files-found: ignore
+            build.log
+            ci-report/errors.md
+          if-no-files-found: warn
           retention-days: 7
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Android environment
+        uses: ./.github/actions/android-env
+
+      - name: Lint debug
+        run: |
+          set -o pipefail
+          ./gradlew --stacktrace --warning-mode=all :app:lintDebug 2>&1 | tee build.log
+
+      - name: Report errors
+        if: failure()
+        run: bash .github/scripts/report-errors.sh build.log "Lint"
+
+      - name: Upload lint report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: lint-report
+          path: app/build/reports/lint-results-debug.*
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Upload error report
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: log-lint
+          path: |
+            build.log
+            ci-report/errors.md
+          if-no-files-found: warn
+          retention-days: 7
+
+  unit-test:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Android environment
+        uses: ./.github/actions/android-env
+
+      - name: Run JVM unit tests
+        run: |
+          set -o pipefail
+          ./gradlew --stacktrace --warning-mode=all :app:testDebugUnitTest 2>&1 | tee build.log
+
+      - name: Report errors
+        if: failure()
+        run: bash .github/scripts/report-errors.sh build.log "Unit tests"
+
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: unit-test-report
+          path: |
+            app/build/reports/tests/testDebugUnitTest
+            app/build/test-results/testDebugUnitTest
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Upload error report
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: log-unit-test
+          path: |
+            build.log
+            ci-report/errors.md
+          if-no-files-found: warn
+          retention-days: 7
+
+  android-test:
+    name: Instrumentation APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Android environment
+        uses: ./.github/actions/android-env
+        with:
+          sdk-packages: "platforms;android-37.0 build-tools;36.0.0 cmake;3.22.1 ndk;30.0.16248370"
+
+      - name: Assemble instrumentation APK
+        run: |
+          set -o pipefail
+          ./gradlew --stacktrace --warning-mode=all :app:assembleDebugAndroidTest 2>&1 | tee build.log
+
+      - name: Report errors
+        if: failure()
+        run: bash .github/scripts/report-errors.sh build.log "Instrumentation APK"
+
+      - name: Upload test APK
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: androidTest-apk
+          path: app/build/outputs/apk/androidTest/debug/*.apk
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Upload error report
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: log-android-test
+          path: |
+            build.log
+            ci-report/errors.md
+          if-no-files-found: warn
+          retention-days: 7
+
+  report:
+    name: Failure report
+    needs: [ assemble, lint, unit-test, android-test ]
+    if: failure()
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Download error reports
+        uses: actions/download-artifact@v7
+        with:
+          pattern: log-*
+          path: logs
+
+      - name: Post aggregated report
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bash .github/scripts/post-report.sh logs

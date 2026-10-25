@@ -1,0 +1,49 @@
+name: Android environment
+description: JDK 21、Android SDK、Gradle 缓存、OCR 模型与 NDK/CMake 缓存
+
+inputs:
+  sdk-packages:
+    description: 需要安装的 SDK 包，空格分隔
+    required: false
+    default: "platforms;android-37.0 build-tools;36.0.0"
+
+runs:
+  using: composite
+  steps:
+    - name: Set up JDK 21
+      uses: actions/setup-java@v6
+      with:
+        distribution: temurin
+        java-version: "21"
+
+    - name: Set up Android SDK
+      uses: android-actions/setup-android@v4
+
+    - name: Set up Gradle
+      uses: gradle/actions/setup-gradle@v6
+
+    # NDK 约 1 GB，缓存后第二次起不用再下。
+    - name: Cache NDK and CMake
+      uses: actions/cache@v6
+      with:
+        path: |
+          ${{ env.ANDROID_SDK_ROOT }}/ndk/30.0.16248370
+          ${{ env.ANDROID_SDK_ROOT }}/cmake/3.22.1
+        key: android-toolchain-ndk-30.0.16248370-cmake-3.22.1
+
+    - name: Install SDK components
+      shell: bash
+      run: |
+        yes | sdkmanager --licenses > /dev/null
+        sdkmanager --install ${{ inputs.sdk-packages }}
+
+    # OCR 模型约 31 MB，由 :app:downloadOcrModels 在构建期下载。
+    - name: Cache OCR models
+      uses: actions/cache@v6
+      with:
+        path: app/build/generated/ocrModels
+        key: ocr-models-ppocrv6-small-v2
+
+    - name: Grant execute permission for gradlew
+      shell: bash
+      run: chmod +x ./gradlew

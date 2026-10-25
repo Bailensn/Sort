@@ -1,4 +1,4 @@
-# 表格转 Excel · Compose + PP-OCRv6 + CMake Native
+# Sort · Compose + PP-OCRv6 + CMake Native
 
 拍一张表格照片，或者从相册选一张，**离线**识别文字、还原行列，导出一份带边框的 `.xlsx`。
 
@@ -93,8 +93,9 @@
 模型不进 git（约 31 MB）。`app/build.gradle.kts` 里的 `downloadOcrModels`：
 
 - 从 HuggingFace 下载 `PP-OCRv6_small_{det,rec}_onnx` 的 `inference.onnx` / `inference.yml`；
-- 落到 `app/src/main/assets/models/{det,rec}/`，已存在就跳过，失败重试 3 次；
-- `merge*Assets` 依赖它，第一次构建会联网下载；
+- 落到 `app/build/generated/ocrModels/{det,rec}/`，已存在就跳过，失败重试 3 次；
+- 通过 `variant.sources.assets.addGeneratedSourceDirectory` 注册给 AGP，
+  打包 / lint / 单测等所有消费 assets 的任务都会自动依赖它，不用按任务名手工挂 dependsOn；
 - CI 用 `actions/cache` 缓存该目录。
 
 换模型改 `ocrModels` 映射即可，det/rec 各要 `.onnx`，rec 还要 `inference.yml`（字符表）。
@@ -111,20 +112,35 @@
 
 ## CI
 
-`.github/workflows/android.yml`：JDK 21 → setup-android → 装 `platforms;android-37.0`、`build-tools;36.0.0`、`cmake;3.22.1`、`ndk;30.0.16248370` → 缓存模型 → `assembleDebug`、`assembleRelease`、`assembleDebugAndroidTest`、`testDebugUnitTest`、`lintDebug` → 上传 APK 与失败报告。
+`.github/workflows/android.yml` 拆成 4 个互不依赖的并行 job，失败时再跑第 5 个汇总 job：
+
+| job | 跑什么 | 产物 |
+| --- | --- | --- |
+| `assemble` | `assembleDebug` + `assembleRelease` | debug/release APK |
+| `lint` | `lintDebug` | lint HTML/XML 报告 |
+| `unit-test` | `testDebugUnitTest` | 单测报告 |
+| `android-test` | `assembleDebugAndroidTest` | 仪器测试 APK |
+| `report` | 仅在前面有失败时运行，合并各 job 的报告 | 提交评论 + Summary |
+
+公共环境抽在 `.github/actions/android-env/action.yml`：JDK 21、Android SDK、
+`platforms;android-37.0` / `build-tools;36.0.0`，NDK 与 CMake 按需传入并缓存。
 
 构建失败时会自动输出错误，不用翻几万行日志：
 
-- **Job Summary**：Kotlin/Java 编译错误、失败 Task、Gradle 失败原因、日志末尾；
-- **提交评论**：同一份报告自动贴到本次提交，公开仓库可直接读取（需要 `contents: write`，不需要就删掉这一步和权限）；
+- **提交评论**：`report` job 把所有失败 job 的报告合并成一条评论贴到本次提交，
+  公开仓库无需登录即可读取；
+- **Job Summary**：每个 job 自己那部分的错误、失败 Task、Gradle 失败原因；
 - **行内注解**：编译错误生成 `::error file=...,line=...`，PR/commit 页面能直接点；
-- **artifact**：完整 `build.log` 与 `ci-report/errors.md` 保留 7 天。
+- **artifact**：完整 `build.log` 与 `ci-report/errors.md` 保留 7 天（`log-*`）。
 
-> `gradlew` 的可执行位在共享存储/Windows 上容易丢，workflow 里有 `chmod +x ./gradlew` 兜底。
+> `gradlew` 的可执行位在共享存储/Windows 上容易丢，composite action 里有
+> `chmod +x ./gradlew` 兜底。
 
 ## 已知限制
 
-- 合并单元格会被拆成多个格子，导出不做 merge；
+- 合并单元格靠「两格之间那条边界有没有画线」判断：线没画全、或线太淡导致探针判不到，
+  会退化成多个格子（判定偏保守，宁可拆开也不误合并），非矩形的合并区域一律拆开；
+- 完全没框线的表格走文字聚类，列位置靠文字间距推断，整列为空时列会丢；
 - 逐格识别假设单元格内是**单行**文字，多行会被压成一行（无框线时会退回整图检测 + 聚类）；
 - 竖排、旋转拍摄、手写体识别率有限；
 - 透视校正需要四条外框线都可见，缺边时只做旋转纠偏。
