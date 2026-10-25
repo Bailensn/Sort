@@ -123,4 +123,23 @@ class TableSelfCheckTest {
         assertEquals("391", result.rows[4][10])
         assertTrue(result.report.suspiciousRows.contains(4))
     }
+
+    @Test
+    fun fillsEmptyTotalColumnFromSubjects() {
+        // 总分列整列是空的（OCR 没认出来）——这正是「先找科目块、再看右边一列」要解决的场景。
+        val rows = listOf(
+            listOf("14", "1", "900000000001", "张三丰", "94.5", "7", "88", "25", "59", "56", ""),
+            listOf("14", "2", "900000000002", "李四海", "77.5", "24", "77", "30", "70", "56", ""),
+            listOf("14", "3", "900000000003", "王五岳", "95", "54", "60.5", "47", "72", "83", ""),
+            listOf("14", "4", "900000000004", "赵六合", "87.5", "68", "52.5", "42", "62", "76", ""),
+        )
+
+        val result = TableSelfCheck.check(rows, confidences())
+
+        assertEquals(4, result.report.correctedCells)
+        assertEquals("329.5", result.rows[0][10])
+        assertEquals("334.5", result.rows[1][10])
+        assertEquals("411.5", result.rows[2][10])
+        assertEquals("388", result.rows[3][10])
+    }
 }

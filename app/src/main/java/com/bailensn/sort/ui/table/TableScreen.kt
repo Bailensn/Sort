@@ -331,7 +331,8 @@ private fun ReadyContent(
 ) {
 
     val original = state.original
-    if (original == null) {
+    // 历史记录只有表格、没有原图：这种情况下也要把表格显示出来。
+    if (original == null && state.grid == null) {
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(
                 text = stringResource(R.string.empty_title),
@@ -346,11 +347,13 @@ private fun ReadyContent(
         return
     }
 
-    ImageBlock(
-        state = state,
-        viewMode = viewMode,
-        onCycleView = onCycleView,
-    )
+    if (original != null) {
+        ImageBlock(
+            state = state,
+            viewMode = viewMode,
+            onCycleView = onCycleView,
+        )
+    }
 
     when (state.phase) {
         TableUiState.Phase.RECOGNIZING -> {

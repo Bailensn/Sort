@@ -31,8 +31,8 @@ object TableSelfCheck {
     /** 科目列至少要有这么多行填了值：垃圾列通常只填了一半。 */
     private const val MIN_SUBJECT_FILL = 0.75
 
-    /** 总分列几乎每行都该有值。 */
-    private const val MIN_TOTAL_FILL = 0.85
+    /** 总分列的非空值里，数字至少要占这么多——但允许它整列是空的。 */
+    private const val MIN_TOTAL_NUMERIC_RATIO = 0.6
 
     /** 总分这格置信度低于这个值、又和求和对不上时，直接用求和的数覆盖。 */
     private const val RECOMPUTE_TOTAL_CONFIDENCE = 0.9f
@@ -95,7 +95,20 @@ object TableSelfCheck {
             val (totalColumn, subjectColumns) = total
             rows.forEachIndexed { index, row ->
                 val sum = subjectColumns.sumOf { column -> parseNumber(row.getOrNull(column)).orZero() }
-                val value = parseNumber(row.getOrNull(totalColumn)) ?: return@forEachIndexed
+                val allSubjectsPresent = subjectColumns.all { column ->
+                    parseNumber(row.getOrNull(column)) != null
+                }
+                // 总分格是空的：只要六科都在，就直接算出来填上。
+                val value = parseNumber(row.getOrNull(totalColumn))
+                if (value == null) {
+                    if (allSubjectsPresent) {
+                        row[totalColumn] = formatNumber(sum)
+                        corrected++
+                    } else {
+                        suspicious.add(index)
+                    }
+                    return@forEachIndexed
+                }
                 if (kotlin.math.abs(sum - value) <= SUM_EPSILON) return@forEachIndexed
 
                 val fixed = fixSingleCell(row, index, subjectColumns, totalColumn, sum, value, confidences)
@@ -106,9 +119,6 @@ object TableSelfCheck {
                 }
                 // 单格反推不出来，但六科都在：总分是可以算出来的，用它覆盖那格。
                 // 前提是总分这格本身不够有把握，否则宁可相信印出来的数字。
-                val allSubjectsPresent = subjectColumns.all { column ->
-                    parseNumber(row.getOrNull(column)) != null
-                }
                 val totalConfidence = confidences?.getOrNull(index)?.getOrNull(totalColumn) ?: 0f
                 if (allSubjectsPresent && totalConfidence < RECOMPUTE_TOTAL_CONFIDENCE) {
                     row[totalColumn] = formatNumber(sum)
@@ -186,7 +196,15 @@ object TableSelfCheck {
         return best.first to best.second
     }
 
-    /** 找「总分列」和它的科目列：对得上的行数够多才认。 */
+    /**
+     * 找「总分列 + 科目列」。
+     *
+     * 业务事实：**总分就是整张表最右一列**（每一行里数值最大的那个格子）。
+     * 所以不去猜「哪一列像总分」，直接取最右边有数字的那一列；
+     * 它右边那些空列/垃圾列先跳过，左边紧挨着的那段数字列就是科目。
+     *
+     * 这样也顺带解决了「总分列整列是空的」：它仍然是最后那列，等着被算出来。
+     */
     private fun findTotalColumn(
         rows: List<List<String>>,
         columns: Int,
@@ -195,38 +213,44 @@ object TableSelfCheck {
         sequences: List<Boolean>,
         identifiers: List<Boolean>,
     ): Pair<Int, List<Int>>? {
+        if (columns < 3) return null
         val fillRatio = (0 until columns).map { column ->
             rows.count { row -> row.getOrNull(column)?.isNotBlank() == true }.toDouble() / rows.size
         }
-        val candidates = (0 until columns).filter { column ->
-            numeric[column] && !constant[column] && !sequences[column] && !identifiers[column]
+        val numericRatio = (0 until columns).map { column ->
+            val values = rows.mapNotNull { row -> row.getOrNull(column)?.takeIf(String::isNotBlank) }
+            if (values.isEmpty()) 0.0 else values.count { NUMBER.matches(it) }.toDouble() / values.size
         }
-        if (candidates.size < 4) return null
+        val eligibleSubject = (0 until columns).map { column ->
+            numeric[column] && !constant[column] && !sequences[column] && !identifiers[column] &&
+                fillRatio[column] >= MIN_SUBJECT_FILL
+        }
 
-        var best: Pair<Int, List<Int>>? = null
-        var bestAgreement = 0.0
-        for (totalColumn in candidates.drop(3)) {
-            if (fillRatio[totalColumn] < MIN_TOTAL_FILL) continue
-            // 科目列要填得满：垃圾列往往只填了一半，混进求和会让「纠正」去改真实分数。
-            val subjects = candidates.filter { it < totalColumn && fillRatio[it] >= MIN_SUBJECT_FILL }
-            if (subjects.size < 2) continue
-            var agree = 0
-            var compared = 0
-            rows.forEach { row ->
-                val total = parseNumber(row.getOrNull(totalColumn)) ?: return@forEach
-                val sum = subjects.sumOf { column -> parseNumber(row.getOrNull(column)).orZero() }
-                if (row.getOrNull(totalColumn).isNullOrBlank()) return@forEach
-                compared++
-                if (kotlin.math.abs(sum - total) <= SUM_EPSILON) agree++
+        // 总分 = 最右一列。两种算正常：
+        //   a) 最后一列装着数字；
+        //   b) 最后一列整列是空的——那是「等着被算出来」的总分列。
+        // 只有最后一列是「填了东西但不是数字」的垃圾列时，才往左退到第一个像样的数字列。
+        val last = columns - 1
+        val totalColumn = if (fillRatio[last] == 0.0 || numericRatio[last] >= 0.8) {
+            last
+        } else {
+            var candidate = last
+            while (candidate > 0 && !(fillRatio[candidate] >= 0.2 && numericRatio[candidate] >= 0.8)) {
+                candidate--
             }
-            if (compared == 0) continue
-            val agreement = agree.toDouble() / compared
-            if (agreement >= MIN_SUM_AGREEMENT && agreement > bestAgreement) {
-                bestAgreement = agreement
-                best = totalColumn to subjects
-            }
+            candidate
         }
-        return best
+        if (totalColumn <= 0) return null
+
+        // 科目：总分左边那段连续、填得满的数字列（中间的垃圾列跳过）。
+        var end = totalColumn - 1
+        while (end > 0 && !eligibleSubject[end]) end--
+        if (end <= 0) return null
+        var begin = end
+        while (begin - 1 >= 0 && eligibleSubject[begin - 1]) begin--
+        val subjects = (begin..end).toList()
+        if (subjects.size < 2) return null
+        return totalColumn to subjects
     }
 
     /** 连续列：去掉空值后严格 +1，允许中途缺行。 */
