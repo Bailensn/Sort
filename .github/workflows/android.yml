@@ -9,6 +9,10 @@ on:
 permissions:
   contents: read
 
+env:
+  # setup-android 默认装到这个路径；这里显式声明，缓存步骤的 ${{ env.ANDROID_SDK_ROOT }} 才有值。
+  ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+
 concurrency:
   group: android-ci-${{ github.ref }}
   cancel-in-progress: true
@@ -16,7 +20,7 @@ concurrency:
 jobs:
   assemble-debug:
     name: Assemble debug
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v7
@@ -31,7 +35,7 @@ jobs:
         uses: gradle/actions/setup-gradle@v6
         with:
           # 缓存按周清理一次，避免 Gradle Home 越滚越大。
-          gradle-home-cache-cleanup: true
+          cache-cleanup: on-success
       - name: Cache Android SDK platform
         continue-on-error: true
         uses: actions/cache@v6
@@ -96,7 +100,7 @@ jobs:
 
   assemble-release:
     name: Assemble release
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v7
@@ -111,7 +115,7 @@ jobs:
         uses: gradle/actions/setup-gradle@v6
         with:
           # 缓存按周清理一次，避免 Gradle Home 越滚越大。
-          gradle-home-cache-cleanup: true
+          cache-cleanup: on-success
       - name: Cache Android SDK platform
         continue-on-error: true
         uses: actions/cache@v6
@@ -176,7 +180,7 @@ jobs:
 
   lint:
     name: Lint
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v7
@@ -191,7 +195,7 @@ jobs:
         uses: gradle/actions/setup-gradle@v6
         with:
           # 缓存按周清理一次，避免 Gradle Home 越滚越大。
-          gradle-home-cache-cleanup: true
+          cache-cleanup: on-success
       - name: Cache Android SDK platform
         continue-on-error: true
         uses: actions/cache@v6
@@ -239,7 +243,7 @@ jobs:
           echo "::error::环境诊断 job=${{ github.job }} sdk=${ANDROID_SDK_ROOT:-unset} java=${JAVA_HOME:-unset} sdkmanager=$(command -v sdkmanager || echo none)"
   unit-test:
     name: Unit tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
@@ -254,7 +258,7 @@ jobs:
         uses: gradle/actions/setup-gradle@v6
         with:
           # 缓存按周清理一次，避免 Gradle Home 越滚越大。
-          gradle-home-cache-cleanup: true
+          cache-cleanup: on-success
       - name: Cache Android SDK platform
         continue-on-error: true
         uses: actions/cache@v6
@@ -302,7 +306,7 @@ jobs:
           echo "::error::环境诊断 job=${{ github.job }} sdk=${ANDROID_SDK_ROOT:-unset} java=${JAVA_HOME:-unset} sdkmanager=$(command -v sdkmanager || echo none)"
   android-test:
     name: Instrumentation APK
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v7
@@ -317,7 +321,7 @@ jobs:
         uses: gradle/actions/setup-gradle@v6
         with:
           # 缓存按周清理一次，避免 Gradle Home 越滚越大。
-          gradle-home-cache-cleanup: true
+          cache-cleanup: on-success
       - name: Cache Android SDK platform
         continue-on-error: true
         uses: actions/cache@v6
