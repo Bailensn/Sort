@@ -7,6 +7,7 @@ import org.opencv.core.Mat
 import org.opencv.core.MatOfPoint2f
 import org.opencv.core.Point
 import org.opencv.core.Size
+import org.opencv.geometry.Geometry
 import org.opencv.imgproc.Imgproc
 import kotlin.math.abs
 import kotlin.math.hypot
@@ -80,7 +81,7 @@ object PerspectiveRectifier {
 
         try {
             Utils.bitmapToMat(bitmap, src)
-            val matrix = Imgproc.getPerspectiveTransform(srcPoints, dstPoints)
+            val matrix = Geometry.getPerspectiveTransform(srcPoints, dstPoints)
             try {
                 Imgproc.warpPerspective(
                     src,

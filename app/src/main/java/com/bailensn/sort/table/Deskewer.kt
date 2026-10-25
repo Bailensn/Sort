@@ -8,6 +8,7 @@ import org.opencv.core.Mat
 import org.opencv.core.Point
 import org.opencv.core.Scalar
 import org.opencv.core.Size
+import org.opencv.geometry.Geometry
 import org.opencv.imgproc.Imgproc
 import kotlin.math.abs
 import kotlin.math.cos
@@ -80,7 +81,7 @@ object Deskewer {
 
             var angle = -MAX_ANGLE
             while (angle <= MAX_ANGLE + 1e-9) {
-                val matrix = Imgproc.getRotationMatrix2D(center, angle, 1.0)
+                val matrix = Geometry.getRotationMatrix2D(center, angle, 1.0)
                 Imgproc.warpAffine(
                     binary,
                     rotated,
@@ -130,7 +131,7 @@ object Deskewer {
 
         val src = Mat()
         val dst = Mat()
-        val matrix = Imgproc.getRotationMatrix2D(
+        val matrix = Geometry.getRotationMatrix2D(
             Point(bitmap.width / 2.0, bitmap.height / 2.0),
             angleDegrees,
             1.0,

@@ -24,7 +24,7 @@ object OpenCVUtils {
     fun init(context: Context): Boolean {
         if (initialized) return true
         try {
-            System.loadLibrary("opencv_java4")
+            System.loadLibrary("opencv_java5")
             initialized = true
         } catch (e: UnsatisfiedLinkError) {
             Log.e("OpenCVUtils", "Failed to initialize OpenCV: ${e.message}")
