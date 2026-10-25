@@ -5,6 +5,7 @@ import android.graphics.Rect
 import android.graphics.RectF
 import android.os.SystemClock
 import com.paddle.ocr.PaddleOCR
+import com.paddle.ocr.model.CellReading
 import com.paddle.ocr.model.OCRBox
 import kotlin.math.max
 import kotlin.math.min
@@ -135,12 +136,18 @@ object TablePipeline {
         val matrix = MutableList(cellGrid.rows) { MutableList(cellGrid.columns) { "" } }
 
         cellGrid.cells.forEachIndexed { index, cell ->
-            val cellResult = recognized.getOrElse(index) { "" to 0f }
-            val cellText = if (cellResult.second >= 0.25f) cellResult.first.trim() else ""
+            val reading = recognized.getOrNull(index) ?: CellReading("", 0f, hasInk = false)
+            val cellText = if (reading.confidence >= 0.25f) reading.text.trim() else ""
             val detector = byCell[index]
 
             val chosen = when {
+                // 整图检测没有落到这个格子里，以逐格结果为准。
                 detector == null -> cellText
+
+                // 格子里没有墨迹 = 真正的空白格（选科没选的科目、缺考没写标记）。
+                // 这种格子在成绩单里很常见，必须保持空白：
+                // 一旦用整图检测去“补”，就会把邻格或跨列框的文字填进来，整行数据错位。
+                !reading.hasInk -> cellText
 
                 cellText.isEmpty() -> {
                     corrected++
@@ -151,10 +158,10 @@ object TablePipeline {
 
                 cellText.contains(detector.first) || detector.first.contains(cellText) -> {
                     corrected++
-                    if (cellResult.second >= detector.second) cellText else detector.first
+                    if (reading.confidence >= detector.second) cellText else detector.first
                 }
 
-                cellResult.second >= detector.second -> cellText
+                reading.confidence >= detector.second -> cellText
 
                 else -> {
                     corrected++

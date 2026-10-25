@@ -19,6 +19,7 @@ import android.graphics.Bitmap
 import android.graphics.Rect
 import com.paddle.ocr.EngineConfig
 import com.paddle.ocr.PaddleOCRConfig
+import com.paddle.ocr.model.CellReading
 import com.paddle.ocr.model.ModelConfig
 import com.paddle.ocr.model.OCRError
 import com.paddle.ocr.model.OCRResult
@@ -186,19 +187,23 @@ class OCREngine(
     /**
      * 逐格识别：按给定矩形裁图，识别每个单元格里的文字。
      * 表格场景比整图检测稳，因为不会出现跨列合并的检测框。
-     * 返回顺序与入参一致，每项是 (文本, 置信度)。
+     * 返回顺序与入参一致；[CellReading.hasInk] 区分「真空白」和「有字没认出来」。
      */
-    fun recognizeCells(bitmap: Bitmap, cells: List<Rect>): List<Pair<String, Float>> {
+    fun recognizeCells(bitmap: Bitmap, cells: List<Rect>): List<CellReading> {
         if (cells.isEmpty()) return emptyList()
         val src = BitmapUtils.bitmapToBGRMat(bitmap)
-        val output = ArrayList<Pair<String, Float>>(cells.size)
+        val output = ArrayList<CellReading>(cells.size)
         var batch = ArrayList<Mat>()
         var batchWidth = 0
 
         fun flush() {
             if (batch.isEmpty()) return
             try {
-                output.addAll(recognitionEngine.recognize(batch).texts)
+                output.addAll(
+                    recognitionEngine.recognize(batch).texts.map { (text, confidence) ->
+                        CellReading(text, confidence, hasInk = true)
+                    },
+                )
             } finally {
                 batch.forEach { it.release() }
             }
@@ -210,13 +215,13 @@ class OCREngine(
             for (cell in cells) {
                 val crop = cropCell(src, cell)
                 if (crop == null) {
-                    output.add("" to 0f)
+                    output.add(CellReading("", 0f, hasInk = false))
                     continue
                 }
                 // 空白格直接跳过，避免模型在空框里“猜”出字。
                 if (!hasInk(crop)) {
                     crop.release()
-                    output.add("" to 0f)
+                    output.add(CellReading("", 0f, hasInk = false))
                     continue
                 }
                 val estimatedWidth = (CELL_INPUT_HEIGHT * crop.cols().toDouble() / crop.rows())

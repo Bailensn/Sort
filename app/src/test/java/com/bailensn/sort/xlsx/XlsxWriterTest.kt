@@ -41,6 +41,28 @@ class XlsxWriterTest {
     }
 
     @Test
+    fun keepsBlankCellsAsEmptyBorderedCells() {
+        // 高中选科 / 缺考：一行里本来就可能有空单元格，位置不能塌陷。
+        val grid = TableGrid(
+            rows = listOf(
+                listOf("姓名", "语文", "数学", "物理", "化学"),
+                listOf("张三", "缺考", "95", "", ""),
+                listOf("李四", "88", "", "缺考", ""),
+            ),
+            mode = TableGrid.Mode.GRID_LINES,
+        )
+        val sheet = sheetXml(write(grid))
+
+        assertTrue(sheet.contains("<c r=\"E2\" s=\"1\"/>"))
+        assertTrue(sheet.contains("<c r=\"C3\" s=\"1\"/>"))
+        assertTrue(sheet.contains("<c r=\"E3\" s=\"1\"/>"))
+        assertTrue(sheet.contains("<dimension ref=\"A1:E3\"/>"))
+        // 空白格不写值，也不会把后面的文字往前挪。
+        assertTrue(sheet.contains("<c r=\"D2\" s=\"1\"/>"))
+        assertTrue(sheet.contains("缺考"))
+    }
+
+    @Test
     fun escapesXmlSpecialCharacters() {
         val grid = TableGrid(listOf(listOf("A&B <C>")), TableGrid.Mode.TEXT_CLUSTER)
         val sheet = sheetXml(write(grid))

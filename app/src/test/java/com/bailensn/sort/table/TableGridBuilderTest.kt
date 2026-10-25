@@ -63,6 +63,39 @@ class TableGridBuilderTest {
     }
 
     @Test
+    fun keepsInteriorEmptyCellsForMissingSubjects() {
+        // 选科之后一行里本来就会有空格；缺考的格子也不该被邻格文字填上。
+        val regions = listOf(
+            region("姓名", 10f, 10f, 60f, 30f),
+            region("语文", 110f, 10f, 160f, 30f),
+            region("数学", 210f, 10f, 260f, 30f),
+            region("张三", 10f, 60f, 60f, 80f),
+            region("缺考", 110f, 60f, 160f, 80f),
+            region("李四", 10f, 110f, 60f, 130f),
+            region("92", 210f, 110f, 260f, 130f),
+        )
+
+        val grid = TableGridBuilder.fromLines(
+            regions = regions,
+            lines = GridLines(
+                horizontal = listOf(0f, 50f, 100f, 150f),
+                vertical = listOf(0f, 100f, 200f, 300f),
+            ),
+        )
+
+        assertEquals(
+            listOf(
+                listOf("姓名", "语文", "数学"),
+                listOf("张三", "缺考", ""),
+                listOf("李四", "", "92"),
+            ),
+            grid!!.rows,
+        )
+        assertEquals(3, grid.columnCount)
+        assertEquals(7, grid.filledCellCount)
+    }
+
+    @Test
     fun dropsTrailingEmptyColumns() {
         val grid = TableGridBuilder.fromClusters(listOf(region("A", 10f, 10f, 30f, 30f)))
 
