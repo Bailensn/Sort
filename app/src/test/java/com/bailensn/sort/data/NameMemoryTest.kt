@@ -4,20 +4,24 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
 
+/**
+ * 注意：这里所有姓名都是**虚构占位名**（张三丰/李四海/王五岳/钱七曜）。
+ * 任何真实人名都不允许出现在本仓库，包括测试数据、注释和示例。
+ */
 class NameMemoryTest {
 
     @Test
     fun editDistanceCountsSingleCharacterSwap() {
-        assertEquals(1, NameMemory.editDistance("张三丰", "关英树"))
+        assertEquals(1, NameMemory.editDistance("张三丰", "张三风"))
         assertEquals(0, NameMemory.editDistance("李四海", "李四海"))
-        assertEquals(2, NameMemory.editDistance("冯二虎", "李赫赫"))
+        assertEquals(1, NameMemory.editDistance("钱七曜", "钱七耀"))
     }
 
     @Test
     fun nearestFixesOneCharacterMisread() {
         val memory = listOf("张三丰", "李四海", "王五岳", "钱七曜")
-        assertEquals("王五岳", NameMemory.nearest("王五岳", memory))
-        assertEquals("钱七曜", NameMemory.nearest("刘木于", memory))
+        assertEquals("张三丰", NameMemory.nearest("张三风", memory))
+        assertEquals("王五岳", NameMemory.nearest("王五丘", memory))
     }
 
     @Test

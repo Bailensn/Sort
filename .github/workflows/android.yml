@@ -58,6 +58,11 @@ jobs:
         with:
           path: app/build/generated/ocrModels
           key: ocr-models-medium-v2
+      # 真实人名一律不允许进仓库。名单以 sha256 形式放在 secret 里，仓库本身不存名单。
+      - name: Check for real names
+        env:
+          REAL_NAME_HASHES: ${{ secrets.REAL_NAME_HASHES }}
+        run: bash .github/scripts/check-real-names.sh
       - name: Make gradlew executable
         run: chmod +x ./gradlew
       - name: Assemble release
