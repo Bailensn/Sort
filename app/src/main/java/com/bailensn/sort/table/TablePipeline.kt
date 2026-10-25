@@ -56,7 +56,13 @@ object TablePipeline {
         }
 
         onStage(Stage.SEGMENT)
-        val cellGrid = CellGrid.fromLines(working.width, working.height, detection.toGridLines())
+        // 用二值图逐条边界确认有没有画线：没画线的地方就是合并单元格。
+        val probe = PixelBorderProbe.from(working)
+        val cellGrid = try {
+            CellGrid.fromLines(working.width, working.height, detection.toGridLines(), probe)
+        } finally {
+            probe?.release()
+        }
 
         var grid = TableGrid(emptyList(), TableGrid.Mode.TEXT_CLUSTER)
         var correctedCells = 0
@@ -171,7 +177,7 @@ object TablePipeline {
             matrix[cell.row][cell.column] = chosen
         }
 
-        val grid = TableGridBuilder.normalize(matrix, TableGrid.Mode.GRID_LINES)
+        val grid = TableGridBuilder.normalize(matrix, TableGrid.Mode.GRID_LINES, cellGrid.merges)
             ?: TableGrid(emptyList(), TableGrid.Mode.GRID_LINES)
         return CellPass(grid, corrected)
     }

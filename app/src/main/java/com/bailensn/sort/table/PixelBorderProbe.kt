@@ -1,0 +1,105 @@
+package com.bailensn.sort.table
+
+import android.graphics.Bitmap
+import org.opencv.android.Utils
+import org.opencv.core.Mat
+import org.opencv.imgproc.Imgproc
+
+/**
+ * 在二值图上判断一条边界上到底有没有画线。
+ *
+ * 做法很直白：沿这条边界采样几十个点，每个点看左右（或上下）[RADIUS] 像素内有没有黑像素，
+ * 命中率过半才算“线画到了这里”。没画线的那一段就说明相邻两格其实是合并单元格。
+ *
+ * 判定偏保守（[MIN_HIT_RATIO] 取 0.55）：宁可把合并格拆开，也不要把两个独立格粘成一个。
+ */
+class PixelBorderProbe private constructor(
+    private val binary: Mat,
+    private val height: Int,
+    private val width: Int,
+) : BorderProbe {
+
+    override fun hasVerticalBorder(x: Int, top: Int, bottom: Int): Boolean {
+        val from = top.coerceIn(0, height - 1)
+        val to = bottom.coerceIn(0, height - 1)
+        if (to - from < MIN_SAMPLES) return true
+        val step = ((to - from) / MAX_SAMPLES).coerceAtLeast(1)
+        var hits = 0
+        var samples = 0
+        var y = from
+        while (y <= to) {
+            var dark = false
+            var dx = -RADIUS
+            while (dx <= RADIUS && !dark) {
+                if (isDark(x + dx, y)) dark = true
+                dx++
+            }
+            if (dark) hits++
+            samples++
+            y += step
+        }
+        return samples == 0 || hits.toFloat() / samples >= MIN_HIT_RATIO
+    }
+
+    override fun hasHorizontalBorder(y: Int, left: Int, right: Int): Boolean {
+        val from = left.coerceIn(0, width - 1)
+        val to = right.coerceIn(0, width - 1)
+        if (to - from < MIN_SAMPLES) return true
+        val step = ((to - from) / MAX_SAMPLES).coerceAtLeast(1)
+        var hits = 0
+        var samples = 0
+        var x = from
+        while (x <= to) {
+            var dark = false
+            var dy = -RADIUS
+            while (dy <= RADIUS && !dark) {
+                if (isDark(x, y + dy)) dark = true
+                dy++
+            }
+            if (dark) hits++
+            samples++
+            x += step
+        }
+        return samples == 0 || hits.toFloat() / samples >= MIN_HIT_RATIO
+    }
+
+    private fun isDark(x: Int, y: Int): Boolean {
+        if (x < 0 || y < 0 || x >= width || y >= height) return false
+        return binary.get(y, x)?.getOrNull(0)?.let { it > 127.0 } ?: false
+    }
+
+    /** 探针内部持有一个全尺寸二值图，用完必须释放。 */
+    fun release() {
+        binary.release()
+    }
+
+    companion object {
+        private const val RADIUS = 3
+        private const val MIN_SAMPLES = 6
+        private const val MAX_SAMPLES = 64
+        private const val MIN_HIT_RATIO = 0.55f
+
+        fun from(bitmap: Bitmap): PixelBorderProbe? = runCatching {
+            val rgba = Mat()
+            val gray = Mat()
+            try {
+                Utils.bitmapToMat(bitmap, rgba)
+                Imgproc.cvtColor(rgba, gray, Imgproc.COLOR_RGBA2GRAY)
+                val binary = Mat()
+                Imgproc.adaptiveThreshold(
+                    gray,
+                    binary,
+                    255.0,
+                    Imgproc.ADAPTIVE_THRESH_MEAN_C,
+                    Imgproc.THRESH_BINARY_INV,
+                    15,
+                    10.0,
+                )
+                PixelBorderProbe(binary, binary.rows(), binary.cols())
+            } finally {
+                rgba.release()
+                gray.release()
+            }
+        }.getOrNull()
+    }
+}

@@ -141,15 +141,25 @@ object TableGridBuilder {
         return merged
     }
 
-    /** 去掉首尾整行为空、右侧整列为空的行列，并补齐每行长度。 */
-    internal fun normalize(cells: List<List<String>>, mode: TableGrid.Mode): TableGrid? {
+    /**
+     * 去掉首尾整行为空、右侧整列为空的行列，并补齐每行长度。
+     * [merges] 会跟着行列裁剪一起平移 / 截断，保证合并区域仍指向正确的格子。
+     */
+    internal fun normalize(
+        cells: List<List<String>>,
+        mode: TableGrid.Mode,
+        merges: List<TableMerge> = emptyList(),
+    ): TableGrid? {
         if (cells.isEmpty()) return null
         val width = cells.maxOf { it.size }
         if (width == 0) return null
 
         val padded = cells.map { row -> List(width) { index -> row.getOrElse(index) { "" } } }
+        val leading = padded.indexOfFirst { row -> row.any { it.isNotBlank() } }
+        if (leading < 0) return null
+
         val trimmedRows = padded
-            .dropWhile { row -> row.all { it.isBlank() } }
+            .drop(leading)
             .dropLastWhile { row -> row.all { it.isBlank() } }
         if (trimmedRows.isEmpty()) return null
 
@@ -159,9 +169,20 @@ object TableGridBuilder {
         }
         if (lastColumn < 0) return null
 
+        val shiftedMerges = merges.mapNotNull { merge ->
+            val row = merge.row - leading
+            if (row < 0 || row >= trimmedRows.size || merge.column > lastColumn) {
+                null
+            } else {
+                val columnSpan = merge.columnSpan.coerceAtMost(lastColumn - merge.column + 1)
+                if (columnSpan <= 0) null else TableMerge(row, merge.column, merge.rowSpan, columnSpan)
+            }
+        }
+
         return TableGrid(
             rows = trimmedRows.map { it.take(lastColumn + 1) },
             mode = mode,
+            merges = shiftedMerges,
         )
     }
 }

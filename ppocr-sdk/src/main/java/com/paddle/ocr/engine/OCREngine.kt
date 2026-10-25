@@ -29,6 +29,7 @@ import com.paddle.ocr.util.BitmapUtils
 import org.opencv.core.Core
 import org.opencv.core.Mat
 import org.opencv.core.Scalar
+import org.opencv.core.Size
 import org.opencv.imgproc.Imgproc
 
 class OCREngine(
@@ -242,7 +243,12 @@ class OCREngine(
         return output
     }
 
-    /** 裁出单元格内部，去掉边框，再补白边，识别模型对留白更稳。 */
+    /**
+     * 裁出单元格内部，去掉边框，再补白边，识别模型对留白更稳。
+     *
+     * 小字的格子（高度不足 [SMALL_TEXT_HEIGHT] 像素）先放大再送模型：
+     * 成绩单里「缺考」这类小字、或者缩得很小的备注，直接喂原尺寸会掉字。
+     */
     private fun cropCell(src: Mat, cell: Rect): Mat? {
         if (cell.width() <= 2 || cell.height() <= 2) return null
         val inset = maxOf(2, minOf(cell.width(), cell.height()) / 40)
@@ -253,11 +259,27 @@ class OCREngine(
         if (right - left < 3 || bottom - top < 3) return null
 
         val roi = Mat(src, org.opencv.core.Rect(left, top, right - left, bottom - top))
+        var scaled: Mat? = null
         return try {
-            val padding = maxOf(4, (bottom - top) / 8)
+            val source = if (roi.rows() < SMALL_TEXT_HEIGHT) {
+                val factor = (SMALL_TEXT_HEIGHT.toDouble() / roi.rows()).coerceIn(1.5, 3.0)
+                Mat().also {
+                    Imgproc.resize(
+                        roi,
+                        it,
+                        Size(roi.cols() * factor, roi.rows() * factor),
+                        0.0,
+                        0.0,
+                        Imgproc.INTER_CUBIC,
+                    )
+                }.also { scaled = it }
+            } else {
+                roi
+            }
+            val padding = maxOf(4, source.rows() / 8)
             Mat().also { padded ->
                 Core.copyMakeBorder(
-                    roi,
+                    source,
                     padded,
                     padding,
                     padding,
@@ -268,8 +290,14 @@ class OCREngine(
                 )
             }
         } finally {
+            scaled?.release()
             roi.release()
         }
+    }
+
+    private companion object {
+        /** 低于这个高度的小字先放大再识别。 */
+        const val SMALL_TEXT_HEIGHT = 28
     }
 
     /** 粗判单元格里有没有墨迹；空白格不送模型，减少误识别。 */

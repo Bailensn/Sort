@@ -1,6 +1,7 @@
 package com.bailensn.sort.xlsx
 
 import com.bailensn.sort.table.TableGrid
+import com.bailensn.sort.table.TableMerge
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.ByteArrayInputStream
@@ -60,6 +61,27 @@ class XlsxWriterTest {
         // 空白格不写值，也不会把后面的文字往前挪。
         assertTrue(sheet.contains("<c r=\"D2\" s=\"1\"/>"))
         assertTrue(sheet.contains("缺考"))
+    }
+
+    @Test
+    fun writesMergedCellsForSpannedHeaders() {
+        val grid = TableGrid(
+            rows = listOf(
+                listOf("高二（3）班成绩单", "", ""),
+                listOf("姓名", "语文", "数学"),
+                listOf("张三", "92", "88"),
+            ),
+            mode = TableGrid.Mode.GRID_LINES,
+            merges = listOf(TableMerge(0, 0, 1, 3)),
+        )
+        val sheet = sheetXml(write(grid))
+
+        assertTrue(sheet.contains("<mergeCells count=\"1\">"))
+        assertTrue(sheet.contains("<mergeCell ref=\"A1:C1\"/>"))
+        // 合并区域只保留左上角文字，另外两格是空的。
+        assertTrue(sheet.contains("高二（3）班成绩单"))
+        assertTrue(sheet.contains("<c r=\"B1\" s=\"1\"/>"))
+        assertTrue(sheet.contains("<c r=\"C1\" s=\"1\"/>"))
     }
 
     @Test

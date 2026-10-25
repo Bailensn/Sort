@@ -80,6 +80,18 @@ object XlsxWriter {
             xml.append("</row>")
         }
         xml.append("</sheetData>")
+
+        // 合并单元格：只写左上角的 ref，其余格子在 sheetData 里保持空。
+        if (grid.merges.isNotEmpty()) {
+            xml.append("<mergeCells count=\"${grid.merges.size}\">")
+            grid.merges.forEach { merge ->
+                val from = "${columnName(merge.column)}${merge.row + 1}"
+                val to = "${columnName(merge.column + merge.columnSpan - 1)}${merge.row + merge.rowSpan}"
+                xml.append("<mergeCell ref=\"$from:$to\"/>")
+            }
+            xml.append("</mergeCells>")
+        }
+
         xml.append("</worksheet>")
         return xml.toString()
     }

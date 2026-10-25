@@ -22,10 +22,16 @@ data class GridLines(
     val isUsable: Boolean get() = horizontal.size >= 2 && vertical.size >= 2
 }
 
-/** 规整后的表格：每行等长，空单元格是空字符串。 */
+/**
+ * 规整后的表格：每行等长，空单元格是空字符串。
+ *
+ * [merges] 记录合并单元格（只记左上角），导出 xlsx 时写成 mergeCells；
+ * 被合并覆盖的格子在 [rows] 里是空字符串。
+ */
 data class TableGrid(
     val rows: List<List<String>>,
     val mode: Mode,
+    val merges: List<TableMerge> = emptyList(),
 ) {
     enum class Mode {
         /** 靠检测到的横竖线切格。 */
