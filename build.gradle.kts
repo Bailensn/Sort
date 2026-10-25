@@ -13,7 +13,13 @@ buildscript {
     }
 }
 
+// 根工程声明过的插件，子工程才能用「带版本」的方式再申请一次：
+// buildscript 的依赖会让插件 classpath 在配置阶段就先于 plugins 块就绪，
+// 此时子工程若申请一个根工程没声明过的插件 id，Gradle 会报
+// “plugin is already on the classpath with an unknown version”。
+// 所以这里把每个用到的插件都声明一遍（apply false 只上 classpath、不应用）。
 plugins {
     alias(libs.plugins.android.application) apply false
+    alias(libs.plugins.android.library) apply false
     alias(libs.plugins.kotlin.compose) apply false
 }
