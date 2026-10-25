@@ -116,13 +116,13 @@ class PaddleOCR private constructor(
      * 逐格识别：cells 是原图上的单元格矩形，返回顺序与入参一致，每项是 (文本, 置信度)。
      * 有表格线时优先用它，避免整图检测把相邻两列粘成一个框。
      */
-    suspend fun recognizeCells(bitmap: Bitmap, cells: List<Rect>): List<CellReading> {
+    suspend fun recognizeCells(bitmap: Bitmap, cells: List<Rect>, scale: Float = 1f): List<CellReading> {
         if (bitmap.width == 0 || bitmap.height == 0) {
             throw OCRError.InvalidImage()
         }
         if (cells.isEmpty()) return emptyList()
         return withContext(Dispatchers.IO) {
-            engine.recognizeCells(bitmap, cells)
+            engine.recognizeCells(bitmap, cells, scale)
         }
     }
 

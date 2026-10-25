@@ -24,6 +24,7 @@ import com.paddle.ocr.model.ModelConfig
 import com.paddle.ocr.model.OCRError
 import com.paddle.ocr.model.OCRResult
 import com.paddle.ocr.postprocess.BoxSorter
+import com.paddle.ocr.postprocess.CellText
 import com.paddle.ocr.postprocess.QuadTextCrop
 import com.paddle.ocr.util.BitmapUtils
 import org.opencv.core.Core
@@ -190,7 +191,7 @@ class OCREngine(
      * 表格场景比整图检测稳，因为不会出现跨列合并的检测框。
      * 返回顺序与入参一致；[CellReading.hasInk] 区分「真空白」和「有字没认出来」。
      */
-    fun recognizeCells(bitmap: Bitmap, cells: List<Rect>): List<CellReading> {
+    fun recognizeCells(bitmap: Bitmap, cells: List<Rect>, scale: Float = 1f): List<CellReading> {
         if (cells.isEmpty()) return emptyList()
         val src = BitmapUtils.bitmapToBGRMat(bitmap)
         val output = ArrayList<CellReading>(cells.size)
@@ -202,7 +203,7 @@ class OCREngine(
             try {
                 output.addAll(
                     recognitionEngine.recognize(batch).texts.map { (text, confidence) ->
-                        CellReading(text, confidence, hasInk = true)
+                        CellReading(CellText.clean(text), confidence, hasInk = true)
                     },
                 )
             } finally {
@@ -214,7 +215,7 @@ class OCREngine(
 
         try {
             for (cell in cells) {
-                val crop = cropCell(src, cell)
+                val crop = cropCell(src, cell, scale)
                 if (crop == null) {
                     output.add(CellReading("", 0f, hasInk = false))
                     continue
@@ -249,7 +250,7 @@ class OCREngine(
      * 小字的格子（高度不足 [SMALL_TEXT_HEIGHT] 像素）先放大再送模型：
      * 成绩单里「缺考」这类小字、或者缩得很小的备注，直接喂原尺寸会掉字。
      */
-    private fun cropCell(src: Mat, cell: Rect): Mat? {
+    private fun cropCell(src: Mat, cell: Rect, scale: Float = 1f): Mat? {
         if (cell.width() <= 2 || cell.height() <= 2) return null
         val inset = maxOf(2, minOf(cell.width(), cell.height()) / 40)
         val left = (cell.left + inset).coerceIn(0, src.cols() - 1)
@@ -261,8 +262,16 @@ class OCREngine(
         val roi = Mat(src, org.opencv.core.Rect(left, top, right - left, bottom - top))
         var scaled: Mat? = null
         return try {
-            val source = if (roi.rows() < SMALL_TEXT_HEIGHT) {
-                val factor = (SMALL_TEXT_HEIGHT.toDouble() / roi.rows()).coerceIn(1.5, 3.0)
+            // 低置信度格子会带着 scale > 1 再识别一次，这时无论格子大小都放大。
+            val targetFactor = if (scale > 1f) {
+                scale.toDouble()
+            } else if (roi.rows() < SMALL_TEXT_HEIGHT) {
+                (SMALL_TEXT_HEIGHT.toDouble() / roi.rows()).coerceIn(1.5, 3.0)
+            } else {
+                1.0
+            }
+            val source = if (targetFactor > 1.0) {
+                val factor = targetFactor.coerceAtMost(4.0)
                 Mat().also {
                     Imgproc.resize(
                         roi,

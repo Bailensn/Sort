@@ -19,6 +19,19 @@ class PixelBorderProbe private constructor(
     private val width: Int,
 ) : BorderProbe {
 
+    private var verticalThicknessSum = 0
+    private var verticalThicknessCount = 0
+    private var horizontalThicknessSum = 0
+    private var horizontalThicknessCount = 0
+
+    /** 线宽估计（像素）。裁单元格时按它往内缩，避免把表格线带进识别图里。 */
+    val maxThickness: Int
+        get() {
+            val vertical = if (verticalThicknessCount == 0) 0 else verticalThicknessSum / verticalThicknessCount
+            val horizontal = if (horizontalThicknessCount == 0) 0 else horizontalThicknessSum / horizontalThicknessCount
+            return maxOf(vertical, horizontal)
+        }
+
     override fun hasVerticalBorder(x: Int, top: Int, bottom: Int): Boolean {
         val from = top.coerceIn(0, height - 1)
         val to = bottom.coerceIn(0, height - 1)
@@ -29,12 +42,20 @@ class PixelBorderProbe private constructor(
         var y = from
         while (y <= to) {
             var dark = false
+            var run = 0
             var dx = -RADIUS
-            while (dx <= RADIUS && !dark) {
-                if (isDark(x + dx, y)) dark = true
+            while (dx <= RADIUS) {
+                if (isDark(x + dx, y)) {
+                    dark = true
+                    run++
+                }
                 dx++
             }
-            if (dark) hits++
+            if (dark) {
+                hits++
+                verticalThicknessSum += run
+                verticalThicknessCount++
+            }
             samples++
             y += step
         }
@@ -51,12 +72,20 @@ class PixelBorderProbe private constructor(
         var x = from
         while (x <= to) {
             var dark = false
+            var run = 0
             var dy = -RADIUS
-            while (dy <= RADIUS && !dark) {
-                if (isDark(x, y + dy)) dark = true
+            while (dy <= RADIUS) {
+                if (isDark(x, y + dy)) {
+                    dark = true
+                    run++
+                }
                 dy++
             }
-            if (dark) hits++
+            if (dark) {
+                hits++
+                horizontalThicknessSum += run
+                horizontalThicknessCount++
+            }
             samples++
             x += step
         }
