@@ -93,9 +93,11 @@
 模型不进 git（约 31 MB）。`app/build.gradle.kts` 里的 `downloadOcrModels`：
 
 - 从 HuggingFace 下载 `PP-OCRv6_small_{det,rec}_onnx` 的 `inference.onnx` / `inference.yml`；
-- 落到 `app/build/generated/ocrModels/{det,rec}/`，已存在就跳过，失败重试 3 次；
-- 通过 `variant.sources.assets.addGeneratedSourceDirectory` 注册给 AGP，
-  打包 / lint / 单测等所有消费 assets 的任务都会自动依赖它，不用按任务名手工挂 dependsOn；
+- 落到 `app/build/generated/ocrModels/models/{det,rec}/`，已存在就跳过，失败重试 3 次；
+- 这个目录通过 `variant.sources.assets.addGeneratedSourceDirectory` 注册给 AGP，
+  打包 / lint / 单测等所有消费 assets 的任务都会自动依赖它；
+- 因为该目录就是 assets 的根，所以文件必须放在 `models/` 子目录下，
+  才能和 PaddleOCR 默认的 `models/det/inference.onnx` 对上——少这一层就会在设备上报「模型加载失败」；
 - CI 用 `actions/cache` 缓存该目录。
 
 换模型改 `ocrModels` 映射即可，det/rec 各要 `.onnx`，rec 还要 `inference.yml`（字符表）。
@@ -112,26 +114,20 @@
 
 ## CI
 
-`.github/workflows/android.yml` 拆成 4 个互不依赖的并行 job，失败时再跑第 5 个汇总 job：
+`.github/workflows/android.yml` 拆成 4 个互不依赖的并行 job：
 
-| job | 跑什么 | 产物 |
-| --- | --- | --- |
-| `assemble` | `assembleDebug` + `assembleRelease` | debug/release APK |
-| `lint` | `lintDebug` | lint HTML/XML 报告 |
-| `unit-test` | `testDebugUnitTest` | 单测报告 |
-| `android-test` | `assembleDebugAndroidTest` | 仪器测试 APK |
-| `report` | 仅在前面有失败时运行，合并各 job 的报告 | 提交评论 + Summary |
+| job | 跑什么 |
+| --- | --- |
+| `assemble` | `assembleDebug` + `assembleRelease`，成功时上传 APK |
+| `lint` | `lintDebug` |
+| `unit-test` | `testDebugUnitTest` |
+| `android-test` | `assembleDebugAndroidTest`（只编译，不跑） |
 
-公共环境抽在 `.github/actions/android-env/action.yml`：JDK 21、Android SDK、
-`platforms;android-37.0` / `build-tools;36.0.0`，NDK 与 CMake 只装需要它们的 job（assemble、android-test）。
+公共环境在 `.github/actions/android-env/action.yml`：JDK 21、Android SDK、
+`platforms;android-37.0` / `build-tools;36.0.0`，NDK 与 CMake 只给需要它们的 job。
 
-构建失败时会自动输出错误，不用翻几万行日志：
-
-- **提交评论**：`report` job 把所有失败 job 的报告合并成一条评论贴到本次提交，
-  公开仓库无需登录即可读取；
-- **Job Summary**：每个 job 自己那部分的错误、失败 Task、Gradle 失败原因；
-- **行内注解**：编译错误生成 `::error file=...,line=...`，PR/commit 页面能直接点；
-- **artifact**：完整 `build.log` 与 `ci-report/errors.md` 保留 7 天（`log-*`）。
+失败时每个 job 只做一件事：把 `build.log` 作为 `build-log-<job>` artifact 传上去（保留 7 天），
+点进 run 页面下载即可，不再往提交里写评论、也不再生成额外的报告文件。
 
 > `gradlew` 的可执行位在共享存储/Windows 上容易丢，composite action 里有
 > `chmod +x ./gradlew` 兜底。
