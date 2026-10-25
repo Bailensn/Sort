@@ -48,24 +48,28 @@ object PerspectiveRectifier {
             return null
         }
 
-        val targetWidth = ((distance(topLeft, topRight) + distance(bottomLeft, bottomRight)) / 2f)
+        // 最外圈那条线没被检测到时，画面会被裁掉一整列（比如最左边的班级列）。
+        // 这里在左右两侧找一下表格外面还有没有内容，有就把四边形扩到内容边界。
+        val expanded = expandToInk(bitmap, topLeft, topRight, bottomLeft, bottomRight)
+
+        val targetWidth = ((distance(expanded[0], expanded[1]) + distance(expanded[2], expanded[3])) / 2f)
             .roundToInt()
-        val targetHeight = ((distance(topLeft, bottomLeft) + distance(topRight, bottomRight)) / 2f)
+        val targetHeight = ((distance(expanded[0], expanded[3]) + distance(expanded[1], expanded[2])) / 2f)
             .roundToInt()
         if (targetWidth < 200 || targetHeight < 150 || targetWidth > 4000 || targetHeight > 4000) {
             return null
         }
 
         // 角度太歪说明四条线不是同一张表的外框，放弃。
-        if (!isRightAngle(topLeft, topRight, bottomLeft)) return null
+        if (!isRightAngle(expanded[0], expanded[1], expanded[3])) return null
 
         val src = Mat()
         val warped = Mat()
         val srcPoints = MatOfPoint2f(
-            Point(topLeft.x.toDouble(), topLeft.y.toDouble()),
-            Point(topRight.x.toDouble(), topRight.y.toDouble()),
-            Point(bottomRight.x.toDouble(), bottomRight.y.toDouble()),
-            Point(bottomLeft.x.toDouble(), bottomLeft.y.toDouble()),
+            Point(expanded[0].x, expanded[0].y),
+            Point(expanded[1].x, expanded[1].y),
+            Point(expanded[2].x, expanded[2].y),
+            Point(expanded[3].x, expanded[3].y),
         )
         val dstPoints = MatOfPoint2f(
             Point(0.0, 0.0),
@@ -98,6 +102,91 @@ object PerspectiveRectifier {
             dstPoints.release()
             src.release()
             warped.release()
+        }
+    }
+
+    /**
+     * 左右两侧如果还有墨迹（说明最外圈的竖线没检测到、或者表格本身超出检测框），
+     * 就把四边形的左右边扩到内容边界；上下不扩，避免把标题、页码带进来。
+     *
+     * 返回 [左上, 右上, 右下, 左下]。
+     */
+    private fun expandToInk(
+        bitmap: Bitmap,
+        topLeft: Point,
+        topRight: Point,
+        bottomRight: Point,
+        bottomLeft: Point,
+    ): List<Point> {
+        val rgba = Mat()
+        val gray = Mat()
+        val binary = Mat()
+        try {
+            Utils.bitmapToMat(bitmap, rgba)
+            Imgproc.cvtColor(rgba, gray, Imgproc.COLOR_RGBA2GRAY)
+            Imgproc.adaptiveThreshold(
+                gray,
+                binary,
+                255.0,
+                Imgproc.ADAPTIVE_THRESH_MEAN_C,
+                Imgproc.THRESH_BINARY_INV,
+                15,
+                10.0,
+            )
+            val width = binary.cols()
+            val height = binary.rows()
+            val top = minOf(topLeft.y, topRight.y).toInt().coerceIn(0, height - 1)
+            val bottom = maxOf(bottomLeft.y, bottomRight.y).toInt().coerceIn(top + 1, height)
+            val left = minOf(topLeft.x, bottomLeft.x).toInt().coerceIn(0, width - 1)
+            val right = maxOf(topRight.x, bottomRight.x).toInt().coerceIn(left + 1, width)
+
+            val counts = IntArray(width)
+            val row = ByteArray(width)
+            val band = bottom - top
+            for (y in top until bottom) {
+                binary.get(y, 0, row)
+                for (x in 0 until width) {
+                    if (row[x].toInt() != 0) counts[x]++
+                }
+            }
+            val minInk = maxOf(3, (band * 0.01).toInt())
+
+            var contentLeft = left
+            for (x in 0 until left) {
+                if (counts[x] >= minInk) {
+                    contentLeft = x
+                    break
+                }
+            }
+            var contentRight = right
+            for (x in width - 1 downTo right) {
+                if (counts[x] >= minInk) {
+                    contentRight = x + 1
+                    break
+                }
+            }
+
+            val pad = maxOf(4, width / 200)
+            val expandLeft = (left - contentLeft) > pad
+            val expandRight = (contentRight - right) > pad
+            // 扩得太多说明框外是别的东西（标题、别的表格），放弃扩展。
+            if (expandLeft && (left - contentLeft) > width * 0.3) return listOf(topLeft, topRight, bottomRight, bottomLeft)
+            if (expandRight && (contentRight - right) > width * 0.3) return listOf(topLeft, topRight, bottomRight, bottomLeft)
+
+            val newLeft = if (expandLeft) (contentLeft - pad).coerceAtLeast(0).toDouble() else null
+            val newRight = if (expandRight) (contentRight + pad).coerceAtMost(width).toDouble() else null
+
+            val tl = if (newLeft != null) Point(newLeft, topLeft.y) else topLeft
+            val bl = if (newLeft != null) Point(newLeft, bottomLeft.y) else bottomLeft
+            val tr = if (newRight != null) Point(newRight, topRight.y) else topRight
+            val br = if (newRight != null) Point(newRight, bottomRight.y) else bottomRight
+            return listOf(tl, tr, br, bl)
+        } catch (t: Throwable) {
+            return listOf(topLeft, topRight, bottomRight, bottomLeft)
+        } finally {
+            rgba.release()
+            gray.release()
+            binary.release()
         }
     }
 
