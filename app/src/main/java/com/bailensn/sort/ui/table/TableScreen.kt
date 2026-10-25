@@ -336,6 +336,17 @@ private fun StatsBlock(state: TableUiState, grid: TableGrid) {
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+        if (state.selfCheckSummary.isNotEmpty()) {
+            Text(
+                text = state.selfCheckSummary,
+                style = MaterialTheme.typography.labelMedium,
+                color = if (state.suspiciousRows.isEmpty()) {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                } else {
+                    MaterialTheme.colorScheme.tertiary
+                },
+            )
+        }
         // 置信度和低置信度格子数：98% 是「可信线」，低于它的格子更值得人工核对。
         Text(
             text = "平均置信度 " + String.format(Locale.US, "%.1f%%", state.averageConfidence * 100) +

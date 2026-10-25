@@ -58,6 +58,8 @@ data class TableUiState(
     val enhanced: Bitmap? = null,
     val averageConfidence: Float = 0f,
     val lowConfidenceCells: Int = 0,
+    val selfCheckSummary: String = "",
+    val suspiciousRows: List<Int> = emptyList(),
 ) {
     enum class Phase { IDLE, RECOGNIZING, DONE, ERROR }
 }
@@ -199,6 +201,8 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
                         enhanced = analysis.enhanced,
                         averageConfidence = analysis.averageConfidence,
                         lowConfidenceCells = analysis.lowConfidenceCells,
+                        selfCheckSummary = analysis.selfCheck.summary,
+                        suspiciousRows = analysis.selfCheck.suspiciousRows,
                     )
                 }
             } else {
@@ -221,6 +225,8 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
                         enhanced = analysis.enhanced,
                         averageConfidence = analysis.averageConfidence,
                         lowConfidenceCells = analysis.lowConfidenceCells,
+                        selfCheckSummary = analysis.selfCheck.summary,
+                        suspiciousRows = analysis.selfCheck.suspiciousRows,
                     )
                 }
             }

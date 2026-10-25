@@ -49,6 +49,8 @@ object TablePipeline {
         val averageConfidence: Float = 0f,
         /** 三遍走完仍低于可信线的格子数。 */
         val lowConfidenceCells: Int = 0,
+        /** 算术自检的结论（序号/学号连续、求和校验、反推纠正）。 */
+        val selfCheck: TableSelfCheck.Report = TableSelfCheck.Report(),
     ) {
         /** 除识别以外的耗时：纠偏、线检测、切格、画网格。 */
         val structureMs: Long get() = (elapsedMs - cellMs).coerceAtLeast(0L)
@@ -111,6 +113,7 @@ object TablePipeline {
         var detectMs = 0L
         var averageConfidence = 0f
         var lowConfidenceCells = 0
+        var selfCheck = TableSelfCheck.Report()
 
         if (cellGrid.cells.isNotEmpty()) {
             val pass = recognizeByCells(ocr, working, enhanced, cellGrid, borderInset, onStage)
@@ -120,6 +123,7 @@ object TablePipeline {
             detectMs = pass.detectMs
             averageConfidence = pass.averageConfidence
             lowConfidenceCells = pass.lowConfidenceCells
+            selfCheck = pass.selfCheck
 
             if (grid.filledCellCount < 2) {
                 onStage(Stage.RECOGNIZE)
@@ -148,6 +152,7 @@ object TablePipeline {
             enhanced = enhanced,
             averageConfidence = averageConfidence,
             lowConfidenceCells = lowConfidenceCells,
+            selfCheck = selfCheck,
         )
     }
 
@@ -158,6 +163,7 @@ object TablePipeline {
         val detectMs: Long = 0L,
         val averageConfidence: Float = 0f,
         val lowConfidenceCells: Int = 0,
+        val selfCheck: TableSelfCheck.Report = TableSelfCheck.Report(),
     )
 
     private suspend fun recognizeByCells(
@@ -298,6 +304,7 @@ object TablePipeline {
 
         var corrected = 0
         val matrix = MutableList(cellGrid.rows) { MutableList(cellGrid.columns) { "" } }
+        val confidenceGrid = MutableList(cellGrid.rows) { MutableList(cellGrid.columns) { 0f } }
 
         cellGrid.cells.forEachIndexed { index, cell ->
             val reading = recognized.getOrNull(index) ?: CellReading("", 0f, hasInk = false)
@@ -339,16 +346,32 @@ object TablePipeline {
                 }
             }
             matrix[cell.row][cell.column] = chosen
+            confidenceGrid[cell.row][cell.column] =
+                if (detector != null && chosen == detector.first && chosen != cellText) detector.second
+                else reading.confidence
         }
 
+        // 算术自检放在裁列之前：这时候每一列还和置信度矩阵对得上，
+        // 「多个格子都只改一位就能对平」时可以拿置信度决胜，改认得更虚的那一格。
+        val selfCheckResult = TableSelfCheck.check(matrix, confidenceGrid)
+        val selfCheck = selfCheckResult.report
+
         // 空列里冒出来的短噪声（1/161/N/wa）先清掉；再裁两侧被背景带出来的垃圾列。
-        val cleaned = GarbageColumnTrimmer.cleanNoisyColumns(matrix)
+        val cleaned = GarbageColumnTrimmer.cleanNoisyColumns(selfCheckResult.rows)
         val trimmed = GarbageColumnTrimmer.trim(cleaned)
         // 分数列里 5→S、0→O 这类错字按列纠正：整列大多是数字时才动手。
         val repaired = NumericColumnRepair.repair(trimmed)
         val grid = TableGridBuilder.normalize(repaired, TableGrid.Mode.GRID_LINES, cellGrid.merges)
             ?: TableGrid(emptyList(), TableGrid.Mode.GRID_LINES)
-        CellPass(grid, corrected, cellMs, detectMs, averageConfidence, lowConfidenceCells)
+        CellPass(
+            grid = grid,
+            corrected = corrected + selfCheck.correctedCells,
+            cellMs = cellMs,
+            detectMs = detectMs,
+            averageConfidence = averageConfidence,
+            lowConfidenceCells = lowConfidenceCells,
+            selfCheck = selfCheck,
+        )
     }
 
     private suspend fun recognizeByDetection(ocr: PaddleOCR, bitmap: Bitmap): TableGrid {
