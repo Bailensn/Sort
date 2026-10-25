@@ -155,14 +155,32 @@ object ModelRepository {
         minBytes: Long,
         onBytes: (Long) -> Unit,
     ) {
-        val connection = open(url)
+        target.parentFile?.mkdirs()
+        val temp = File(target.parentFile, target.name + ".part")
+        // 大文件支持断点续传：上次中断留下的 .part 从断点继续，
+        // 换镜像也能接着下（同一份文件的字节内容一致）。
+        var existing = if (temp.isFile) temp.length() else 0L
+        if (existing >= minBytes) {
+            if (temp.renameTo(target)) {
+                onBytes(existing)
+                return
+            }
+            existing = 0
+        }
+
+        val connection = open(url, rangeStart = existing.takeIf { it > 0 })
         try {
-            target.parentFile?.mkdirs()
-            val temp = File(target.parentFile, target.name + ".part")
+            val resuming = existing > 0 && connection.responseCode == 206
+            if (existing > 0 && !resuming) {
+                // 服务器不支持断点续传，从头来。
+                existing = 0
+                temp.delete()
+            }
             connection.inputStream.use { input ->
-                FileOutputStream(temp).use { output ->
+                FileOutputStream(temp, resuming).use { output ->
                     val buffer = ByteArray(64 * 1024)
-                    var total = 0L
+                    var total = existing
+                    onBytes(total)
                     while (true) {
                         val read = input.read(buffer)
                         if (read <= 0) break
@@ -221,6 +239,7 @@ object ModelRepository {
         url: String,
         connectTimeoutMs: Int = 15_000,
         readTimeoutMs: Int = 30_000,
+        rangeStart: Long? = null,
     ): HttpURLConnection {
         var current = url
         var redirects = 0
@@ -230,6 +249,9 @@ object ModelRepository {
             connection.readTimeout = readTimeoutMs
             connection.instanceFollowRedirects = false
             connection.setRequestProperty("User-Agent", "Sort-Android")
+            if (rangeStart != null) {
+                connection.setRequestProperty("Range", "bytes=$rangeStart-")
+            }
             val code = connection.responseCode
             if (code in 300..399) {
                 val location = connection.getHeaderField("Location")
