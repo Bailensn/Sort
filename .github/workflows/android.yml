@@ -29,6 +29,25 @@ jobs:
         uses: android-actions/setup-android@v4
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v6
+        with:
+          # 缓存按周清理一次，避免 Gradle Home 越滚越大。
+          gradle-home-cache-cleanup: true
+      - name: Cache Android SDK platform
+        continue-on-error: true
+        uses: actions/cache@v6
+        with:
+          path: |
+            ${{ env.ANDROID_SDK_ROOT }}/platforms/android-37.0
+            ${{ env.ANDROID_SDK_ROOT }}/build-tools/36.0.0
+          key: android-sdk-platform37-bt36
+      - name: Cache NDK and CMake
+        continue-on-error: true
+        uses: actions/cache@v6
+        with:
+          path: |
+            ${{ env.ANDROID_SDK_ROOT }}/ndk/30.0.16248370
+            ${{ env.ANDROID_SDK_ROOT }}/cmake/3.22.1
+          key: android-ndk30-cmake322
       - name: Install SDK components
         run: |
           set -o pipefail
@@ -60,7 +79,7 @@ jobs:
       - name: Assemble debug
         run: |
           set -o pipefail
-          ./gradlew --stacktrace --warning-mode=all :app:assembleDebug 2>&1 | tee build.log \
+          ./gradlew --stacktrace --warning-mode=all --build-cache :app:assembleDebug 2>&1 | tee build.log \
             || { bash .github/scripts/print-errors.sh build.log; exit 1; }
       - name: Upload debug APK
         if: success()
@@ -90,6 +109,25 @@ jobs:
         uses: android-actions/setup-android@v4
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v6
+        with:
+          # 缓存按周清理一次，避免 Gradle Home 越滚越大。
+          gradle-home-cache-cleanup: true
+      - name: Cache Android SDK platform
+        continue-on-error: true
+        uses: actions/cache@v6
+        with:
+          path: |
+            ${{ env.ANDROID_SDK_ROOT }}/platforms/android-37.0
+            ${{ env.ANDROID_SDK_ROOT }}/build-tools/36.0.0
+          key: android-sdk-platform37-bt36
+      - name: Cache NDK and CMake
+        continue-on-error: true
+        uses: actions/cache@v6
+        with:
+          path: |
+            ${{ env.ANDROID_SDK_ROOT }}/ndk/30.0.16248370
+            ${{ env.ANDROID_SDK_ROOT }}/cmake/3.22.1
+          key: android-ndk30-cmake322
       - name: Install SDK components
         run: |
           set -o pipefail
@@ -121,7 +159,7 @@ jobs:
       - name: Assemble release
         run: |
           set -o pipefail
-          ./gradlew --stacktrace --warning-mode=all :app:assembleRelease 2>&1 | tee build.log \
+          ./gradlew --stacktrace --warning-mode=all --build-cache :app:assembleRelease 2>&1 | tee build.log \
             || { bash .github/scripts/print-errors.sh build.log; exit 1; }
       - name: Upload release APK
         if: success()
@@ -151,6 +189,17 @@ jobs:
         uses: android-actions/setup-android@v4
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v6
+        with:
+          # 缓存按周清理一次，避免 Gradle Home 越滚越大。
+          gradle-home-cache-cleanup: true
+      - name: Cache Android SDK platform
+        continue-on-error: true
+        uses: actions/cache@v6
+        with:
+          path: |
+            ${{ env.ANDROID_SDK_ROOT }}/platforms/android-37.0
+            ${{ env.ANDROID_SDK_ROOT }}/build-tools/36.0.0
+          key: android-sdk-platform37-bt36
       - name: Install SDK components
         run: |
           set -o pipefail
@@ -182,7 +231,7 @@ jobs:
       - name: Lint debug
         run: |
           set -o pipefail
-          ./gradlew --stacktrace --warning-mode=all :app:lintDebug 2>&1 | tee build.log \
+          ./gradlew --stacktrace --warning-mode=all --build-cache :app:lintDebug 2>&1 | tee build.log \
             || { bash .github/scripts/print-errors.sh build.log; exit 1; }
       - name: Diagnose failure
         if: failure()
@@ -203,6 +252,17 @@ jobs:
         uses: android-actions/setup-android@v4
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v6
+        with:
+          # 缓存按周清理一次，避免 Gradle Home 越滚越大。
+          gradle-home-cache-cleanup: true
+      - name: Cache Android SDK platform
+        continue-on-error: true
+        uses: actions/cache@v6
+        with:
+          path: |
+            ${{ env.ANDROID_SDK_ROOT }}/platforms/android-37.0
+            ${{ env.ANDROID_SDK_ROOT }}/build-tools/36.0.0
+          key: android-sdk-platform37-bt36
       - name: Install SDK components
         run: |
           set -o pipefail
@@ -234,7 +294,7 @@ jobs:
       - name: Run JVM unit tests
         run: |
           set -o pipefail
-          ./gradlew --stacktrace --warning-mode=all :app:testDebugUnitTest 2>&1 | tee build.log \
+          ./gradlew --stacktrace --warning-mode=all --build-cache :app:testDebugUnitTest 2>&1 | tee build.log \
             || { bash .github/scripts/print-errors.sh build.log; exit 1; }
       - name: Diagnose failure
         if: failure()
@@ -255,6 +315,25 @@ jobs:
         uses: android-actions/setup-android@v4
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v6
+        with:
+          # 缓存按周清理一次，避免 Gradle Home 越滚越大。
+          gradle-home-cache-cleanup: true
+      - name: Cache Android SDK platform
+        continue-on-error: true
+        uses: actions/cache@v6
+        with:
+          path: |
+            ${{ env.ANDROID_SDK_ROOT }}/platforms/android-37.0
+            ${{ env.ANDROID_SDK_ROOT }}/build-tools/36.0.0
+          key: android-sdk-platform37-bt36
+      - name: Cache NDK and CMake
+        continue-on-error: true
+        uses: actions/cache@v6
+        with:
+          path: |
+            ${{ env.ANDROID_SDK_ROOT }}/ndk/30.0.16248370
+            ${{ env.ANDROID_SDK_ROOT }}/cmake/3.22.1
+          key: android-ndk30-cmake322
       - name: Install SDK components
         run: |
           set -o pipefail
@@ -286,7 +365,7 @@ jobs:
       - name: Assemble instrumentation APK
         run: |
           set -o pipefail
-          ./gradlew --stacktrace --warning-mode=all :app:assembleDebugAndroidTest 2>&1 | tee build.log \
+          ./gradlew --stacktrace --warning-mode=all --build-cache :app:assembleDebugAndroidTest 2>&1 | tee build.log \
             || { bash .github/scripts/print-errors.sh build.log; exit 1; }
       - name: Diagnose failure
         if: failure()
