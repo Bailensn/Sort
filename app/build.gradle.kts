@@ -1,3 +1,5 @@
+import java.net.URI
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
@@ -97,7 +99,7 @@ abstract class BundleOcrModelsTask : DefaultTask() {
             var failure: Exception? = null
             for (attempt in 1..3) {
                 try {
-                    java.net.URI(url).toURL().openStream().use { input ->
+                    URI(url).toURL().openStream().use { input ->
                         temp.outputStream().use { output -> input.copyTo(output) }
                     }
                     failure = null

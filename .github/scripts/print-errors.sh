@@ -52,7 +52,16 @@ if [[ $emitted -eq 0 ]]; then
   echo "::group::日志末尾"
   tail -30 "$LOG"
   echo "::endgroup::"
-  echo "::error::构建失败，原因见上方输出"
+  # 把 Gradle 失败原因的头几行直接写进注解：run 页面上不用展开日志就能看到，
+  # 配置阶段（脚本编译错误、插件解析失败）也能定位。
+  summary="$(awk '/^\* What went wrong:/{flag=1;next} /^\* Try:/{exit} flag && NF {print; count++} count>=3{exit}' "$LOG" | tr '\n' ' ')"
+  summary="${summary//\%/%25}"
+  summary="${summary:0:400}"
+  if [[ -n "$summary" ]]; then
+    echo "::error::构建失败：$summary"
+  else
+    echo "::error::构建失败，原因见上方输出"
+  fi
 else
   echo "::error::构建失败，$emitted 处错误已标注到文件行"
 fi
