@@ -293,6 +293,31 @@ object TablePipeline {
             }
         }
 
+        // 第四遍（只给极低置信度的格子）：二值图再认一次。
+        // 输入形态和前面的灰度增强图完全不同，两边一致时基本可以放心。
+        val hopelessIndices = recognized.indices.filter { index ->
+            val reading = recognized[index]
+            reading.hasInk && reading.confidence < HOPELESS_CONFIDENCE
+        }
+        if (hopelessIndices.isNotEmpty()) {
+            val binary = ImageEnhancer.binarize(bitmap)
+            if (binary != null) {
+                val hopelessRects = hopelessIndices.map { rects[it] }
+                val fromBinary = runCatching {
+                    ocr.recognizeCells(binary, hopelessRects, scale = STRICT_SCALE)
+                }.getOrNull()
+                if (fromBinary != null) {
+                    val merged = recognized.toMutableList()
+                    hopelessIndices.forEachIndexed { position, index ->
+                        val candidate = fromBinary.getOrNull(position) ?: return@forEachIndexed
+                        merged[index] = pickBest(listOf(recognized[index], candidate))
+                    }
+                    recognized = merged
+                }
+                if (binary !== bitmap) binary.recycle()
+            }
+        }
+
         // 统计用：只看有墨迹的格子，空白格不该拉低置信度。
         val scored = recognized.filter { it.hasInk }
         val averageConfidence = if (scored.isEmpty()) 0f else scored.sumOf { it.confidence.toDouble() }.toFloat() / scored.size
@@ -485,6 +510,9 @@ object TablePipeline {
 
     /** 第二遍的放大倍率：小字号、贴边的数字靠这一步救回来。 */
     private const val STRICT_SCALE = 2.0f
+
+    /** 低到这个程度就再补一遍二值图识别（相当于「人工再看一眼」）。 */
+    private const val HOPELESS_CONFIDENCE = 0.6f
 
     /** 结果页展示「低于多少算不确定」用的门槛。 */
     private const val DISPLAY_TRUSTED_CONFIDENCE = 0.98f
