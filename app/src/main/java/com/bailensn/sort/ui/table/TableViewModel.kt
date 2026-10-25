@@ -56,6 +56,8 @@ data class TableUiState(
     val cellMs: Long = 0L,
     val detectMs: Long = 0L,
     val enhanced: Bitmap? = null,
+    val averageConfidence: Float = 0f,
+    val lowConfidenceCells: Int = 0,
 ) {
     enum class Phase { IDLE, RECOGNIZING, DONE, ERROR }
 }
@@ -189,6 +191,8 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
                         cellMs = analysis.cellMs,
                         detectMs = analysis.detectMs,
                         enhanced = analysis.enhanced,
+                        averageConfidence = analysis.averageConfidence,
+                        lowConfidenceCells = analysis.lowConfidenceCells,
                     )
                 }
             } else {
@@ -209,6 +213,8 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
                         cellMs = analysis.cellMs,
                         detectMs = analysis.detectMs,
                         enhanced = analysis.enhanced,
+                        averageConfidence = analysis.averageConfidence,
+                        lowConfidenceCells = analysis.lowConfidenceCells,
                     )
                 }
             }

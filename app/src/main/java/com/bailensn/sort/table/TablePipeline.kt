@@ -45,6 +45,10 @@ object TablePipeline {
         val detectMs: Long = 0L,
         /** 增强后的灰度图：二遍识别的输入，也拿来给用户看。 */
         val enhanced: Bitmap? = null,
+        /** 有墨迹格子的平均置信度。 */
+        val averageConfidence: Float = 0f,
+        /** 三遍走完仍低于可信线的格子数。 */
+        val lowConfidenceCells: Int = 0,
     ) {
         /** 除识别以外的耗时：纠偏、线检测、切格、画网格。 */
         val structureMs: Long get() = (elapsedMs - cellMs).coerceAtLeast(0L)
@@ -105,6 +109,8 @@ object TablePipeline {
         var correctedCells = 0
         var cellMs = 0L
         var detectMs = 0L
+        var averageConfidence = 0f
+        var lowConfidenceCells = 0
 
         if (cellGrid.cells.isNotEmpty()) {
             val pass = recognizeByCells(ocr, working, enhanced, cellGrid, borderInset, onStage)
@@ -112,6 +118,8 @@ object TablePipeline {
             correctedCells = pass.corrected
             cellMs = pass.cellMs
             detectMs = pass.detectMs
+            averageConfidence = pass.averageConfidence
+            lowConfidenceCells = pass.lowConfidenceCells
 
             if (grid.filledCellCount < 2) {
                 onStage(Stage.RECOGNIZE)
@@ -138,6 +146,8 @@ object TablePipeline {
             cellMs = cellMs,
             detectMs = detectMs,
             enhanced = enhanced,
+            averageConfidence = averageConfidence,
+            lowConfidenceCells = lowConfidenceCells,
         )
     }
 
@@ -146,6 +156,8 @@ object TablePipeline {
         val corrected: Int,
         val cellMs: Long = 0L,
         val detectMs: Long = 0L,
+        val averageConfidence: Float = 0f,
+        val lowConfidenceCells: Int = 0,
     )
 
     private suspend fun recognizeByCells(
@@ -186,7 +198,7 @@ object TablePipeline {
         // 两遍都认成同一串字时给一点置信度加成——独立两次都一致，基本就是对的。
         val strictIndices = recognized.indices.filter { index ->
             val reading = recognized[index]
-            reading.hasInk && reading.confidence < STRICT_CONFIDENCE
+            reading.hasInk && reading.confidence < TRUSTED_CONFIDENCE
         }
         if (strictIndices.isNotEmpty()) {
             val strictSource = enhanced ?: bitmap
@@ -243,6 +255,11 @@ object TablePipeline {
                 recognized = merged
             }
         }
+
+        // 统计用：只看有墨迹的格子，空白格不该拉低置信度。
+        val scored = recognized.filter { it.hasInk }
+        val averageConfidence = if (scored.isEmpty()) 0f else scored.sumOf { it.confidence.toDouble() }.toFloat() / scored.size
+        val lowConfidenceCells = scored.count { it.confidence < TRUSTED_CONFIDENCE }
 
         val cellMs = SystemClock.elapsedRealtime() - cellStarted
 
@@ -330,7 +347,7 @@ object TablePipeline {
         val repaired = NumericColumnRepair.repair(trimmed)
         val grid = TableGridBuilder.normalize(repaired, TableGrid.Mode.GRID_LINES, cellGrid.merges)
             ?: TableGrid(emptyList(), TableGrid.Mode.GRID_LINES)
-        CellPass(grid, corrected, cellMs, detectMs)
+        CellPass(grid, corrected, cellMs, detectMs, averageConfidence, lowConfidenceCells)
     }
 
     private suspend fun recognizeByDetection(ocr: PaddleOCR, bitmap: Bitmap): TableGrid {
@@ -395,8 +412,11 @@ object TablePipeline {
 
     private const val MIN_FILL_CONFIDENCE = 0.6f
 
-    /** 低于这个置信度就进第二遍（最严厉的那遍）。 */
-    private const val STRICT_CONFIDENCE = 0.9f
+    /**
+     * 可信线：rec 的置信度到这个数以上就不再往下过。
+     * 98% 是原版 OCR demo 里的经验值——低于它的格子即使字看着对，也常有单个数字认错。
+     */
+    private const val TRUSTED_CONFIDENCE = 0.98f
 
     /** 第二遍的放大倍率：小字号、贴边的数字靠这一步救回来。 */
     private const val STRICT_SCALE = 2.0f
@@ -404,8 +424,8 @@ object TablePipeline {
     /** 两遍认出来的字一致时，给置信度的加成。 */
     private const val AGREE_BONUS = 0.05f
 
-    /** 第三遍的门槛：二遍之后还低于它就再极限认一次。 */
-    private const val THIRD_CONFIDENCE = 0.9f
+    /** 第三遍的门槛：二遍（含一致加成）之后还低于可信线，就再极限认一次。 */
+    private const val THIRD_CONFIDENCE = TRUSTED_CONFIDENCE
 
     /** 第三遍的放大倍率。 */
     private const val THIRD_SCALE = 3.0f
