@@ -99,6 +99,15 @@ val bundledOcrModels = mapOf(
         "https://huggingface.co/PaddlePaddle/PP-OCRv6_medium_rec_onnx/resolve/main/inference.onnx",
         "https://modelscope.cn/models/PaddlePaddle/PP-OCRv6_medium_rec_onnx/resolve/main/inference.onnx",
     ),
+    // 复核模型：PP-OCRv5 server rec，比 v6 medium 更大，只在难认的格子上投票。
+    "referee/inference.onnx" to listOf(
+        "https://huggingface.co/PaddlePaddle/PP-OCRv5_server_rec_onnx/resolve/main/inference.onnx",
+        "https://hf-mirror.com/PaddlePaddle/PP-OCRv5_server_rec_onnx/resolve/main/inference.onnx",
+    ),
+    "referee/inference.yml" to listOf(
+        "https://huggingface.co/PaddlePaddle/PP-OCRv5_server_rec_onnx/resolve/main/inference.yml",
+        "https://hf-mirror.com/PaddlePaddle/PP-OCRv5_server_rec_onnx/resolve/main/inference.yml",
+    ),
     "rec/inference.yml" to listOf(
         "https://huggingface.co/PaddlePaddle/PP-OCRv6_medium_rec_onnx/resolve/main/inference.yml",
         "https://modelscope.cn/models/PaddlePaddle/PP-OCRv6_medium_rec_onnx/resolve/main/inference.yml",

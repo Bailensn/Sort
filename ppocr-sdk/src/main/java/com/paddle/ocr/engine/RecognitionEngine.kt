@@ -21,6 +21,8 @@ import org.opencv.core.Mat
 class RecognitionEngine(
     private val ortManager: ORTSessionManager,
     private val characterList: List<String>,
+    /** true = 走复核模型（更准但更慢）。 */
+    private val referee: Boolean = false,
 ) {
     data class RecognitionResult(
         val texts: List<Pair<String, Float>>,
@@ -39,7 +41,11 @@ class RecognitionEngine(
 
         // Inference
         val infStart = System.currentTimeMillis()
-        val (outputData, outputShape) = ortManager.runRecognition(preResult.tensorData, preResult.shape)
+        val (outputData, outputShape) = if (referee) {
+            ortManager.runReferee(preResult.tensorData, preResult.shape)
+        } else {
+            ortManager.runRecognition(preResult.tensorData, preResult.shape)
+        }
         val inferenceMs = System.currentTimeMillis() - infStart
 
         // Postprocess (CTC decode)

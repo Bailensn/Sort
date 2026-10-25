@@ -32,10 +32,13 @@ class ORTSessionManager(
     private var recSession: OrtSession? = null
     private var detInputName: String = "x"
     private var recInputName: String = "x"
+    private var refereeSession: OrtSession? = null
+    private var refereeInputName: String = "x"
+    private var pendingRefereeSource: ModelSource? = null
     var coldLoadTimeMs: Long = 0
         private set
 
-    fun loadModels(detSource: ModelSource, recSource: ModelSource) {
+    fun loadModels(detSource: ModelSource, recSource: ModelSource, refereeSource: ModelSource? = null) {
         val loadStart = System.currentTimeMillis()
         env = OrtEnvironment.getEnvironment()
         val opts = OrtSession.SessionOptions().apply {
@@ -69,6 +72,9 @@ class ORTSessionManager(
             } catch (t: Throwable) {
                 throw OCRError.ModelLoadFailed("recognition", t)
             }
+            // 复核模型是 85 MB 的大件，启动时先不建会话：等真的用到（第三遍）再加载，
+            // 免得低内存设备一开机就同时压着三个模型。
+            pendingRefereeSource = refereeSource
             coldLoadTimeMs = System.currentTimeMillis() - loadStart
         } finally {
             opts.close()
@@ -91,7 +97,39 @@ class ORTSessionManager(
         return runSession(ortEnv, session, recInputName, input, shape, "recognition")
     }
 
-    fun release() {
+    fun runReferee(input: FloatArray, shape: LongArray): Pair<FloatArray, LongArray> {
+        val ortEnv = env ?: throw OCRError.ModelLoadFailed("referee", Exception("Environment not initialized"))
+        val session = refereeSession ?: ensureRefereeSession(ortEnv)
+        return runSession(ortEnv, session, refereeInputName, input, shape, "referee")
+    }
+
+    /** 首次用到时再建会话；失败就抛出去，调用方 runCatching 会退化成「没有复核」。 */
+    private fun ensureRefereeSession(ortEnv: OrtEnvironment): OrtSession {
+        refereeSession?.let { return it }
+        val source = pendingRefereeSource
+            ?: throw OCRError.ModelLoadFailed("referee", Exception("No referee model"))
+        val opts = OrtSession.SessionOptions().apply {
+            setOptimizationLevel(OrtSession.SessionOptions.OptLevel.ALL_OPT)
+            setIntraOpNumThreads(config.numThreads)
+        }
+        try {
+            val bytes = readModel(source, "referee")
+            val session = ortEnv.createSession(bytes, opts)
+            refereeSession = session
+            refereeInputName = session.inputNames.iterator().next()
+            return session
+        } finally {
+            opts.close()
+        }
+    }
+
+    fun release() = run {
+        runCatching { refereeSession?.close() }
+        refereeSession = null
+        releaseSessions()
+    }
+
+    private fun releaseSessions() {
         try {
             detSession?.close()
         } finally {

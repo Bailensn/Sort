@@ -57,7 +57,7 @@ jobs:
         uses: actions/cache@v6
         with:
           path: app/build/generated/ocrModels
-          key: ocr-models-medium-v1
+          key: ocr-models-medium-v2
       - name: Make gradlew executable
         run: chmod +x ./gradlew
       - name: Assemble debug
@@ -121,7 +121,7 @@ jobs:
         uses: actions/cache@v6
         with:
           path: app/build/generated/ocrModels
-          key: ocr-models-medium-v1
+          key: ocr-models-medium-v2
       - name: Make gradlew executable
         run: chmod +x ./gradlew
       - name: Assemble release
@@ -185,7 +185,7 @@ jobs:
         uses: actions/cache@v6
         with:
           path: app/build/generated/ocrModels
-          key: ocr-models-medium-v1
+          key: ocr-models-medium-v2
       - name: Make gradlew executable
         run: chmod +x ./gradlew
       - name: Lint debug
@@ -240,7 +240,7 @@ jobs:
         uses: actions/cache@v6
         with:
           path: app/build/generated/ocrModels
-          key: ocr-models-medium-v1
+          key: ocr-models-medium-v2
       - name: Make gradlew executable
         run: chmod +x ./gradlew
       - name: Run JVM unit tests
@@ -295,7 +295,7 @@ jobs:
         uses: actions/cache@v6
         with:
           path: app/build/generated/ocrModels
-          key: ocr-models-medium-v1
+          key: ocr-models-medium-v2
       - name: Make gradlew executable
         run: chmod +x ./gradlew
       - name: Assemble instrumentation APK

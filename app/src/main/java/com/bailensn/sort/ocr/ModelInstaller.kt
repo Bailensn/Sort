@@ -13,12 +13,19 @@ import java.io.IOException
  */
 object ModelInstaller {
 
-    private const val VERSION = "medium-xz-1"
+    private const val VERSION = "medium-xz-2"
     private const val DIR = "ocr-models"
-    private val FILES = listOf(
+    /** 没解压出来就没法识别，缺一个都算失败。 */
+    private val REQUIRED = listOf(
         "det/inference.onnx",
         "rec/inference.onnx",
         "rec/inference.yml",
+    )
+
+    /** 复核模型是可选的：缺了只是少一遍投票，不影响主流程。 */
+    private val OPTIONAL = listOf(
+        "referee/inference.onnx",
+        "referee/inference.yml",
     )
 
     fun modelDir(context: Context): File = File(context.filesDir, DIR)
@@ -26,7 +33,7 @@ object ModelInstaller {
     fun isReady(context: Context): Boolean {
         val dir = modelDir(context)
         if (File(dir, "version").takeIf { it.isFile }?.readText()?.trim() != VERSION) return false
-        return FILES.all { File(dir, it).takeIf { file -> file.isFile }?.length() ?: 0L > 1024L }
+        return REQUIRED.all { File(dir, it).takeIf { file -> file.isFile }?.length() ?: 0L > 1024L }
     }
 
     suspend fun ensure(context: Context, onStage: (String) -> Unit = {}): File =
@@ -38,19 +45,24 @@ object ModelInstaller {
             dir.deleteRecursively()
             dir.mkdirs()
 
-            FILES.forEachIndexed { index, relative ->
-                onStage("正在解压内置模型 ${index + 1}/${FILES.size}")
+            val files = REQUIRED + OPTIONAL
+            files.forEachIndexed { index, relative ->
+                onStage("正在解压内置模型 ${index + 1}/${files.size}")
                 val out = File(dir, relative)
                 out.parentFile?.mkdirs()
                 val temp = File(out.parentFile, "${out.name}.part")
-                context.assets.open("models/$relative.xz").use { asset ->
-                    XZInputStream(asset).use { input ->
-                        temp.outputStream().use { output -> input.copyTo(output) }
+                val extracted = runCatching {
+                    context.assets.open("models/$relative.xz").use { asset ->
+                        XZInputStream(asset).use { input ->
+                            temp.outputStream().use { output -> input.copyTo(output) }
+                        }
                     }
-                }
-                if (temp.length() < 1024L || !temp.renameTo(out)) {
+                    temp.length() >= 1024L && temp.renameTo(out)
+                }.getOrDefault(false)
+                if (!extracted && relative in REQUIRED) {
                     throw IOException("内置模型解压失败：$relative")
                 }
+                if (!extracted) temp.delete()
             }
             File(dir, "version").writeText(VERSION)
             dir

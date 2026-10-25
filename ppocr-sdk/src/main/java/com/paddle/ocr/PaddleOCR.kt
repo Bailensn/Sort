@@ -141,6 +141,14 @@ class PaddleOCR private constructor(
         }
     }
 
+    /** 用复核模型（更大更准）再认一遍；没有复核模型时返回空列表。 */
+    suspend fun recognizeCellsReferee(bitmap: Bitmap, cells: List<Rect>, scale: Float = 1f): List<CellReading> {
+        if (cells.isEmpty()) return emptyList()
+        return withContext(Dispatchers.IO) {
+            engine.recognizeCellsReferee(bitmap, cells, scale)
+        }
+    }
+
     suspend fun release() {
         withContext(Dispatchers.IO) {
             engine.release()

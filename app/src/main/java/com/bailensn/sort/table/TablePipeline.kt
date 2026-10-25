@@ -225,13 +225,18 @@ object TablePipeline {
             val fromOriginal = runCatching {
                 ocr.recognizeCells(bitmap, rects3, scale = THIRD_SCALE)
             }.getOrNull()
-            if (fromEnhanced != null || fromOriginal != null) {
+            // 复核模型（PP-OCRv5 server rec）：更大更准，只在这批难认的格子上投一票。
+            val fromReferee = runCatching {
+                ocr.recognizeCellsReferee(enhanced ?: bitmap, rects3, scale = REFEREE_SCALE)
+            }.getOrNull()?.takeIf { it.size == rects3.size }
+            if (fromEnhanced != null || fromOriginal != null || fromReferee != null) {
                 val merged = recognized.toMutableList()
                 thirdIndices.forEachIndexed { position, index ->
                     val candidates = listOfNotNull(
                         recognized[index],
                         fromEnhanced?.getOrNull(position),
                         fromOriginal?.getOrNull(position),
+                        fromReferee?.getOrNull(position),
                     )
                     merged[index] = pickBest(candidates)
                 }
@@ -404,6 +409,9 @@ object TablePipeline {
 
     /** 第三遍的放大倍率。 */
     private const val THIRD_SCALE = 3.0f
+
+    /** 复核模型的放大倍率：server 模型本身容量大，2 倍就够。 */
+    private const val REFEREE_SCALE = 2.0f
 
     /** 三遍投票时，「多一遍认成同样的字」值多少置信度。 */
     private const val VOTE_BONUS = 0.12f

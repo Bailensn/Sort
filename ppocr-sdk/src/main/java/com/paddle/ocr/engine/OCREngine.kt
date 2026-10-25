@@ -47,15 +47,19 @@ class OCREngine(
     private val ortManager = ORTSessionManager(context, engineConfig)
     private val detectionEngine: DetectionEngine
     private val recognitionEngine: RecognitionEngine
+    /** 复核模型（可选）：比主识别模型更大更准，只用来给难认的格子投票。 */
+    private val refereeEngine: RecognitionEngine?
     val coldLoadTimeMs: Long get() = ortManager.coldLoadTimeMs
 
     init {
+        val refereeModel = modelDir?.let { File(it, "referee/inference.onnx") }?.takeIf { it.isFile }
         val configured = try {
             if (modelDir != null) {
                 // 运行时下载的模型：直接读内部存储里的文件。
                 ortManager.loadModels(
                     ModelSource.Local(File(modelDir, "det/inference.onnx")),
                     ModelSource.Local(File(modelDir, "rec/inference.onnx")),
+                    refereeModel?.let { ModelSource.Local(it) },
                 )
                 ModelConfig.parse(File(modelDir, "rec/inference.yml"))
             } else {
@@ -71,6 +75,15 @@ class OCREngine(
         }
         detectionEngine = DetectionEngine(ortManager, config)
         recognitionEngine = RecognitionEngine(ortManager, configured.characterList)
+        refereeEngine = refereeModel?.let { model ->
+            val yml = File(model.parentFile, "inference.yml")
+            val chars = if (yml.isFile) {
+                runCatching { ModelConfig.parse(yml).characterList }.getOrNull()
+            } else {
+                null
+            } ?: configured.characterList
+            RecognitionEngine(ortManager, chars, referee = true)
+        }
     }
 
     fun run(bitmap: Bitmap): OCREngineResult {
@@ -205,7 +218,21 @@ class OCREngine(
      * 表格场景比整图检测稳，因为不会出现跨列合并的检测框。
      * 返回顺序与入参一致；[CellReading.hasInk] 区分「真空白」和「有字没认出来」。
      */
-    fun recognizeCells(bitmap: Bitmap, cells: List<Rect>, scale: Float = 1f): List<CellReading> {
+    fun recognizeCells(bitmap: Bitmap, cells: List<Rect>, scale: Float = 1f): List<CellReading> =
+        recognizeCellsWith(bitmap, cells, scale, recognitionEngine)
+
+    /** 用复核模型再认一遍；没有复核模型时返回空列表。 */
+    fun recognizeCellsReferee(bitmap: Bitmap, cells: List<Rect>, scale: Float = 1f): List<CellReading> {
+        val engine = refereeEngine ?: return emptyList()
+        return recognizeCellsWith(bitmap, cells, scale, engine)
+    }
+
+    private fun recognizeCellsWith(
+        bitmap: Bitmap,
+        cells: List<Rect>,
+        scale: Float,
+        recEngine: RecognitionEngine,
+    ): List<CellReading> {
         if (cells.isEmpty()) return emptyList()
         val src = BitmapUtils.bitmapToBGRMat(bitmap)
         val output = arrayOfNulls<CellReading>(cells.size)
@@ -245,7 +272,7 @@ class OCREngine(
                     end++
                 }
                 val slice = pending.subList(start, end)
-                val texts = recognitionEngine.recognize(slice.map { it.crop }).texts
+                val texts = recEngine.recognize(slice.map { it.crop }).texts
                 slice.forEachIndexed { offset, item ->
                     val reading = texts.getOrNull(offset)
                     output[item.index] = if (reading == null) {
