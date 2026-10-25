@@ -14,8 +14,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  assemble:
-    name: Assemble
+  assemble-debug:
+    name: Assemble debug
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
@@ -57,26 +57,85 @@ jobs:
           key: ocr-models-ppocrv6-small-v3
       - name: Make gradlew executable
         run: chmod +x ./gradlew
-      - name: Assemble debug and release
+      - name: Assemble debug
         run: |
           set -o pipefail
-          ./gradlew --stacktrace --warning-mode=all \
-            :app:assembleDebug :app:assembleRelease 2>&1 | tee build.log \
+          ./gradlew --stacktrace --warning-mode=all :app:assembleDebug 2>&1 | tee build.log \
             || { bash .github/scripts/print-errors.sh build.log; exit 1; }
-      - name: Upload APKs
+      - name: Upload debug APK
         if: success()
         uses: actions/upload-artifact@v7
         with:
-          name: apks
-          path: |
-            app/build/outputs/apk/debug/*.apk
-            app/build/outputs/apk/release/*.apk
+          name: apk-debug
+          path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: warn
           retention-days: 14
       - name: Diagnose failure
         if: failure()
         run: |
           echo "::error::环境诊断 job=${{ github.job }} sdk=${ANDROID_SDK_ROOT:-unset} java=${JAVA_HOME:-unset} sdkmanager=$(command -v sdkmanager || echo none)"
+
+  assemble-release:
+    name: Assemble release
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+      - name: Set up JDK 21
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "21"
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v4
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+      - name: Install SDK components
+        run: |
+          set -o pipefail
+          yes | sdkmanager --licenses > /dev/null || true
+          installed=""
+          for attempt in 1 2; do
+            if sdkmanager --install "platforms;android-37.0" "build-tools;36.0.0" "cmake;3.22.1" "ndk;30.0.16248370" > sdk-install.log 2>&1; then
+              installed=1
+              break
+            fi
+            echo "第 $attempt 次安装失败，5 秒后重试"
+            tail -5 sdk-install.log || true
+            sleep 5
+          done
+          if [ -z "$installed" ]; then
+            tail -20 sdk-install.log || true
+            echo "::error::SDK 组件安装失败：$(tail -3 sdk-install.log | tr '\n' ' ')"
+            exit 1
+          fi
+      # 缓存服务偶发抽风不该让整个构建变红，失败就当没命中。
+      - name: Cache OCR models
+        continue-on-error: true
+        uses: actions/cache@v6
+        with:
+          path: app/build/generated/ocrModels
+          key: ocr-models-ppocrv6-small-v3
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
+      - name: Assemble release
+        run: |
+          set -o pipefail
+          ./gradlew --stacktrace --warning-mode=all :app:assembleRelease 2>&1 | tee build.log \
+            || { bash .github/scripts/print-errors.sh build.log; exit 1; }
+      - name: Upload release APK
+        if: success()
+        uses: actions/upload-artifact@v7
+        with:
+          name: apk-release
+          path: app/build/outputs/apk/release/*.apk
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Diagnose failure
+        if: failure()
+        run: |
+          echo "::error::环境诊断 job=${{ github.job }} sdk=${ANDROID_SDK_ROOT:-unset} java=${JAVA_HOME:-unset} sdkmanager=$(command -v sdkmanager || echo none)"
+
   lint:
     name: Lint
     runs-on: ubuntu-latest

@@ -115,11 +115,12 @@
 
 ## CI
 
-`.github/workflows/android.yml` 拆成 4 个互不依赖的并行 job：
+`.github/workflows/android.yml` 拆成 5 个互不依赖的并行 job：
 
 | job | 跑什么 |
 | --- | --- |
-| `assemble` | `assembleDebug` + `assembleRelease`，成功时上传 APK |
+| `assemble-debug` | `assembleDebug`，成功时上传 `apk-debug` |
+| `assemble-release` | `assembleRelease`，成功时上传 `apk-release` |
 | `lint` | `lintDebug` |
 | `unit-test` | `testDebugUnitTest` |
 | `android-test` | `assembleDebugAndroidTest`（只编译，不跑） |
