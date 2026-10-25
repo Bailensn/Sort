@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import com.bailensn.sort.table.TableGrid
 import com.bailensn.sort.table.TablePipeline
 import com.bailensn.sort.ui.table.TableUiState.Phase
+import com.bailensn.sort.ocr.ModelRepository
 import com.bailensn.sort.util.ImageLoader
 import com.bailensn.sort.xlsx.ExportedFile
 import com.bailensn.sort.xlsx.XlsxExporter
@@ -29,13 +30,14 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 sealed interface EngineState {
-    data object Loading : EngineState
+    /** 首次启动会先下载模型（约 140 MB），[message] 用于展示进度。 */
+    data class Loading(val message: String = "正在加载识别模型") : EngineState
     data class Ready(val loadTimeMs: Long) : EngineState
     data class Failed(val message: String) : EngineState
 }
 
 data class TableUiState(
-    val engine: EngineState = EngineState.Loading,
+    val engine: EngineState = EngineState.Loading(),
     val original: Bitmap? = null,
     val processed: Bitmap? = null,
     val overlay: Bitmap? = null,
@@ -74,7 +76,7 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun loadEngine() {
         engineDeferred = CompletableDeferred()
-        _state.update { it.copy(engine = EngineState.Loading, message = null) }
+        _state.update { it.copy(engine = EngineState.Loading("正在准备识别模型"), message = null) }
 
         viewModelScope.launch {
             val app = getApplication<Application>()
@@ -82,9 +84,15 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
                 if (!OpenCVUtils.init(app)) {
                     error("OpenCV 初始化失败")
                 }
+                // 模型不再内嵌 APK：首次使用先下载（带进度），之后离线可用。
+                val modelDir = ModelRepository.ensure(app) { percent, text ->
+                    _state.update { it.copy(engine = EngineState.Loading(text), message = null) }
+                }
+                _state.update { it.copy(engine = EngineState.Loading("正在加载识别模型")) }
                 val created = withContext(Dispatchers.IO) {
-                    PaddleOCR.create(
+                    PaddleOCR.createWithModels(
                         context = app,
+                        modelDir = modelDir,
                         config = PaddleOCRConfig(recScoreThresh = 0f, recBatchSize = 1),
                     )
                 }

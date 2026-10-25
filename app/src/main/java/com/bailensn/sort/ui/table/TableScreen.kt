@@ -148,7 +148,7 @@ fun TableScreen(
             verticalArrangement = Arrangement.spacedBy(20.dp),
         ) {
             when (val engine = state.engine) {
-                EngineState.Loading -> LoadingBlock("正在加载识别模型")
+                is EngineState.Loading -> LoadingBlock(engine.message)
 
                 is EngineState.Failed -> MessageBlock(
                     title = "模型加载失败",

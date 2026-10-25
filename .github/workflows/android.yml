@@ -48,13 +48,6 @@ jobs:
             echo "::error::SDK 组件安装失败：$(tail -3 sdk-install.log | tr '\n' ' ')"
             exit 1
           fi
-      # 缓存服务偶发抽风不该让整个构建变红，失败就当没命中。
-      - name: Cache OCR models
-        continue-on-error: true
-        uses: actions/cache@v6
-        with:
-          path: app/build/generated/ocrModels
-          key: ocr-models-ppocrv6-small-v3
       - name: Make gradlew executable
         run: chmod +x ./gradlew
       - name: Assemble debug
@@ -109,13 +102,6 @@ jobs:
             echo "::error::SDK 组件安装失败：$(tail -3 sdk-install.log | tr '\n' ' ')"
             exit 1
           fi
-      # 缓存服务偶发抽风不该让整个构建变红，失败就当没命中。
-      - name: Cache OCR models
-        continue-on-error: true
-        uses: actions/cache@v6
-        with:
-          path: app/build/generated/ocrModels
-          key: ocr-models-ppocrv6-small-v3
       - name: Make gradlew executable
         run: chmod +x ./gradlew
       - name: Assemble release
@@ -170,13 +156,6 @@ jobs:
             echo "::error::SDK 组件安装失败：$(tail -3 sdk-install.log | tr '\n' ' ')"
             exit 1
           fi
-      # 缓存服务偶发抽风不该让整个构建变红，失败就当没命中。
-      - name: Cache OCR models
-        continue-on-error: true
-        uses: actions/cache@v6
-        with:
-          path: app/build/generated/ocrModels
-          key: ocr-models-ppocrv6-small-v3
       - name: Make gradlew executable
         run: chmod +x ./gradlew
       - name: Lint debug
@@ -222,13 +201,6 @@ jobs:
             echo "::error::SDK 组件安装失败：$(tail -3 sdk-install.log | tr '\n' ' ')"
             exit 1
           fi
-      # 缓存服务偶发抽风不该让整个构建变红，失败就当没命中。
-      - name: Cache OCR models
-        continue-on-error: true
-        uses: actions/cache@v6
-        with:
-          path: app/build/generated/ocrModels
-          key: ocr-models-ppocrv6-small-v3
       - name: Make gradlew executable
         run: chmod +x ./gradlew
       - name: Run JVM unit tests
@@ -274,13 +246,6 @@ jobs:
             echo "::error::SDK 组件安装失败：$(tail -3 sdk-install.log | tr '\n' ' ')"
             exit 1
           fi
-      # 缓存服务偶发抽风不该让整个构建变红，失败就当没命中。
-      - name: Cache OCR models
-        continue-on-error: true
-        uses: actions/cache@v6
-        with:
-          path: app/build/generated/ocrModels
-          key: ocr-models-ppocrv6-small-v3
       - name: Make gradlew executable
         run: chmod +x ./gradlew
       - name: Assemble instrumentation APK

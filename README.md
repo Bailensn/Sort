@@ -91,22 +91,20 @@
 
 ## 模型从哪来
 
-模型不进 git（约 31 MB）。`app/build.gradle.kts` 里的 `downloadOcrModels`：
+模型**不内嵌 APK**，首次使用时下载到内部存储（`files/ocr-models/`），之后完全离线：
 
-- 从 HuggingFace 下载 `PP-OCRv6_small_{det,rec}_onnx` 的 `inference.onnx` / `inference.yml`；
-- 落到 `app/build/generated/ocrModels/models/{det,rec}/`，已存在就跳过，失败重试 3 次；
-- 这个目录通过 `variant.sources.assets.addGeneratedSourceDirectory` 注册给 AGP，
-  打包 / lint / 单测等所有消费 assets 的任务都会自动依赖它；
-- 因为该目录就是 assets 的根，所以文件必须放在 `models/` 子目录下，
-  才能和 PaddleOCR 默认的 `models/det/inference.onnx` 对上——少这一层就会在设备上报「模型加载失败」；
-- CI 用 `actions/cache` 缓存该目录。
+- 默认下 **PP-OCRv6 medium**（det 62 MB + rec 76 MB + 字符表 150 KB），比 small 明显准；
+- medium 失败（没网、空间不足、镜像挂）自动退回 **small**（约 31 MB），保证能用；
+- 下载前用字符表做一次测速，**国内 `hf-mirror.com` 与海外 `huggingface.co` 谁快用谁**，
+  下载中途失败会自动换另一个镜像重试；
+- 下载有进度（百分比 + MB/s），完成后不再联网。
 
-换模型改 `ocrModels` 映射即可，det/rec 各要 `.onnx`，rec 还要 `inference.yml`（字符表）。
+换模型改 `ModelRepository` 里的 `Profile` 即可；`ModelRepository.clear(context)` 可清掉已下载的模型。
 
 ## 构建
 
 ```bash
-# 首次会下载模型（约 31 MB）
+# 模型在首次运行时下载，构建不再联网
 ./gradlew :app:assembleDebug
 
 # 单测 / lint
