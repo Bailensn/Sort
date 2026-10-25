@@ -1,3 +1,14 @@
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        // 构建期把模型压成 .xz（LZMA2），比 zip 再小一截。
+        classpath("org.tukaani:xz:1.10")
+    }
+}
+
 import java.net.URI
 
 plugins {
@@ -51,6 +62,11 @@ android {
         }
     }
 
+    androidResources {
+        // 已经是 xz，别让 aapt 再压一遍浪费时间。
+        noCompress += "xz"
+    }
+
     buildFeatures {
         compose = true
     }
@@ -70,16 +86,16 @@ android {
 }
 
 // ---------------------------------------------------------------------------
-// 内置「轻量」模型：medium 下载失败时的兜底，所以 small 必须随 APK 走。
+// 内置「高精度」模型（PP-OCRv6 medium）：不再运行时下载，APK 自带。
 // 下载到 build/generated/ocrModels/models/，由 AGP 当作生成的 assets 目录并入。
 // ---------------------------------------------------------------------------
 val bundledOcrModels = mapOf(
     "det/inference.onnx" to
-        "https://huggingface.co/PaddlePaddle/PP-OCRv6_small_det_onnx/resolve/main/inference.onnx",
+        "https://modelscope.cn/models/PaddlePaddle/PP-OCRv6_medium_det_onnx/resolve/main/inference.onnx",
     "rec/inference.onnx" to
-        "https://huggingface.co/PaddlePaddle/PP-OCRv6_small_rec_onnx/resolve/main/inference.onnx",
+        "https://modelscope.cn/models/PaddlePaddle/PP-OCRv6_medium_rec_onnx/resolve/main/inference.onnx",
     "rec/inference.yml" to
-        "https://huggingface.co/PaddlePaddle/PP-OCRv6_small_rec_onnx/resolve/main/inference.yml",
+        "https://modelscope.cn/models/PaddlePaddle/PP-OCRv6_medium_rec_onnx/resolve/main/inference.yml",
 )
 
 abstract class BundleOcrModelsTask : DefaultTask() {
@@ -87,59 +103,83 @@ abstract class BundleOcrModelsTask : DefaultTask() {
     @get:OutputDirectory
     abstract val outputDir: DirectoryProperty
 
+    @get:Internal
+    abstract val rawDir: DirectoryProperty
+
     @get:Input
     abstract val urls: MapProperty<String, String>
 
     @TaskAction
-    fun download() {
-        val root = File(outputDir.get().asFile, "models")
+    fun bundle() {
+        val assetsRoot = File(outputDir.get().asFile, "models")
+        val rawRoot = rawDir.get().asFile
+
         urls.get().forEach { (relativePath, url) ->
-            val target = File(root, relativePath)
-            if (target.isFile && target.length() > 1024L) return@forEach
-            target.parentFile?.mkdirs()
-            val temp = File(target.parentFile, "${target.name}.part")
-            var failure: Exception? = null
-            for (attempt in 1..3) {
-                try {
-                    URI(url).toURL().openStream().use { input ->
-                        temp.outputStream().use { output -> input.copyTo(output) }
-                    }
-                    failure = null
-                    break
-                } catch (e: Exception) {
-                    failure = e
-                    temp.delete()
-                    Thread.sleep(1_000L * attempt)
+            val raw = File(rawRoot, relativePath)
+            if (!raw.isFile || raw.length() < 1024L) {
+                download(raw, url)
+            }
+            val packed = File(assetsRoot, "$relativePath.xz")
+            if (packed.isFile && packed.length() > 1024L) return@forEach
+            packed.parentFile?.mkdirs()
+            compress(raw, packed)
+        }
+    }
+
+    private fun download(target: File, url: String) {
+        target.parentFile?.mkdirs()
+        val temp = File(target.parentFile, "${target.name}.part")
+        var failure: Exception? = null
+        for (attempt in 1..3) {
+            try {
+                URI(url).toURL().openStream().use { input ->
+                    temp.outputStream().use { output -> input.copyTo(output) }
                 }
+                failure = null
+                break
+            } catch (e: Exception) {
+                failure = e
+                temp.delete()
+                Thread.sleep(1_000L * attempt)
             }
-            if (failure != null) {
-                throw GradleException("下载内置模型失败：$url（${failure.message}）")
-            }
-            if (!temp.renameTo(target)) {
-                throw GradleException("无法写入模型文件：${target.absolutePath}")
-            }
+        }
+        if (failure != null) {
+            throw GradleException("下载内置模型失败：$url（${failure.message}）")
+        }
+        if (!temp.renameTo(target)) {
+            throw GradleException("无法写入模型文件：${target.absolutePath}")
+        }
+    }
+
+    /** LZMA2 最高压缩预设（9 | EXTREME）。ONNX 权重压不太动，但能省一点是一点。 */
+    private fun compress(source: File, target: File) {
+        val temp = File(target.parentFile, "${target.name}.part")
+        source.inputStream().buffered().use { input ->
+            org.tukaani.xz.XZOutputStream(
+                temp.outputStream().buffered(),
+                org.tukaani.xz.LZMA2Options(9),
+            ).use { output -> input.copyTo(output) }
+        }
+        if (!temp.renameTo(target)) {
+            throw GradleException("无法写入压缩模型：${target.absolutePath}")
         }
     }
 }
 
-// -PwithoutBundledModels 时不把 31 MB 的轻量模型打进包，出更小的 release。
-val bundleModelsInApk = !project.hasProperty("withoutBundledModels")
-
 val bundleOcrModels = tasks.register<BundleOcrModelsTask>("bundleOcrModels") {
     group = "ocr"
-    description = "下载轻量 OCR 模型，作为 medium 下载失败时的内置兜底"
+    description = "下载高精度 OCR 模型并压缩成 .xz，随 APK 内置"
     outputDir.set(layout.buildDirectory.dir("generated/ocrModels"))
+    rawDir.set(layout.buildDirectory.dir("ocrRaw"))
     urls.set(bundledOcrModels)
 }
 
-if (bundleModelsInApk) {
-    androidComponents {
-        onVariants { variant ->
-            variant.sources.assets?.addGeneratedSourceDirectory(
-                bundleOcrModels,
-                BundleOcrModelsTask::outputDir,
-            )
-        }
+androidComponents {
+    onVariants { variant ->
+        variant.sources.assets?.addGeneratedSourceDirectory(
+            bundleOcrModels,
+            BundleOcrModelsTask::outputDir,
+        )
     }
 }
 
@@ -156,7 +196,7 @@ dependencies {
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.exifinterface)
     implementation(libs.kotlinx.coroutines.android)
-    implementation(libs.okhttp)
+    implementation("org.tukaani:xz:1.10")
 
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.graphics)
