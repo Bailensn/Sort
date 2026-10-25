@@ -123,7 +123,7 @@
 | `report` | 仅在前面有失败时运行，合并各 job 的报告 | 提交评论 + Summary |
 
 公共环境抽在 `.github/actions/android-env/action.yml`：JDK 21、Android SDK、
-`platforms;android-37.0` / `build-tools;36.0.0`，NDK 与 CMake 按需传入并缓存。
+`platforms;android-37.0` / `build-tools;36.0.0`，NDK 与 CMake 只装需要它们的 job（assemble、android-test）。
 
 构建失败时会自动输出错误，不用翻几万行日志：
 

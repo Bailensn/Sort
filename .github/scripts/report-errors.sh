@@ -13,8 +13,24 @@ REPORT_DIR="ci-report"
 REPORT="$REPORT_DIR/errors.md"
 mkdir -p "$REPORT_DIR"
 
+# 环境准备阶段（装 SDK、缓存）就失败时还没有 build.log，
+# 也要写一份最小报告，否则汇总 job 收不到任何 artifact，提交评论也不会出现。
 if [[ ! -f "$LOG" ]]; then
-  echo "未找到构建日志：$LOG" >&2
+  {
+    echo "### $TITLE"
+    echo
+    echo "这个 job 在产出构建日志之前就失败了，问题多半在环境准备步骤。"
+    echo
+    echo "| 项 | 值 |"
+    echo "| --- | --- |"
+    echo "| job | \`${GITHUB_JOB:-unknown}\` |"
+    echo "| runner | \`${ImageOS:-unknown} ${ImageVersion:-}\` |"
+    echo "| 日志 | 需要登录 GitHub 才能看该 job 的原始日志 |"
+  } > "$REPORT"
+  if [[ -n "${GITHUB_STEP_SUMMARY:-}" ]]; then
+    cat "$REPORT" >> "$GITHUB_STEP_SUMMARY"
+  fi
+  cat "$REPORT"
   exit 0
 fi
 

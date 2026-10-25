@@ -1,5 +1,5 @@
 name: Android environment
-description: JDK 21、Android SDK、Gradle 缓存、OCR 模型与 NDK/CMake 缓存
+description: JDK 21、Android SDK、Gradle 缓存与 OCR 模型缓存
 
 inputs:
   sdk-packages:
@@ -22,19 +22,12 @@ runs:
     - name: Set up Gradle
       uses: gradle/actions/setup-gradle@v6
 
-    # NDK 约 1 GB，缓存后第二次起不用再下。
-    - name: Cache NDK and CMake
-      uses: actions/cache@v6
-      with:
-        path: |
-          ${{ env.ANDROID_SDK_ROOT }}/ndk/30.0.16248370
-          ${{ env.ANDROID_SDK_ROOT }}/cmake/3.22.1
-        key: android-toolchain-ndk-30.0.16248370-cmake-3.22.1
-
     - name: Install SDK components
       shell: bash
       run: |
-        yes | sdkmanager --licenses > /dev/null
+        # composite action 的 shell: bash 带 -eo pipefail：sdkmanager 读够后退出，
+        # yes 会收到 SIGPIPE（141），整条管道就判失败。所以这里必须 || true 兜住。
+        yes | sdkmanager --licenses > /dev/null || true
         sdkmanager --install ${{ inputs.sdk-packages }}
 
     # OCR 模型约 31 MB，由 :app:downloadOcrModels 在构建期下载。
