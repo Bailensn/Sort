@@ -169,9 +169,11 @@ object PerspectiveRectifier {
             val pad = maxOf(4, width / 200)
             val expandLeft = (left - contentLeft) > pad
             val expandRight = (contentRight - right) > pad
-            // 扩得太多说明框外是别的东西（标题、别的表格），放弃扩展。
-            if (expandLeft && (left - contentLeft) > width * 0.3) return listOf(topLeft, topRight, bottomRight, bottomLeft)
-            if (expandRight && (contentRight - right) > width * 0.3) return listOf(topLeft, topRight, bottomRight, bottomLeft)
+            // 只容忍「少检测到一条边」这种量级（<=6% 宽度）；
+            // 再多就说明框外是桌面、键盘这些背景，不能框进来，否则会在表格右边多出垃圾列。
+            val maxExpand = (width * 0.06).toInt().coerceAtLeast(24)
+            if (expandLeft && (left - contentLeft) > maxExpand) return listOf(topLeft, topRight, bottomRight, bottomLeft)
+            if (expandRight && (contentRight - right) > maxExpand) return listOf(topLeft, topRight, bottomRight, bottomLeft)
 
             val newLeft = if (expandLeft) (contentLeft - pad).coerceAtLeast(0).toDouble() else null
             val newRight = if (expandRight) (contentRight + pad).coerceAtMost(width).toDouble() else null
