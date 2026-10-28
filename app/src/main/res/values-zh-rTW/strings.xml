@@ -50,4 +50,6 @@
     <string name="history_empty">尚無紀錄</string>
     <string name="history_entry">%1$s · %2$d 列 %3$d 欄</string>
     <string name="preview_fullscreen_close">點擊關閉</string>
+    <string name="action_pick">選擇圖片</string>
+    <string name="stats_rows">列數</string>
 </resources>

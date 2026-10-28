@@ -50,4 +50,6 @@
     <string name="history_empty">記録はまだありません</string>
     <string name="history_entry">%1$s · %2$d 行 %3$d 列</string>
     <string name="preview_fullscreen_close">タップで閉じる</string>
+    <string name="action_pick">画像を選択</string>
+    <string name="stats_rows">行数</string>
 </resources>
