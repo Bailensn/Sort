@@ -73,6 +73,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.bailensn.sort.R
@@ -98,6 +100,7 @@ fun TableScreen(
     // AGP 9.4 的 lint 会把后者判成「不感知配置变化」，直接报 Error。
     val chooserTitle = stringResource(R.string.share_chooser)
     var editingCell by remember { mutableStateOf<CellEdit?>(null) }
+    var fullScreenImage by remember { mutableStateOf<Bitmap?>(null) }
     var showHistory by remember { mutableStateOf(false) }
     val history by viewModel.history.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -126,6 +129,10 @@ fun TableScreen(
                 )
             }
         }
+    }
+
+    fullScreenImage?.let { bitmap ->
+        ImagePreviewDialog(bitmap = bitmap, onDismiss = { fullScreenImage = null })
     }
 
     editingCell?.let { cell ->
@@ -227,6 +234,7 @@ fun TableScreen(
                     viewMode = viewMode,
                     onCycleView = { viewMode = (viewMode + 1) % 3 },
                     onCellClick = { row, column, value -> editingCell = CellEdit(row, column, value) },
+                    onImageClick = { bitmap -> fullScreenImage = bitmap },
                 )
             }
         }
@@ -235,6 +243,27 @@ fun TableScreen(
 }
 
 private data class CellEdit(val row: Int, val column: Int, val value: String)
+
+@Composable
+private fun ImagePreviewDialog(bitmap: Bitmap, onDismiss: () -> Unit) {
+    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+        Surface(color = Color.Black) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clickable(onClick = onDismiss),
+                contentAlignment = Alignment.Center,
+            ) {
+                Image(
+                    bitmap = bitmap.asImageBitmap(),
+                    contentDescription = stringResource(R.string.preview_fullscreen_close),
+                    modifier = Modifier.fillMaxWidth(),
+                    contentScale = ContentScale.Fit,
+                )
+            }
+        }
+    }
+}
 
 @Composable
 private fun CellEditDialog(
@@ -328,6 +357,7 @@ private fun ReadyContent(
     viewMode: Int,
     onCycleView: () -> Unit,
     onCellClick: (row: Int, column: Int, value: String) -> Unit,
+    onImageClick: (Bitmap) -> Unit,
 ) {
 
     val original = state.original
@@ -352,6 +382,7 @@ private fun ReadyContent(
             state = state,
             viewMode = viewMode,
             onCycleView = onCycleView,
+            onImageClick = onImageClick,
         )
     }
 
@@ -455,6 +486,7 @@ private fun ImageBlock(
     state: TableUiState,
     viewMode: Int,
     onCycleView: () -> Unit,
+    onImageClick: (Bitmap) -> Unit,
 ) {
     // 0=网格（画了检测线的处理图） 1=原图 2=增强图（二遍识别看到的那张灰度图）
     val bitmap: Bitmap? = when (viewMode) {
@@ -514,7 +546,8 @@ private fun ImageBlock(
                         .fillMaxWidth()
                         .heightIn(max = 320.dp)
                         .clip(RoundedCornerShape(8.dp))
-                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                        .clickable { onImageClick(bitmap) },
                     contentScale = ContentScale.Fit,
                 )
             }

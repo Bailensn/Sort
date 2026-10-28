@@ -49,4 +49,5 @@
     <string name="history_title">인식 기록</string>
     <string name="history_empty">기록이 없습니다</string>
     <string name="history_entry">%1$s · %2$d행 %3$d열</string>
+    <string name="preview_fullscreen_close">탭하여 닫기</string>
 </resources>

@@ -49,4 +49,5 @@
     <string name="history_title">認識履歴</string>
     <string name="history_empty">記録はまだありません</string>
     <string name="history_entry">%1$s · %2$d 行 %3$d 列</string>
+    <string name="preview_fullscreen_close">タップで閉じる</string>
 </resources>
