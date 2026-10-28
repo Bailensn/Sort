@@ -21,6 +21,11 @@
     <string name="preview_title">表格预览</string>
     <string name="preview_meta">%1$d 行 %2$d 列</string>
     <string name="preview_limit">仅预览前 %1$d 行，导出包含全部 %2$d 行</string>
+    <string name="section_stats">本次结果</string>
+    <string name="stats_size">表格尺寸</string>
+    <string name="stats_confidence_label">平均置信度</string>
+    <string name="stats_structure_label">结构</string>
+    <string name="stats_selfcheck">自检</string>
 
     <string name="stats_corrected">回读纠正</string>
     <string name="stats_elapsed">用时</string>
@@ -59,6 +64,7 @@
     <string name="action_delete">删除</string>
     <string name="history_selected">已选 %1$d 项</string>
     <string name="action_select_all">全选</string>
+    <string name="action_clear_selection">取消选择</string>
     <string name="history_delete_title">删除记录</string>
     <string name="history_delete_message">将删除 %1$d 条记录，无法恢复</string>
     <string name="view_mode">显示</string>

@@ -20,6 +20,11 @@
     <string name="preview_title">表格預覽</string>
     <string name="preview_meta">%1$d 列 %2$d 欄</string>
     <string name="preview_limit">僅預覽前 %1$d 列，匯出包含全部 %2$d 列</string>
+    <string name="section_stats">本次結果</string>
+    <string name="stats_size">表格尺寸</string>
+    <string name="stats_confidence_label">平均信賴度</string>
+    <string name="stats_structure_label">結構</string>
+    <string name="stats_selfcheck">自檢</string>
 
     <string name="stats_corrected">回讀修正</string>
     <string name="stats_elapsed">耗時</string>
@@ -58,6 +63,7 @@
     <string name="action_delete">刪除</string>
     <string name="history_selected">已選 %1$d 項</string>
     <string name="action_select_all">全選</string>
+    <string name="action_clear_selection">取消選取</string>
     <string name="history_delete_title">刪除紀錄</string>
     <string name="history_delete_message">將刪除 %1$d 筆紀錄，無法復原</string>
     <string name="view_mode">顯示</string>

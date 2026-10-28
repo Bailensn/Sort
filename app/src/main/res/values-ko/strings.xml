@@ -20,6 +20,11 @@
     <string name="preview_title">미리보기</string>
     <string name="preview_meta">%1$d행 %2$d열</string>
     <string name="preview_limit">앞 %1$d행만 표시하며, 내보내기에는 전체 %2$d행이 포함됩니다</string>
+    <string name="section_stats">이번 결과</string>
+    <string name="stats_size">표 크기</string>
+    <string name="stats_confidence_label">평균 신뢰도</string>
+    <string name="stats_structure_label">구조</string>
+    <string name="stats_selfcheck">자체 검사</string>
 
     <string name="stats_corrected">재확인 교정</string>
     <string name="stats_elapsed">소요 시간</string>
@@ -58,6 +63,7 @@
     <string name="action_delete">삭제</string>
     <string name="history_selected">%1$d개 선택</string>
     <string name="action_select_all">전체 선택</string>
+    <string name="action_clear_selection">선택 해제</string>
     <string name="history_delete_title">기록 삭제</string>
     <string name="history_delete_message">%1$d개 기록이 삭제됩니다</string>
     <string name="view_mode">보기</string>

@@ -20,6 +20,11 @@
     <string name="preview_title">Preview</string>
     <string name="preview_meta">%1$d rows × %2$d columns</string>
     <string name="preview_limit">Showing first %1$d rows; export includes all %2$d rows</string>
+    <string name="section_stats">This run</string>
+    <string name="stats_size">Table size</string>
+    <string name="stats_confidence_label">Avg. confidence</string>
+    <string name="stats_structure_label">Structure</string>
+    <string name="stats_selfcheck">Self-check</string>
 
     <string name="stats_corrected">Read-back fixes</string>
     <string name="stats_elapsed">Time</string>
@@ -58,6 +63,7 @@
     <string name="action_delete">Delete</string>
     <string name="history_selected">%1$d selected</string>
     <string name="action_select_all">Select all</string>
+    <string name="action_clear_selection">Clear</string>
     <string name="history_delete_title">Delete records</string>
     <string name="history_delete_message">%1$d records will be deleted permanently</string>
     <string name="view_mode">Show</string>
