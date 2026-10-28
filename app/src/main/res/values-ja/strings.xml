@@ -28,11 +28,6 @@
 
     <string name="stats_corrected">読み直し補正</string>
     <string name="stats_elapsed">所要時間</string>
-    <string name="stats_rectified">台形補正済み</string>
-    <string name="stats_deskew">傾き補正 %1$s°</string>
-    <string name="stats_structure">横線 %1$d · 縦線 %2$d · セル %3$d</string>
-    <string name="stats_timing">セル %1$s · 全体検出 %2$s · 構造 %3$s</string>
-    <string name="stats_confidence">平均信頼度 %1$s · 98%% 未満のセル %2$d 個</string>
 
     <string name="error_title">認識できませんでした</string>
     <string name="error_hint">より鮮明な写真でお試しください。</string>
@@ -43,20 +38,15 @@
     <string name="stage_verify">読み直し中</string>
     <string name="stage_idle">処理中</string>
 
-    <string name="model_loading">認識モデルを読み込み中</string>
     <string name="model_failed_title">モデルの読み込みに失敗</string>
-    <string name="action_history">履歴</string>
     <string name="action_save">保存</string>
     <string name="action_cancel">キャンセル</string>
-    <string name="action_close">閉じる</string>
     <string name="edit_title">%1$d 行 %2$d 列を編集</string>
     <string name="edit_suggestions">記憶した氏名</string>
     <string name="history_title">認識履歴</string>
     <string name="history_empty">記録はまだありません</string>
-    <string name="history_entry">%1$s · %2$d 行 %3$d 列</string>
     <string name="preview_fullscreen_close">タップで閉じる</string>
     <string name="action_pick">画像を選択</string>
-    <string name="stats_rows">行数</string>
     <string name="snack_exported">出力しました</string>
     <string name="snack_saved">保存しました</string>
     <string name="snack_loaded">履歴を読み込みました</string>
@@ -66,7 +56,6 @@
     <string name="action_clear_selection">選択を解除</string>
     <string name="history_delete_title">記録を削除</string>
     <string name="history_delete_message">%1$d 件を削除します。元に戻せません</string>
-    <string name="view_mode">表示</string>
     <string name="tab_recognize">認識</string>
     <string name="tab_history">履歴</string>
     <string name="history_subtitle">タップで開く、選択で削除</string>

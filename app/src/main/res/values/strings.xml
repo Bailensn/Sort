@@ -29,11 +29,6 @@
 
     <string name="stats_corrected">回读纠正</string>
     <string name="stats_elapsed">用时</string>
-    <string name="stats_rectified">已做透视校正</string>
-    <string name="stats_deskew">已纠偏 %1$s°</string>
-    <string name="stats_structure">横线 %1$d · 竖线 %2$d · 格子 %3$d</string>
-    <string name="stats_timing">逐格 %1$s · 整图检测 %2$s · 结构 %3$s</string>
-    <string name="stats_confidence">平均置信度 %1$s · 低于 98%% 的格子 %2$d 个</string>
 
     <string name="error_title">识别失败</string>
     <string name="error_hint">换一张清晰的照片试试</string>
@@ -44,20 +39,15 @@
     <string name="stage_verify">正在回读核对</string>
     <string name="stage_idle">正在处理</string>
 
-    <string name="model_loading">正在加载识别模型</string>
     <string name="model_failed_title">模型加载失败</string>
-    <string name="action_history">历史</string>
     <string name="action_save">保存</string>
     <string name="action_cancel">取消</string>
-    <string name="action_close">关闭</string>
     <string name="edit_title">修改第 %1$d 行第 %2$d 列</string>
     <string name="edit_suggestions">记忆里的人名</string>
     <string name="history_title">识别历史</string>
     <string name="history_empty">还没有记录</string>
-    <string name="history_entry">%1$s · %2$d 行 %3$d 列</string>
     <string name="preview_fullscreen_close">点击关闭</string>
     <string name="action_pick">选择图片</string>
-    <string name="stats_rows">行数</string>
     <string name="snack_exported">已导出</string>
     <string name="snack_saved">已保存</string>
     <string name="snack_loaded">已载入历史</string>
@@ -67,7 +57,6 @@
     <string name="action_clear_selection">取消选择</string>
     <string name="history_delete_title">删除记录</string>
     <string name="history_delete_message">将删除 %1$d 条记录，无法恢复</string>
-    <string name="view_mode">显示</string>
     <string name="tab_recognize">识别</string>
     <string name="tab_history">历史</string>
     <string name="history_subtitle">点选可打开，勾选可删除</string>

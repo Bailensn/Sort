@@ -28,11 +28,6 @@
 
     <string name="stats_corrected">재확인 교정</string>
     <string name="stats_elapsed">소요 시간</string>
-    <string name="stats_rectified">원근 보정 완료</string>
-    <string name="stats_deskew">기울기 보정 %1$s°</string>
-    <string name="stats_structure">가로선 %1$d · 세로선 %2$d · 셀 %3$d</string>
-    <string name="stats_timing">셀 %1$s · 전체 검출 %2$s · 구조 %3$s</string>
-    <string name="stats_confidence">평균 신뢰도 %1$s · 98%% 미만 셀 %2$d개</string>
 
     <string name="error_title">인식 실패</string>
     <string name="error_hint">더 선명한 사진으로 시도해 보세요.</string>
@@ -43,20 +38,15 @@
     <string name="stage_verify">재확인 중</string>
     <string name="stage_idle">처리 중</string>
 
-    <string name="model_loading">인식 모델 불러오는 중</string>
     <string name="model_failed_title">모델 로드 실패</string>
-    <string name="action_history">기록</string>
     <string name="action_save">저장</string>
     <string name="action_cancel">취소</string>
-    <string name="action_close">닫기</string>
     <string name="edit_title">%1$d행 %2$d열 수정</string>
     <string name="edit_suggestions">기억된 이름</string>
     <string name="history_title">인식 기록</string>
     <string name="history_empty">기록이 없습니다</string>
-    <string name="history_entry">%1$s · %2$d행 %3$d열</string>
     <string name="preview_fullscreen_close">탭하여 닫기</string>
     <string name="action_pick">이미지 선택</string>
-    <string name="stats_rows">행</string>
     <string name="snack_exported">내보냈습니다</string>
     <string name="snack_saved">저장했습니다</string>
     <string name="snack_loaded">기록을 불러왔습니다</string>
@@ -66,7 +56,6 @@
     <string name="action_clear_selection">선택 해제</string>
     <string name="history_delete_title">기록 삭제</string>
     <string name="history_delete_message">%1$d개 기록이 삭제됩니다</string>
-    <string name="view_mode">보기</string>
     <string name="tab_recognize">인식</string>
     <string name="tab_history">기록</string>
     <string name="history_subtitle">탭하면 열기, 선택하면 삭제</string>

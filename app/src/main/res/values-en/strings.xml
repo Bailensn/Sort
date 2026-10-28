@@ -28,11 +28,6 @@
 
     <string name="stats_corrected">Read-back fixes</string>
     <string name="stats_elapsed">Time</string>
-    <string name="stats_rectified">Perspective corrected</string>
-    <string name="stats_deskew">Deskewed %1$s°</string>
-    <string name="stats_structure">%1$d h-lines · %2$d v-lines · %3$d cells</string>
-    <string name="stats_timing">cells %1$s · full-page %2$s · structure %3$s</string>
-    <string name="stats_confidence">Avg confidence %1$s · %2$d cells below 98%%</string>
 
     <string name="error_title">Recognition failed</string>
     <string name="error_hint">Try a sharper photo.</string>
@@ -43,20 +38,15 @@
     <string name="stage_verify">Cross-checking</string>
     <string name="stage_idle">Working</string>
 
-    <string name="model_loading">Loading models</string>
     <string name="model_failed_title">Failed to load models</string>
-    <string name="action_history">History</string>
     <string name="action_save">Save</string>
     <string name="action_cancel">Cancel</string>
-    <string name="action_close">Close</string>
     <string name="edit_title">Edit row %1$d, column %2$d</string>
     <string name="edit_suggestions">Remembered names</string>
     <string name="history_title">History</string>
     <string name="history_empty">No records yet</string>
-    <string name="history_entry">%1$s · %2$d rows %3$d cols</string>
     <string name="preview_fullscreen_close">Tap to close</string>
     <string name="action_pick">Pick image</string>
-    <string name="stats_rows">Rows</string>
     <string name="snack_exported">Exported</string>
     <string name="snack_saved">Saved</string>
     <string name="snack_loaded">Loaded history</string>
@@ -66,7 +56,6 @@
     <string name="action_clear_selection">Clear</string>
     <string name="history_delete_title">Delete records</string>
     <string name="history_delete_message">%1$d records will be deleted permanently</string>
-    <string name="view_mode">Show</string>
     <string name="tab_recognize">Scan</string>
     <string name="tab_history">History</string>
     <string name="history_subtitle">Tap to open, tick to delete</string>

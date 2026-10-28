@@ -77,6 +77,10 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
     private val _history = MutableStateFlow<List<HistoryStore.Entry>>(emptyList())
     val history: StateFlow<List<HistoryStore.Entry>> = _history.asStateFlow()
 
+    // 手改时的候选名：只读一次盘，改完再刷，避免在组合期做 IO。
+    private val _suggestions = MutableStateFlow<List<String>>(emptyList())
+    val suggestions: StateFlow<List<String>> = _suggestions.asStateFlow()
+
     /** 当前结果对应的历史条目文件名；手改格子时回写它。 */
     private var currentEntryId: String? = null
 
@@ -85,6 +89,7 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
 
     init {
         loadEngine()
+        _suggestions.value = NameMemory.load(getApplication())
     }
 
     fun retryEngine() {
@@ -289,6 +294,7 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
         val value = text.trim()
         if (value.length in 2..4 && value.all { it.code > 0x2E80 }) {
             NameMemory.remember(getApplication(), listOf(value))
+            _suggestions.value = NameMemory.load(getApplication())
         }
     }
 
@@ -316,8 +322,6 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun memoryNames(): List<String> = NameMemory.load(getApplication())
-
     fun deleteHistory(ids: Collection<String>) {
         HistoryStore.delete(getApplication(), ids)
         if (currentEntryId in ids) currentEntryId = null
@@ -330,7 +334,10 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
             val names = grid.rows.flatMap { row ->
                 row.filter { it.length in 2..4 && it.all { character -> character.code > 0x2E80 } }
             }
-            if (names.isNotEmpty()) NameMemory.remember(getApplication(), names)
+            if (names.isNotEmpty()) {
+                NameMemory.remember(getApplication(), names)
+                _suggestions.value = NameMemory.load(getApplication())
+            }
         }
         viewModelScope.launch {
             _state.update { it.copy(exporting = true) }
