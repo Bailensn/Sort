@@ -1,6 +1,8 @@
 package com.bailensn.sort.data
 
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -18,7 +20,13 @@ object HistoryStore {
     private const val PREFIX = "history-"
     private const val SUFFIX = ".tsv"
 
-    data class Entry(val id: String, val timestamp: Long, val rowCount: Int, val columnCount: Int)
+    data class Entry(
+        val id: String,
+        val timestamp: Long,
+        val rowCount: Int,
+        val columnCount: Int,
+        val hasImage: Boolean = false,
+    )
 
     fun list(context: Context): List<Entry> = runCatching {
         val dir = context.filesDir
@@ -33,7 +41,8 @@ object HistoryStore {
                     id = file.name,
                     timestamp = timestamp,
                     rowCount = lines.size,
-                    columnCount = lines.maxOfOrNull { it.count { _ -> true } } ?: 0,
+                    columnCount = lines.firstOrNull()?.count { it == '\t' }?.plus(1) ?: 0,
+                    hasImage = File(dir, imageName(file.name)).isFile,
                 )
             }
     }.getOrDefault(emptyList())
@@ -42,26 +51,62 @@ object HistoryStore {
         File(context.filesDir, entry.id).readLines().map { it.split("\t") }
     }.getOrDefault(emptyList())
 
-    fun save(context: Context, rows: List<List<String>>): Entry? = runCatching {
+    /**
+     * 存一次识别结果。
+     *
+     * [original] 是原图：一起落盘后，从历史记录进去还能看原图、网格图、增强图，
+     * 而不是只剩一张冷冰冰的表格。
+     */
+    fun save(context: Context, rows: List<List<String>>, original: Bitmap? = null): Entry? = runCatching {
         if (rows.isEmpty()) return null
         val timestamp = System.currentTimeMillis()
         val file = File(context.filesDir, "$PREFIX$timestamp$SUFFIX")
         file.writeText(rows.joinToString("\n") { row -> row.joinToString("\t") })
+        if (original != null) {
+            runCatching {
+                File(context.filesDir, imageName(file.name)).outputStream().use { out ->
+                    original.compress(Bitmap.CompressFormat.JPEG, 90, out)
+                }
+            }
+        }
         prune(context)
         Entry(
             id = file.name,
             timestamp = timestamp,
             rowCount = rows.size,
             columnCount = rows.maxOfOrNull { it.size } ?: 0,
+            hasImage = original != null,
         )
     }.getOrNull()
+
+    /** 手动改格子后回写，历史记录里看到的就是改过的版本。 */
+    fun update(context: Context, entryId: String, rows: List<List<String>>) {
+        runCatching {
+            if (rows.isEmpty()) return
+            File(context.filesDir, entryId).writeText(
+                rows.joinToString("\n") { row -> row.joinToString("\t") },
+            )
+        }
+    }
+
+    /** 读回原图；没有就返回 null（旧记录、或当时没存）。 */
+    fun image(context: Context, entry: Entry): Bitmap? = runCatching {
+        val file = File(context.filesDir, imageName(entry.id))
+        if (file.isFile) BitmapFactory.decodeFile(file.absolutePath) else null
+    }.getOrNull()
+
+    private fun imageName(tsvName: String): String =
+        tsvName.removeSuffix(SUFFIX) + ".jpg"
 
     private fun prune(context: Context) {
         val files = context.filesDir
             .listFiles { file -> file.name.startsWith(PREFIX) && file.name.endsWith(SUFFIX) }
             .orEmpty()
             .sortedByDescending { it.name }
-        files.drop(MAX_ENTRIES).forEach { runCatching { it.delete() } }
+        files.drop(MAX_ENTRIES).forEach { file ->
+            runCatching { file.delete() }
+            runCatching { File(file.parentFile, imageName(file.name)).delete() }
+        }
     }
 
     fun formatTime(timestamp: Long): String =
