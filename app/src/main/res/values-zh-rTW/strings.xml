@@ -61,4 +61,7 @@
     <string name="history_delete_title">刪除紀錄</string>
     <string name="history_delete_message">將刪除 %1$d 筆紀錄，無法復原</string>
     <string name="view_mode">顯示</string>
+    <string name="tab_recognize">辨識</string>
+    <string name="tab_history">歷史</string>
+    <string name="history_subtitle">點選可開啟，勾選可刪除</string>
 </resources>

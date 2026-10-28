@@ -61,4 +61,7 @@
     <string name="history_delete_title">기록 삭제</string>
     <string name="history_delete_message">%1$d개 기록이 삭제됩니다</string>
     <string name="view_mode">보기</string>
+    <string name="tab_recognize">인식</string>
+    <string name="tab_history">기록</string>
+    <string name="history_subtitle">탭하면 열기, 선택하면 삭제</string>
 </resources>

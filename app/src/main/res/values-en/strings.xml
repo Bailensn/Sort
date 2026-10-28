@@ -61,4 +61,7 @@
     <string name="history_delete_title">Delete records</string>
     <string name="history_delete_message">%1$d records will be deleted permanently</string>
     <string name="view_mode">Show</string>
+    <string name="tab_recognize">Scan</string>
+    <string name="tab_history">History</string>
+    <string name="history_subtitle">Tap to open, tick to delete</string>
 </resources>

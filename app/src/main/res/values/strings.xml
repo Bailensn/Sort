@@ -62,4 +62,7 @@
     <string name="history_delete_title">删除记录</string>
     <string name="history_delete_message">将删除 %1$d 条记录，无法恢复</string>
     <string name="view_mode">显示</string>
+    <string name="tab_recognize">识别</string>
+    <string name="tab_history">历史</string>
+    <string name="history_subtitle">点选可打开，勾选可删除</string>
 </resources>
