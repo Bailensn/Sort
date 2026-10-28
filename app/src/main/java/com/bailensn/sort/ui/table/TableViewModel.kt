@@ -284,6 +284,11 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
         if (column !in newRows[row].indices) return
         newRows[row][column] = text.trim()
         _state.update { it.copy(grid = grid.copy(rows = newRows)) }
+        // 改完立刻落盘：下次从历史记录进来，看到的还是改过的版本。
+        currentEntryId?.let { entryId ->
+            HistoryStore.update(getApplication(), entryId, newRows)
+            _history.value = HistoryStore.list(getApplication())
+        }
         // 改对了的名字记下来，下次自动纠。
         val value = text.trim()
         if (value.length in 2..4 && value.all { it.code > 0x2E80 }) {
