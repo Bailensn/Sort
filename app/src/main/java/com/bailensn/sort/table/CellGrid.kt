@@ -11,12 +11,6 @@ interface BorderProbe {
     fun hasHorizontalBorder(y: Int, left: Int, right: Int): Boolean
 }
 
-/**
- * 一个单元格在原图中的像素矩形。
- *
- * 合并单元格只保留左上角这一个 [TableCell]，用 [rowSpan] / [columnSpan] 表示它占了几行几列；
- * 被它覆盖的格子不会单独出现（识别时也只裁这一整块）。
- */
 data class TableCell(
     val row: Int,
     val column: Int,
@@ -48,15 +42,6 @@ data class CellGrid(
     val merges: List<TableMerge> = emptyList(),
 ) {
     companion object {
-        /**
-         * 用检测到的横竖线切出单元格。
-         *
-         * 传入 [probe] 时，会逐条检查两个相邻格子之间的边界：没有画线的那一段说明
-         * 这两格其实是一个合并单元格（标题行、备注、跨列的表头都很常见），于是合并起来。
-         * 合并后只保留左上角这一格，识别时整块送入模型。
-         *
-         * 线先按像素取整、去重，间距小于 [MIN_GAP] 的合并（防止同一条粗线被算成两条）。
-         */
         fun fromLines(
             width: Int,
             height: Int,

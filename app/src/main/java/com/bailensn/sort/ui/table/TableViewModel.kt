@@ -250,10 +250,6 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    /**
-     * 人名记忆：认出来的姓名如果和记忆里只差一个字，就改成记忆里的写法。
-     * 只对「含中文的列」生效，数字列一律不动。
-     */
     private fun applyNameMemory(grid: TableGrid): TableGrid {
         if (grid.rows.isEmpty()) return grid
         val memory = NameMemory.load(getApplication())

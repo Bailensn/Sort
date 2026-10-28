@@ -1,11 +1,5 @@
 package com.bailensn.sort
 
-/**
- * JNI 桥：native 侧实现在 `src/main/cpp/native-lib.cpp`。
- *
- * JNI 符号名由「包名 + 类名 + 方法名」拼出来，修改包名或类名后，
- * 必须同步修改 native-lib.cpp 里的函数名。
- */
 object NativeBridge {
 
     private const val LIBRARY_NAME = "main"

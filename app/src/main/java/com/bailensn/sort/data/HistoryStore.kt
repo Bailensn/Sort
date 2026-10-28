@@ -8,12 +8,6 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-/**
- * 识别历史：把每次识别出的表格落一份到内部存储，最多留 [MAX_ENTRIES] 份。
- *
- * 存成 TSV（一行一条记录，制表符分隔），不需要 JSON 库，读回来就是矩阵。
- * 表格里不会出现制表符和换行，所以这个格式足够安全。
- */
 object HistoryStore {
 
     private const val MAX_ENTRIES = 20
@@ -51,12 +45,6 @@ object HistoryStore {
         File(context.filesDir, entry.id).readLines().map { it.split("\t") }
     }.getOrDefault(emptyList())
 
-    /**
-     * 存一次识别结果。
-     *
-     * [original] 是原图：一起落盘后，从历史记录进去还能看原图、网格图、增强图，
-     * 而不是只剩一张冷冰冰的表格。
-     */
     fun save(context: Context, rows: List<List<String>>, original: Bitmap? = null): Entry? = runCatching {
         if (rows.isEmpty()) return null
         val timestamp = System.currentTimeMillis()

@@ -5,14 +5,6 @@ import org.opencv.android.Utils
 import org.opencv.core.Mat
 import org.opencv.imgproc.Imgproc
 
-/**
- * 在二值图上判断一条边界上到底有没有画线。
- *
- * 做法很直白：沿这条边界采样几十个点，每个点看左右（或上下）[RADIUS] 像素内有没有黑像素，
- * 命中率过半才算“线画到了这里”。没画线的那一段就说明相邻两格其实是合并单元格。
- *
- * 判定偏保守（[MIN_HIT_RATIO] 取 0.55）：宁可把合并格拆开，也不要把两个独立格粘成一个。
- */
 class PixelBorderProbe private constructor(
     private val binary: Mat,
     private val height: Int,

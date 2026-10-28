@@ -15,13 +15,6 @@ import kotlin.math.cos
 import kotlin.math.roundToInt
 import kotlin.math.sin
 
-/**
- * 手机拍出来的表格往往是斜的，先把它转正再切格/识别，精度会高很多。
- *
- * 角度估计用投影法：把二值图按候选角度旋转，统计每一行的白点数量，
- * 行与行之间跳变最尖锐的角度就是表格线最水平的那个角度。
- * 只在小角度范围（±3°）内搜索，避免把整张图转歪。
- */
 object Deskewer {
 
     data class Result(

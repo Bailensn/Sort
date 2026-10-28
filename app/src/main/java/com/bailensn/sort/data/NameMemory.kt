@@ -3,14 +3,6 @@ package com.bailensn.sort.data
 import android.content.Context
 import java.io.File
 
-/**
- * 人名记忆：记住用户确认过的姓名，下次识别时拿它纠错。
- *
- * 成绩单里的姓名是生僻字重灾区（`蒴`、`熇`、`忱`），模型的字表救不了，
- * 但同一个班的名字年年重复——认过一次、你确认过，下次就能按编辑距离纠回来。
- *
- * 存储用一行一个名字的纯文本，几十个名字，读写都是毫秒级。
- */
 object NameMemory {
 
     private const val FILE_NAME = "names.txt"
@@ -33,12 +25,6 @@ object NameMemory {
         }
     }
 
-    /**
-     * 在记忆里找一个和 [candidate] 足够接近的名字。
-     *
-     * 只允许一个字的差异，而且两边长度都得 ≥2——汉字一个字的差别往往就是同一个人
-     * 被认错（`示例甲` 被认成 `示例由`），但两个字的差异已经可能是别人了。
-     */
     fun nearest(candidate: String, memory: List<String>): String? {
         val target = candidate.trim()
         if (target.length < 2) return null

@@ -1,15 +1,5 @@
 package com.bailensn.sort.table
 
-/**
- * 数字列的字符级纠错。
- *
- * 成绩单里绝大多数列是分数，OCR 最典型的错误是把数字认成外形相近的字母或符号：
- * `5→S`、`0→O`、`8→B`、`1→l/I/|`、`2→Z`、`6→G`、`7→T`、`9→q`。
- * 只要一列里大部分格子都是纯数字，就用这层规则把剩下的格子按同样的字典映射回数字，
- * 映射后仍然不是数字的（比如「缺考」）保持原样。
- *
- * 纯 Kotlin，方便 JVM 单测。
- */
 object NumericColumnRepair {
 
     private val NUMERIC = Regex("""^\d+(\.\d+)?$""")

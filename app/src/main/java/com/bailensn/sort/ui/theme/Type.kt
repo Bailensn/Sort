@@ -6,10 +6,6 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
-/**
- * 字号只保留三档：20 / 15 / 13。
- * 更细的层级用字重和颜色区分，不再新增字号（最小 13sp，高于 12sp 下限）。
- */
 val SortTypography = Typography(
     titleLarge = TextStyle(
         fontFamily = FontFamily.Default,

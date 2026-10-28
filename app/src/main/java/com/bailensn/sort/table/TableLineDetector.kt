@@ -8,7 +8,6 @@ import org.opencv.core.Size
 import org.opencv.imgproc.Imgproc
 import kotlin.math.abs
 
-/** 一条拟合出来的直线：横线是 y = slope * x + intercept，竖线是 x = slope * y + intercept。 */
 data class FittedLine(
     val slope: Float,
     val intercept: Float,
@@ -16,10 +15,6 @@ data class FittedLine(
     fun valueAt(t: Float): Float = slope * t + intercept
 }
 
-/**
- * 线检测结果，保留斜率信息。投影只用来找“大概在哪”，
- * 每个线带再按 x 窗口取质心做最小二乘拟合，得到真实的斜线。
- */
 data class LineDetection(
     val width: Int,
     val height: Int,

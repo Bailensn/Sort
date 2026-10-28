@@ -6,13 +6,6 @@ import java.io.OutputStream
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 
-/**
- * 手写一个最小但合法的 .xlsx（OOXML）。
- *
- * 不引 Apache POI：POI 在 Android 上方法数、体积和 dex 都不友好。
- * 这里只用到 `java.util.zip` + 字符串拼 XML，产物在 Excel / WPS / Google Sheets
- * 里都能正常打开，单元格带细边框、自动换行、按内容估宽。
- */
 object XlsxWriter {
 
     fun write(grid: TableGrid, output: OutputStream) {

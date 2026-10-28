@@ -10,10 +10,6 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.darkColorScheme
 import top.yukonga.miuix.kmp.theme.lightColorScheme
 
-/**
- * 主题：外层用 Miuix 的配色与文字体系（应用的主体控件都在 Miuix 上），
- * 内层保留 MaterialTheme，给还没迁移的零散控件兜底。
- */
 private val SortShapes = Shapes(
     extraSmall = RoundedCornerShape(8.dp),
     small = RoundedCornerShape(12.dp),

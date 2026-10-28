@@ -1,15 +1,8 @@
-// Copyright (c) 2026 PaddlePaddle Authors. All Rights Reserved.
 //
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
 //     http://www.apache.org/licenses/LICENSE-2.0
 //
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
 // limitations under the License.
 
 package com.paddle.ocr.engine
@@ -213,11 +206,6 @@ class OCREngine(
         )
     }
 
-    /**
-     * 逐格识别：按给定矩形裁图，识别每个单元格里的文字。
-     * 表格场景比整图检测稳，因为不会出现跨列合并的检测框。
-     * 返回顺序与入参一致；[CellReading.hasInk] 区分「真空白」和「有字没认出来」。
-     */
     fun recognizeCells(bitmap: Bitmap, cells: List<Rect>, scale: Float = 1f): List<CellReading> =
         recognizeCellsWith(bitmap, cells, scale, recognitionEngine)
 
@@ -271,10 +259,6 @@ class OCREngine(
         return cells.indices.map { output[it] ?: CellReading("", 0f, hasInk = false) }
     }
 
-    /**
-     * 把一块裁剪图算完：按估计宽度排序再分批，一批图会补齐到同宽，
-     * 混进一个学号格会让整批多算好几倍。排序只影响送算先后，结果按 index 放回。
-     */
     private fun runBatch(
         output: Array<CellReading?>,
         cells: List<PendingCell>,
@@ -314,12 +298,6 @@ class OCREngine(
 
     private class PendingCell(val index: Int, val crop: Mat, val width: Int)
 
-    /**
-     * 裁出单元格内部，去掉边框，再补白边，识别模型对留白更稳。
-     *
-     * 小字的格子（高度不足 [SMALL_TEXT_HEIGHT] 像素）先放大再送模型：
-     * 成绩单里「缺考」这类小字、或者缩得很小的备注，直接喂原尺寸会掉字。
-     */
     private fun cropCell(src: Mat, cell: Rect, scale: Float = 1f): Mat? {
         if (cell.width() <= 2 || cell.height() <= 2) return null
         val inset = maxOf(2, minOf(cell.width(), cell.height()) / 40)

@@ -2,15 +2,6 @@ package com.bailensn.sort.table
 
 import com.paddle.ocr.model.OCRBox
 
-/**
- * 把 OCR 文本框还原成二维表格。
- *
- * 两条路径：
- * 1. [fromLines]：优先用 OpenCV 检测到的横竖线切格，合并单元格会被拆开，但整体最准；
- * 2. [fromClusters]：检测不到线时，按行聚类 + 列方向的空白间隔推断。
- *
- * 这里不依赖 Android/OpenCV，纯几何计算，方便 JVM 单测。
- */
 object TableGridBuilder {
 
     /** 开头最多保留几行空白（可能是被截断的首行）。 */
@@ -100,10 +91,6 @@ object TableGridBuilder {
             .joinToString("\n") { it.text.trim() }
             .trim()
 
-    /**
-     * 把 x 方向上有文字覆盖的区间合并成列，间隔小于 [minGap] 的视为同一列内部的字距。
-     * 返回值是相对 [tableLeft] 的区间。
-     */
     private fun columnRuns(
         regions: List<TextRegion>,
         tableLeft: Float,
@@ -144,10 +131,6 @@ object TableGridBuilder {
         return merged
     }
 
-    /**
-     * 去掉首尾整行为空、右侧整列为空的行列，并补齐每行长度。
-     * [merges] 会跟着行列裁剪一起平移 / 截断，保证合并区域仍指向正确的格子。
-     */
     internal fun normalize(
         cells: List<List<String>>,
         mode: TableGrid.Mode,

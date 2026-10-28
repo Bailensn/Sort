@@ -12,15 +12,6 @@ import com.paddle.ocr.model.OCRBox
 import kotlin.math.max
 import kotlin.math.min
 
-/**
- * 一张图的完整处理链：
- *
- * 1. 微矫正：Hough 投影估角 → 旋转；再用外框四边做透视校正；
- * 2. 表格处理：检测横竖线 → 切单元格；
- * 3. 逐格识别：每个单元格单独裁图送识别模型，避免检测框跨列；
- * 4. 回读纠错：再跑一遍整图检测，把每个检测框按覆盖面积落回单元格，
- *    和逐格结果不一致时按置信度取舍，并统计纠正数量。
- */
 object TablePipeline {
 
     enum class Stage { RECTIFY, SEGMENT, RECOGNIZE, VERIFY }
@@ -453,12 +444,6 @@ object TablePipeline {
             ?: TableGrid(emptyList(), TableGrid.Mode.TEXT_CLUSTER)
     }
 
-    /**
-     * 校正后不能把内容丢了。
-     *
-     * 透视变换把表格拉正时，墨迹总量基本不变；如果结果里的暗像素只剩一点点，
-     * 说明四边形选歪了、只框到表格的一条边——这种白带状的图继续往下走没用。
-     */
     private fun keepsInk(source: Bitmap, warped: Bitmap): Boolean {
         val before = darkRatio(source)
         if (before <= 0.0) return true
@@ -503,16 +488,8 @@ object TablePipeline {
 
     private const val MIN_FILL_CONFIDENCE = 0.6f
 
-    /**
-     * 精度至上：第二遍（增强图 2 倍）对所有有墨迹的格子都跑。
-     * 设成大于 1 的值等于「没有格子能免修」——宁可慢，也要让每格都有两次独立读数。
-     */
     private const val TRUSTED_CONFIDENCE = 1.01f
 
-    /**
-     * 第三遍的门槛（3 倍 + 原图 + 复核模型四路投票）。
-     * 只对「两遍之后仍然拿不准」的格子跑：四路全跑一页要十分钟，没有实用价值。
-     */
     private const val THIRD_CONFIDENCE = 0.98f
 
     /** 第二遍的放大倍率：小字号、贴边的数字靠这一步救回来。 */
@@ -527,8 +504,6 @@ object TablePipeline {
     /** 两遍认出来的字一致时，给置信度的加成。 */
     private const val AGREE_BONUS = 0.05f
 
-
-
     /** 第三遍的放大倍率。 */
     private const val THIRD_SCALE = 3.0f
 
@@ -538,10 +513,6 @@ object TablePipeline {
     /** 三遍投票时，「多一遍认成同样的字」值多少置信度。 */
     private const val VOTE_BONUS = 0.12f
 
-    /**
-     * 多遍结果里挑一个：同文本出现次数多的优先，其次看置信度。
-     * 空文本永远排最后——宁可空着，也别把噪声填进格子。
-     */
     private fun pickBest(candidates: List<CellReading>): CellReading {
         if (candidates.isEmpty()) return CellReading("", 0f, hasInk = false)
         if (candidates.size == 1) return candidates[0]

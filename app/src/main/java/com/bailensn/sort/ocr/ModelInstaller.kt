@@ -7,10 +7,6 @@ import org.tukaani.xz.XZInputStream
 import java.io.File
 import java.io.IOException
 
-/**
- * 模型随 APK 以 .xz 形式内置，首次启动解压到内部存储，之后直接用文件加载。
- * LZMA2 是通用压缩里对二进制最狠的一档（比 zip 小约 10%~15%）。
- */
 object ModelInstaller {
 
     private const val VERSION = "medium-xz-2"

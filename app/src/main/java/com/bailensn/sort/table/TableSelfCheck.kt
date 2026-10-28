@@ -1,20 +1,5 @@
 package com.bailensn.sort.table
 
-/**
- * 表格自检：用表里本来就有的数学约束去查错、改错。
- *
- * 成绩单这类表自带三条铁律：
- *
- * 1. 序号连续递增 1；
- * 2. 学号连续递增 1（同一批学生）；
- * 3. 六科之和 = 总分。
- *
- * 只要有一条不满足，就说明那几行里有格子认错了。更关键的是：
- * 总分对不上时，如果**只改一个数字**就能对平，那这个格子几乎肯定就是错的，
- * 可以直接改回正确值——这比任何模型再认一遍都可靠，因为它是算术，不是概率。
- *
- * 纯 Kotlin，方便 JVM 单测。
- */
 object TableSelfCheck {
 
     private val NUMBER = Regex("""^\d+(\.\d+)?$""")
@@ -48,10 +33,6 @@ object TableSelfCheck {
 
     data class Result(val rows: List<List<String>>, val report: Report)
 
-    /**
-     * @param confidences 与 rows 同形的置信度矩阵；用来在「多个格子都只改一位就能对平」时
-     *                    挑认得更虚的那一格。传 null 时遇到多候选就不改。
-     */
     fun check(input: List<List<String>>, confidences: List<List<Float>>? = null): Result {
         if (input.isEmpty() || input.first().isEmpty()) return Result(input, Report())
         val rows = input.map { it.toMutableList() }
@@ -148,11 +129,6 @@ object TableSelfCheck {
         return Result(rows.map { it.toList() }, Report(summary, corrected, suspicious.sorted()))
     }
 
-    /**
-     * 只改一个字符就能让总和对上时，返回 (列, 新值)；否则 null。
-     *
-     * 有多个候选就不动——宁可不改，也不能把对的改错。
-     */
     private fun fixSingleCell(
         row: MutableList<String>,
         rowIndex: Int,
@@ -196,15 +172,6 @@ object TableSelfCheck {
         return best.first to best.second
     }
 
-    /**
-     * 找「总分列 + 科目列」。
-     *
-     * 业务事实：**总分就是整张表最右一列**（每一行里数值最大的那个格子）。
-     * 所以不去猜「哪一列像总分」，直接取最右边有数字的那一列；
-     * 它右边那些空列/垃圾列先跳过，左边紧挨着的那段数字列就是科目。
-     *
-     * 这样也顺带解决了「总分列整列是空的」：它仍然是最后那列，等着被算出来。
-     */
     private fun findTotalColumn(
         rows: List<List<String>>,
         columns: Int,

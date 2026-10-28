@@ -13,13 +13,6 @@ import kotlin.math.abs
 import kotlin.math.hypot
 import kotlin.math.roundToInt
 
-/**
- * 微矫正：用检测到的四条最外层表格线求交点，做一次透视变换，
- * 让表格在像素层面变成正矩形，后续切格和裁字都不会歪。
- *
- * 只在四角都落在画面附近、且四边形形状合理时才执行；
- * 表格被裁掉一半（缺边）时直接放弃，退回“只纠偏不透视”。
- */
 object PerspectiveRectifier {
 
     fun rectify(bitmap: Bitmap, detection: LineDetection): Bitmap? {
@@ -106,13 +99,6 @@ object PerspectiveRectifier {
         }
     }
 
-    /**
-     * 四边如果还有墨迹（说明最外圈的线没检测到，或者表格被截在画面边缘），
-     * 就把四边形扩到内容边界。上下也扩：成绩单被截图切掉一行，整列数据就错位了，
-     * 这比误带进一点标题严重得多。扩展上限是宽 6% / 高 8%。
-     *
-     * 返回 [左上, 右上, 右下, 左下]。
-     */
     private fun expandToInk(
         bitmap: Bitmap,
         topLeft: Point,
