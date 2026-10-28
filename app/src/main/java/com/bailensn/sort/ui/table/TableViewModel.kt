@@ -77,6 +77,9 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
     private val _history = MutableStateFlow<List<HistoryStore.Entry>>(emptyList())
     val history: StateFlow<List<HistoryStore.Entry>> = _history.asStateFlow()
 
+    /** 当前结果对应的历史条目文件名；手改格子时回写它。 */
+    private var currentEntryId: String? = null
+
     private var engine: PaddleOCR? = null
     private var engineDeferred = CompletableDeferred<PaddleOCR>()
 
@@ -214,7 +217,7 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
                 }
             } else {
                 val polished = applyNameMemory(analysis.grid)
-                HistoryStore.save(getApplication(), polished.rows)
+                currentEntryId = HistoryStore.save(getApplication(), polished.rows, bitmap)?.id
                 _history.value = HistoryStore.list(getApplication())
                 _state.update {
                     it.copy(
@@ -295,12 +298,19 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
     fun openHistory(entry: HistoryStore.Entry) {
         val rows = HistoryStore.rows(getApplication(), entry)
         if (rows.isEmpty()) return
+        val image = HistoryStore.image(getApplication(), entry)
+        currentEntryId = entry.id
         _state.update {
             it.copy(
+                // 原图也一起恢复：历史里同样能看原图、网格图、增强图。
+                original = image,
                 grid = TableGrid(rows, TableGrid.Mode.GRID_LINES),
                 phase = Phase.DONE,
                 stage = null,
                 message = null,
+                processed = null,
+                overlay = null,
+                enhanced = null,
             )
         }
     }
@@ -331,6 +341,7 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun reset() {
+        currentEntryId = null
         _state.update {
             it.copy(
                 original = null,
