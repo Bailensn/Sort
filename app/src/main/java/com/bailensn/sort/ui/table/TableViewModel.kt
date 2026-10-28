@@ -318,6 +318,12 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
 
     fun memoryNames(): List<String> = NameMemory.load(getApplication())
 
+    fun deleteHistory(ids: Collection<String>) {
+        HistoryStore.delete(getApplication(), ids)
+        if (currentEntryId in ids) currentEntryId = null
+        refreshHistory()
+    }
+
     fun exportXlsx() {
         val grid = _state.value.grid ?: return
         runCatching {

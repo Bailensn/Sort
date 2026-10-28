@@ -52,4 +52,13 @@
     <string name="preview_fullscreen_close">Tap to close</string>
     <string name="action_pick">Pick image</string>
     <string name="stats_rows">Rows</string>
+    <string name="snack_exported">Exported</string>
+    <string name="snack_saved">Saved</string>
+    <string name="snack_loaded">Loaded history</string>
+    <string name="action_delete">Delete</string>
+    <string name="history_selected">%1$d selected</string>
+    <string name="action_select_all">Select all</string>
+    <string name="history_delete_title">Delete records</string>
+    <string name="history_delete_message">%1$d records will be deleted permanently</string>
+    <string name="view_mode">Show</string>
 </resources>

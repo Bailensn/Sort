@@ -52,4 +52,13 @@
     <string name="preview_fullscreen_close">點擊關閉</string>
     <string name="action_pick">選擇圖片</string>
     <string name="stats_rows">列數</string>
+    <string name="snack_exported">已匯出</string>
+    <string name="snack_saved">已儲存</string>
+    <string name="snack_loaded">已載入歷史</string>
+    <string name="action_delete">刪除</string>
+    <string name="history_selected">已選 %1$d 項</string>
+    <string name="action_select_all">全選</string>
+    <string name="history_delete_title">刪除紀錄</string>
+    <string name="history_delete_message">將刪除 %1$d 筆紀錄，無法復原</string>
+    <string name="view_mode">顯示</string>
 </resources>

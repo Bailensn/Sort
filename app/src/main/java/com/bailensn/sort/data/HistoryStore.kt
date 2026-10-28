@@ -83,6 +83,13 @@ object HistoryStore {
         if (file.isFile) BitmapFactory.decodeFile(file.absolutePath) else null
     }.getOrNull()
 
+    fun delete(context: Context, ids: Collection<String>) {
+        ids.forEach { id ->
+            runCatching { File(context.filesDir, id).delete() }
+            runCatching { File(context.filesDir, imageName(id)).delete() }
+        }
+    }
+
     private fun imageName(tsvName: String): String =
         tsvName.removeSuffix(SUFFIX) + ".jpg"
 

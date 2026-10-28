@@ -52,4 +52,13 @@
     <string name="preview_fullscreen_close">탭하여 닫기</string>
     <string name="action_pick">이미지 선택</string>
     <string name="stats_rows">행</string>
+    <string name="snack_exported">내보냈습니다</string>
+    <string name="snack_saved">저장했습니다</string>
+    <string name="snack_loaded">기록을 불러왔습니다</string>
+    <string name="action_delete">삭제</string>
+    <string name="history_selected">%1$d개 선택</string>
+    <string name="action_select_all">전체 선택</string>
+    <string name="history_delete_title">기록 삭제</string>
+    <string name="history_delete_message">%1$d개 기록이 삭제됩니다</string>
+    <string name="view_mode">보기</string>
 </resources>
