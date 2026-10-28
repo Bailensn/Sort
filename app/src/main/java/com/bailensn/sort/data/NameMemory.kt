@@ -37,7 +37,7 @@ object NameMemory {
      * 在记忆里找一个和 [candidate] 足够接近的名字。
      *
      * 只允许一个字的差异，而且两边长度都得 ≥2——汉字一个字的差别往往就是同一个人
-     * 被认错（`庄诗严` / `荘诗严`），但两个字的差异已经可能是别人了。
+     * 被认错（`示例甲` 被认成 `示例由`），但两个字的差异已经可能是别人了。
      */
     fun nearest(candidate: String, memory: List<String>): String? {
         val target = candidate.trim()
