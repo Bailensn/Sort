@@ -37,10 +37,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.graphics.vector.path
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -71,47 +68,13 @@ import top.yukonga.miuix.kmp.basic.SnackbarHostState
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.GridView
+import top.yukonga.miuix.kmp.icon.extended.Timer
 import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.overlay.OverlayListPopup
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-
-private val ScanIcon: ImageVector = ImageVector.Builder(
-    name = "scan",
-    defaultWidth = 24.dp,
-    defaultHeight = 24.dp,
-    viewportWidth = 24f,
-    viewportHeight = 24f,
-).apply {
-    path(
-        stroke = SolidColor(Color.Black),
-        strokeLineWidth = 1.8f,
-    ) {
-        moveTo(3f, 6f); lineTo(21f, 6f)
-        moveTo(3f, 12f); lineTo(21f, 12f)
-        moveTo(3f, 18f); lineTo(21f, 18f)
-        moveTo(8f, 6f); lineTo(8f, 18f)
-    }
-}.build()
-
-private val HistoryIcon: ImageVector = ImageVector.Builder(
-    name = "history",
-    defaultWidth = 24.dp,
-    defaultHeight = 24.dp,
-    viewportWidth = 24f,
-    viewportHeight = 24f,
-).apply {
-    path(
-        stroke = SolidColor(Color.Black),
-        strokeLineWidth = 1.8f,
-    ) {
-        moveTo(12f, 3f)
-        curveTo(17f, 3f, 21f, 7f, 21f, 12f)
-        curveTo(21f, 17f, 17f, 21f, 12f, 21f)
-        curveTo(7f, 21f, 3f, 17f, 3f, 12f)
-        moveTo(12f, 7f); lineTo(12f, 12f); lineTo(16f, 14f)
-    }
-}.build()
 
 private const val PREVIEW_ROW_LIMIT = 40
 private val CELL_WIDTH = 104.dp
@@ -168,7 +131,7 @@ fun TableScreen(
                 NavigationBarItem(
                     selected = tab == 0,
                     onClick = { tab = 0 },
-                    icon = ScanIcon,
+                    icon = MiuixIcons.GridView,
                     label = stringResource(R.string.tab_recognize),
                 )
                 NavigationBarItem(
@@ -177,7 +140,7 @@ fun TableScreen(
                         viewModel.refreshHistory()
                         tab = 1
                     },
-                    icon = HistoryIcon,
+                    icon = MiuixIcons.Timer,
                     label = stringResource(R.string.tab_history),
                 )
             }
