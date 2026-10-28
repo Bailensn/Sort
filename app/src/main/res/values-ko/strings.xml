@@ -39,6 +39,27 @@
     <string name="stage_idle">처리 중</string>
 
     <string name="model_failed_title">모델 로드 실패</string>
+    <string name="model_loading">인식 모델 불러오는 중</string>
+    <string name="model_extracting">내장 모델 압축 해제 중 %1$d/%2$d</string>
+    <string name="model_extract_failed">내장 모델 압축 해제 실패: %1$s</string>
+    <string name="error_model_load">인식 모델 로드 실패</string>
+    <string name="error_opencv">OpenCV 초기화 실패</string>
+    <string name="error_image_read">이미지를 읽을 수 없습니다</string>
+    <string name="error_image_invalid">올바른 이미지가 아닙니다</string>
+    <string name="error_image_decode">이미지 디코딩 실패</string>
+    <string name="error_recognize">인식 실패</string>
+    <string name="error_export">내보내기 실패</string>
+    <string name="hint_no_lines">표 격자선을 찾지 못했습니다 (가로 %1$d, 세로 %2$d)</string>
+    <string name="hint_no_text">%1$d개 셀을 추출했지만 글자가 없습니다</string>
+    <string name="error_table">이 이미지에서 표를 인식하지 못했습니다: %1$s. 다른 사진을 시도하거나 "격자" 보기에서 보정 결과를 확인하세요.</string>
+    <string name="selfcheck_none">자체 검사: 사용 가능한 제약이 없습니다</string>
+    <string name="selfcheck_notes">자체 검사: %1$s</string>
+    <string name="selfcheck_sequence_break">%1$d열에 %2$d곳 끊김</string>
+    <string name="selfcheck_sequence_ok">%1$d열은 연속입니다</string>
+    <string name="selfcheck_id_break">%1$d열 학번에 %2$d곳 끊김</string>
+    <string name="selfcheck_sum">합계 검증: %1$d개 열 → %2$d열</string>
+    <string name="selfcheck_corrected">산술로 %1$d칸 수정</string>
+    <string name="selfcheck_suspicious">불확실한 행 %1$d개</string>
     <string name="action_save">저장</string>
     <string name="action_cancel">취소</string>
     <string name="edit_title">%1$d행 %2$d열 수정</string>

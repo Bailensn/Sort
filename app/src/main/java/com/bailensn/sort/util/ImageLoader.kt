@@ -8,6 +8,7 @@ import android.graphics.Color
 import android.graphics.Matrix
 import android.net.Uri
 import androidx.exifinterface.media.ExifInterface
+import com.bailensn.sort.R
 import java.io.ByteArrayInputStream
 
 /** 从相册 Uri 解码出可用于 OCR 的 Bitmap：限制尺寸、按 EXIF 摆正。 */
@@ -15,11 +16,13 @@ object ImageLoader {
 
     fun decode(context: Context, uri: Uri, maxSide: Int = 2048): Bitmap {
         val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
-            ?: error("无法读取图片")
+            ?: error(context.getString(R.string.error_image_read))
 
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
         BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
-        require(bounds.outWidth > 0 && bounds.outHeight > 0) { "不是有效的图片" }
+        require(bounds.outWidth > 0 && bounds.outHeight > 0) {
+            context.getString(R.string.error_image_invalid)
+        }
 
         var sampleSize = 1
         while (maxOf(bounds.outWidth, bounds.outHeight) / sampleSize > maxSide) {
@@ -31,7 +34,7 @@ object ImageLoader {
             inPreferredConfig = Bitmap.Config.ARGB_8888
         }
         val decoded = BitmapFactory.decodeByteArray(bytes, 0, bytes.size, options)
-            ?: error("图片解码失败")
+            ?: error(context.getString(R.string.error_image_decode))
 
         val orientation = runCatching {
             ExifInterface(ByteArrayInputStream(bytes)).getAttributeInt(

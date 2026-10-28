@@ -68,7 +68,12 @@ internal fun RecognizePage(
     ) {
         when (val engine = state.engine) {
             is EngineState.Loading -> {
-                item("engine-loading") { NoticeCard(title = engine.message, progress = true) }
+                item("engine-loading") {
+                    NoticeCard(
+                        title = engine.message ?: stringResource(R.string.model_loading),
+                        progress = true,
+                    )
+                }
             }
 
             is EngineState.Failed -> {

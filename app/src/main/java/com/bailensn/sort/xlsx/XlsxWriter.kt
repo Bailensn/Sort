@@ -9,7 +9,7 @@ import java.util.zip.ZipOutputStream
 object XlsxWriter {
 
     fun write(grid: TableGrid, output: OutputStream) {
-        require(grid.rowCount > 0 && grid.columnCount > 0) { "表格为空" }
+        require(grid.rowCount > 0 && grid.columnCount > 0) { "empty table" }
 
         ZipOutputStream(BufferedOutputStream(output)).use { zip ->
             putEntry(zip, "[Content_Types].xml", CONTENT_TYPES)

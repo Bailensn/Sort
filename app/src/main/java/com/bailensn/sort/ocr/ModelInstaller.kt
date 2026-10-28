@@ -1,6 +1,7 @@
 package com.bailensn.sort.ocr
 
 import android.content.Context
+import com.bailensn.sort.R
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.tukaani.xz.XZInputStream
@@ -32,7 +33,7 @@ object ModelInstaller {
         return REQUIRED.all { File(dir, it).takeIf { file -> file.isFile }?.length() ?: 0L > 1024L }
     }
 
-    suspend fun ensure(context: Context, onStage: (String) -> Unit = {}): File =
+    suspend fun ensure(context: Context, onStage: (index: Int, total: Int) -> Unit = { _, _ -> }): File =
         withContext(Dispatchers.IO) {
             val dir = modelDir(context)
             if (isReady(context)) return@withContext dir
@@ -43,7 +44,7 @@ object ModelInstaller {
 
             val files = REQUIRED + OPTIONAL
             files.forEachIndexed { index, relative ->
-                onStage("正在解压内置模型 ${index + 1}/${files.size}")
+                onStage(index, files.size)
                 val out = File(dir, relative)
                 out.parentFile?.mkdirs()
                 val temp = File(out.parentFile, "${out.name}.part")
@@ -56,7 +57,7 @@ object ModelInstaller {
                     temp.length() >= 1024L && temp.renameTo(out)
                 }.getOrDefault(false)
                 if (!extracted && relative in REQUIRED) {
-                    throw IOException("内置模型解压失败：$relative")
+                    throw IOException(context.getString(R.string.model_extract_failed, relative))
                 }
                 if (!extracted) temp.delete()
             }

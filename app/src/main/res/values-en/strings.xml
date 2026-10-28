@@ -39,6 +39,27 @@
     <string name="stage_idle">Working</string>
 
     <string name="model_failed_title">Failed to load models</string>
+    <string name="model_loading">Loading OCR model</string>
+    <string name="model_extracting">Extracting bundled model %1$d/%2$d</string>
+    <string name="model_extract_failed">Failed to extract bundled model: %1$s</string>
+    <string name="error_model_load">Failed to load OCR model</string>
+    <string name="error_opencv">OpenCV init failed</string>
+    <string name="error_image_read">Cannot read image</string>
+    <string name="error_image_invalid">Not a valid image</string>
+    <string name="error_image_decode">Image decode failed</string>
+    <string name="error_recognize">Recognition failed</string>
+    <string name="error_export">Export failed</string>
+    <string name="hint_no_lines">No table lines found (horizontal %1$d, vertical %2$d)</string>
+    <string name="hint_no_text">Found %1$d cells but no text</string>
+    <string name="error_table">Could not read a table here: %1$s. Try another photo or check the grid view.</string>
+    <string name="selfcheck_none">Self-check: no usable constraints</string>
+    <string name="selfcheck_notes">Self-check: %1$s</string>
+    <string name="selfcheck_sequence_break">Column %1$d has %2$d gap(s)</string>
+    <string name="selfcheck_sequence_ok">Column %1$d is sequential</string>
+    <string name="selfcheck_id_break">Column %1$d has %2$d ID gap(s)</string>
+    <string name="selfcheck_sum">Sum check: %1$d columns → column %2$d</string>
+    <string name="selfcheck_corrected">%1$d cell(s) fixed by arithmetic</string>
+    <string name="selfcheck_suspicious">%1$d row(s) uncertain</string>
     <string name="action_save">Save</string>
     <string name="action_cancel">Cancel</string>
     <string name="edit_title">Edit row %1$d, column %2$d</string>

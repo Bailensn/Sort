@@ -23,13 +23,21 @@ object TableSelfCheck {
     private const val RECOMPUTE_TOTAL_CONFIDENCE = 0.9f
 
     data class Report(
-        /** 自检结果的一句话摘要，直接显示在结果页。 */
-        val summary: String = "",
+        /** 自检发现的约束明细，由界面翻译成文案。 */
+        val notes: List<Note> = emptyList(),
         /** 靠算术反推纠正的格子数。 */
         val correctedCells: Int = 0,
         /** 仍然对不上的行号（0 基）。 */
         val suspiciousRows: List<Int> = emptyList(),
     )
+
+    /** 自检结论。列号与行号都是 0 基，展示时再加一。 */
+    sealed interface Note {
+        data class SequenceBreak(val column: Int, val breaks: Int) : Note
+        data class SequenceOk(val column: Int) : Note
+        data class IdBreak(val column: Int, val breaks: Int) : Note
+        data class SumChecked(val subjects: Int, val totalColumn: Int) : Note
+    }
 
     data class Result(val rows: List<List<String>>, val report: Report)
 
@@ -46,7 +54,7 @@ object TableSelfCheck {
         val sequences = List(columns) { column -> isSequenceColumn(rows, column) }
         val identifiers = List(columns) { column -> isIdentifierColumn(rows, column) }
 
-        val notes = mutableListOf<String>()
+        val notes = mutableListOf<Note>()
         val suspicious = mutableSetOf<Int>()
 
         // 1) 序号 / 学号 连续性
@@ -55,9 +63,9 @@ object TableSelfCheck {
             val breaks = sequenceBreaks(rows, column)
             if (breaks.isNotEmpty()) {
                 suspicious.addAll(breaks)
-                notes.add("第 ${column + 1} 列不连续 ${breaks.size} 处")
+                notes += Note.SequenceBreak(column, breaks.size)
             } else if (filled[column] > 1) {
-                notes.add("第 ${column + 1} 列连续")
+                notes += Note.SequenceOk(column)
             }
         }
         identifiers.forEachIndexed { column, isIdentifier ->
@@ -65,7 +73,7 @@ object TableSelfCheck {
             val breaks = sequenceBreaks(rows, column)
             if (breaks.isNotEmpty()) {
                 suspicious.addAll(breaks)
-                notes.add("第 ${column + 1} 列学号不连续 ${breaks.size} 处")
+                notes += Note.IdBreak(column, breaks.size)
             }
         }
 
@@ -108,7 +116,7 @@ object TableSelfCheck {
                     suspicious.add(index)
                 }
             }
-            notes.add("求和校验 ${subjectColumns.size} 列 → 第 ${totalColumn + 1} 列")
+            notes += Note.SumChecked(subjectColumns.size, totalColumn)
         }
 
         // 3) 数字列里仍然不是数字的格子
@@ -120,13 +128,10 @@ object TableSelfCheck {
             }
         }
 
-        val summary = buildString {
-            if (notes.isEmpty()) append("自检：没有可用的约束")
-            else append("自检：").append(notes.joinToString(" · "))
-            if (corrected > 0) append(" · 已用算术纠正 $corrected 格")
-            if (suspicious.isNotEmpty()) append(" · 存疑 ${suspicious.size} 行")
-        }
-        return Result(rows.map { it.toList() }, Report(summary, corrected, suspicious.sorted()))
+        return Result(
+            rows.map { it.toList() },
+            Report(notes.toList(), corrected, suspicious.sorted()),
+        )
     }
 
     private fun fixSingleCell(

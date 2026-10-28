@@ -5,10 +5,12 @@ import android.graphics.Bitmap
 import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.bailensn.sort.R
 import com.bailensn.sort.data.HistoryStore
 import com.bailensn.sort.data.NameMemory
 import com.bailensn.sort.table.TableGrid
 import com.bailensn.sort.table.TablePipeline
+import com.bailensn.sort.table.TableSelfCheck
 import com.bailensn.sort.ui.table.TableUiState.Phase
 import com.bailensn.sort.util.ImageLoader
 import com.bailensn.sort.ocr.ModelInstaller
@@ -32,8 +34,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 sealed interface EngineState {
-    /** 首次启动会先下载模型（约 140 MB），[message] 用于展示进度。 */
-    data class Loading(val message: String = "正在加载识别模型") : EngineState
+    /** 首次启动要解压内置模型，[message] 用于展示进度。 */
+    data class Loading(val message: String? = null) : EngineState
     data class Ready(val loadTimeMs: Long) : EngineState
     data class Failed(val message: String) : EngineState
 }
@@ -99,18 +101,24 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun loadEngine() {
         engineDeferred = CompletableDeferred()
-        _state.update { it.copy(engine = EngineState.Loading("正在加载识别模型"), message = null) }
+        _state.update { it.copy(engine = EngineState.Loading(), message = null) }
 
         viewModelScope.launch {
             val app = getApplication<Application>()
             try {
                 if (!OpenCVUtils.init(app)) {
-                    error("OpenCV 初始化失败")
+                    error(app.getString(R.string.error_opencv))
                 }
-                val modelDir = ModelInstaller.ensure(app) { stage ->
-                    _state.update { it.copy(engine = EngineState.Loading(stage)) }
+                val modelDir = ModelInstaller.ensure(app) { index, total ->
+                    _state.update {
+                        it.copy(
+                            engine = EngineState.Loading(
+                                app.getString(R.string.model_extracting, index + 1, total),
+                            ),
+                        )
+                    }
                 }
-                _state.update { it.copy(engine = EngineState.Loading("正在加载识别模型")) }
+                _state.update { it.copy(engine = EngineState.Loading()) }
                 val created = withContext(Dispatchers.IO) {
                     PaddleOCR.createWithModels(
                         context = app,
@@ -132,7 +140,7 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
             } catch (t: Throwable) {
                 engineDeferred.completeExceptionally(t)
                 _state.update {
-                    it.copy(engine = EngineState.Failed(t.message ?: "识别模型加载失败"))
+                    it.copy(engine = EngineState.Failed(t.message ?: app.getString(R.string.error_model_load)))
                 }
             }
         }
@@ -160,7 +168,11 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
                 runPipeline(bitmap)
             } catch (t: Throwable) {
                 _state.update {
-                    it.copy(phase = Phase.ERROR, message = t.message ?: "无法读取图片", stage = null)
+                    it.copy(
+                        phase = Phase.ERROR,
+                        message = t.message ?: app.getString(R.string.error_image_read),
+                        stage = null,
+                    )
                 }
             }
         }
@@ -182,6 +194,7 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private suspend fun runPipeline(bitmap: Bitmap) {
+        val app = getApplication<Application>()
         try {
             val ocr = engineDeferred.await()
             val analysis = withContext(Dispatchers.Default) {
@@ -194,15 +207,15 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
             val blank = analysis.grid.isEmpty || analysis.grid.filledCellCount == 0
             if (blank) {
                 val hint = if (analysis.cellCount == 0) {
-                    "没找到表格线（横线 ${analysis.horizontalLines}、竖线 ${analysis.verticalLines}）"
+                    app.getString(R.string.hint_no_lines, analysis.horizontalLines, analysis.verticalLines)
                 } else {
-                    "切出 ${analysis.cellCount} 个格子但一个字都没认出来"
+                    app.getString(R.string.hint_no_text, analysis.cellCount)
                 }
                 _state.update {
                     it.copy(
                         phase = Phase.ERROR,
                         stage = null,
-                        message = "这张图识别不出表格：$hint。换一张、或点「看网格」看看校正结果。",
+                        message = app.getString(R.string.error_table, hint),
                         processed = analysis.bitmap,
                         overlay = analysis.overlay,
                         elapsedMs = analysis.elapsedMs,
@@ -216,7 +229,7 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
                         enhanced = analysis.enhanced,
                         averageConfidence = analysis.averageConfidence,
                         lowConfidenceCells = analysis.lowConfidenceCells,
-                        selfCheckSummary = analysis.selfCheck.summary,
+                        selfCheckSummary = describeSelfCheck(analysis.selfCheck),
                         suspiciousRows = analysis.selfCheck.suspiciousRows,
                     )
                 }
@@ -243,14 +256,18 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
                         enhanced = analysis.enhanced,
                         averageConfidence = analysis.averageConfidence,
                         lowConfidenceCells = analysis.lowConfidenceCells,
-                        selfCheckSummary = analysis.selfCheck.summary,
+                        selfCheckSummary = describeSelfCheck(analysis.selfCheck),
                         suspiciousRows = analysis.selfCheck.suspiciousRows,
                     )
                 }
             }
         } catch (t: Throwable) {
             _state.update {
-                it.copy(phase = Phase.ERROR, stage = null, message = t.message ?: "识别失败")
+                it.copy(
+                    phase = Phase.ERROR,
+                    stage = null,
+                    message = t.message ?: app.getString(R.string.error_recognize),
+                )
             }
         }
     }
@@ -347,7 +364,7 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
                 }
                 _exported.emit(exported)
             } catch (t: Throwable) {
-                _state.update { it.copy(message = "导出失败：${t.message.orEmpty()}") }
+                _state.update { it.copy(message = getApplication<Application>().getString(R.string.error_export)) }
             } finally {
                 _state.update { it.copy(exporting = false) }
             }
@@ -368,6 +385,36 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
                 elapsedMs = 0L,
                 correctedCells = 0,
             )
+        }
+    }
+
+    private fun describeSelfCheck(report: TableSelfCheck.Report): String {
+        val app = getApplication<Application>()
+        val parts = report.notes.map { note ->
+            when (note) {
+                is TableSelfCheck.Note.SequenceBreak ->
+                    app.getString(R.string.selfcheck_sequence_break, note.column + 1, note.breaks)
+
+                is TableSelfCheck.Note.SequenceOk ->
+                    app.getString(R.string.selfcheck_sequence_ok, note.column + 1)
+
+                is TableSelfCheck.Note.IdBreak ->
+                    app.getString(R.string.selfcheck_id_break, note.column + 1, note.breaks)
+
+                is TableSelfCheck.Note.SumChecked ->
+                    app.getString(R.string.selfcheck_sum, note.subjects, note.totalColumn + 1)
+            }
+        }.toMutableList()
+        if (report.correctedCells > 0) {
+            parts += app.getString(R.string.selfcheck_corrected, report.correctedCells)
+        }
+        if (report.suspiciousRows.isNotEmpty()) {
+            parts += app.getString(R.string.selfcheck_suspicious, report.suspiciousRows.size)
+        }
+        return if (parts.isEmpty()) {
+            app.getString(R.string.selfcheck_none)
+        } else {
+            app.getString(R.string.selfcheck_notes, parts.joinToString(" · "))
         }
     }
 

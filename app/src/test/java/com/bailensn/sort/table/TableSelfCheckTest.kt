@@ -74,7 +74,7 @@ class TableSelfCheckTest {
         val result = TableSelfCheck.check(broken, confidences())
 
         assertTrue(result.report.suspiciousRows.contains(3))
-        assertTrue(result.report.summary.contains("不连续"))
+        assertTrue(result.report.notes.any { it is TableSelfCheck.Note.SequenceBreak })
     }
 
     @Test
@@ -96,7 +96,7 @@ class TableSelfCheckTest {
         val result = TableSelfCheck.check(broken, confidences())
 
         assertTrue(result.report.suspiciousRows.contains(3))
-        assertTrue(result.report.summary.contains("学号"))
+        assertTrue(result.report.notes.any { it is TableSelfCheck.Note.IdBreak })
     }
 
     @Test

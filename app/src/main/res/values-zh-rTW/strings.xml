@@ -39,6 +39,27 @@
     <string name="stage_idle">正在處理</string>
 
     <string name="model_failed_title">模型載入失敗</string>
+    <string name="model_loading">正在載入辨識模型</string>
+    <string name="model_extracting">正在解壓內建模型 %1$d/%2$d</string>
+    <string name="model_extract_failed">內建模型解壓失敗：%1$s</string>
+    <string name="error_model_load">辨識模型載入失敗</string>
+    <string name="error_opencv">OpenCV 初始化失敗</string>
+    <string name="error_image_read">無法讀取圖片</string>
+    <string name="error_image_invalid">不是有效的圖片</string>
+    <string name="error_image_decode">圖片解碼失敗</string>
+    <string name="error_recognize">辨識失敗</string>
+    <string name="error_export">匯出失敗</string>
+    <string name="hint_no_lines">找不到表格線（橫線 %1$d、豎線 %2$d）</string>
+    <string name="hint_no_text">切出 %1$d 個格子但一個字都沒辨識出來</string>
+    <string name="error_table">這張圖辨識不出表格：%1$s。換一張、或點「看網格」看看校正結果。</string>
+    <string name="selfcheck_none">自檢：沒有可用的約束</string>
+    <string name="selfcheck_notes">自檢：%1$s</string>
+    <string name="selfcheck_sequence_break">第 %1$d 列不連續 %2$d 處</string>
+    <string name="selfcheck_sequence_ok">第 %1$d 列連續</string>
+    <string name="selfcheck_id_break">第 %1$d 列學號不連續 %2$d 處</string>
+    <string name="selfcheck_sum">求和校驗 %1$d 列 → 第 %2$d 列</string>
+    <string name="selfcheck_corrected">已用算術糾正 %1$d 格</string>
+    <string name="selfcheck_suspicious">存疑 %1$d 行</string>
     <string name="action_save">儲存</string>
     <string name="action_cancel">取消</string>
     <string name="edit_title">修改第 %1$d 列第 %2$d 欄</string>
