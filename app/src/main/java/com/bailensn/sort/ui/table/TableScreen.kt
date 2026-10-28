@@ -38,8 +38,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.bailensn.sort.R
@@ -58,6 +56,12 @@ import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.GridView
 import top.yukonga.miuix.kmp.icon.extended.Timer
+import top.yukonga.miuix.kmp.nav.core.NavDisplay
+import top.yukonga.miuix.kmp.nav.core.NavDisplayEffects
+import top.yukonga.miuix.kmp.nav.core.NavKey
+import top.yukonga.miuix.kmp.nav.core.navBackStackOf
+import top.yukonga.miuix.kmp.nav.transition.NavSwipeDirection
+import top.yukonga.miuix.kmp.nav.transition.NavTransitions
 import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -65,10 +69,53 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 private const val PAGE_RECOGNIZE = 0
 private const val PAGE_HISTORY = 1
 
+/** 页面栈只有两级：主页面 + 全屏看图。 */
+private sealed interface Route : NavKey {
+    data object Main : Route
+    data class Image(val mode: Int) : Route
+}
+
 @Composable
 fun TableScreen(
     modifier: Modifier = Modifier,
     viewModel: TableViewModel = viewModel(),
+) {
+    // 只在内存里：看图是临时页面，进程重建后回到主页面反而更合理。
+    val stack = remember { navBackStackOf(Route.Main) }
+    val pop: () -> Unit = { if (stack.size > 1) stack.removeAt(stack.lastIndex) }
+
+    NavDisplay(
+        backStack = stack,
+        modifier = modifier.fillMaxSize(),
+        onBack = pop,
+        effects = NavDisplayEffects(
+            enableCornerClip = false,
+            backdropColor = MiuixTheme.colorScheme.background,
+            blockInputDuringTransition = true,
+        ),
+    ) {
+        entry<Route.Main> {
+            MainPage(
+                viewModel = viewModel,
+                // 看图页压在上面时返回手势归它，主页面不要再抢。
+                backEnabled = stack.size == 1,
+                onOpenImage = { mode -> stack.add(Route.Image(mode)) },
+            )
+        }
+        entry<Route.Image>(
+            transition = NavTransitions.Modal,
+            swipeDismiss = NavSwipeDirection.TopToBottom,
+        ) { route ->
+            ImageViewer(viewModel = viewModel, mode = route.mode, onClose = pop)
+        }
+    }
+}
+
+@Composable
+private fun MainPage(
+    viewModel: TableViewModel,
+    backEnabled: Boolean,
+    onOpenImage: (Int) -> Unit,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val history by viewModel.history.collectAsStateWithLifecycle()
@@ -84,7 +131,6 @@ fun TableScreen(
 
     var viewMode by rememberSaveable { mutableIntStateOf(0) }
     var editing by remember { mutableStateOf<CellEdit?>(null) }
-    var fullScreen by remember { mutableStateOf<Bitmap?>(null) }
     var selected by remember { mutableStateOf(emptySet<String>()) }
     var pendingDelete by remember { mutableStateOf(emptyList<String>()) }
 
@@ -115,19 +161,17 @@ fun TableScreen(
         }
     }
 
-    val canGoBack = editing != null || fullScreen != null || pendingDelete.isNotEmpty() ||
-        page != PAGE_RECOGNIZE
-    BackHandler(enabled = canGoBack) {
+    val canGoBack = editing != null || pendingDelete.isNotEmpty() || page != PAGE_RECOGNIZE
+    BackHandler(enabled = backEnabled && canGoBack) {
         when {
             editing != null -> editing = null
-            fullScreen != null -> fullScreen = null
             pendingDelete.isNotEmpty() -> pendingDelete = emptyList()
             else -> scope.launch { pager.animateScrollToPage(PAGE_RECOGNIZE) }
         }
     }
 
     Scaffold(
-        modifier = modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize(),
         topBar = {
             SmallTopAppBar(
                 title = stringResource(
@@ -173,7 +217,7 @@ fun TableScreen(
                         onRetryRecognition = viewModel::retryRecognition,
                         onReset = viewModel::reset,
                         onExport = viewModel::exportXlsx,
-                        onImageClick = { fullScreen = it },
+                        onImageClick = { onOpenImage(viewMode) },
                         onCellClick = { row, column, value -> editing = CellEdit(row, column, value) },
                     )
                 } else {
@@ -244,10 +288,30 @@ fun TableScreen(
             }
         }
     }
+}
 
-    val image = fullScreen
-    if (image != null) {
-        FullScreenImage(bitmap = image, onDismiss = { fullScreen = null })
+/** 全屏看图：黑底、点一下关闭；下滑和系统返回由页面栈接管。 */
+@Composable
+private fun ImageViewer(viewModel: TableViewModel, mode: Int, onClose: () -> Unit) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    val bitmap: Bitmap = when (mode) {
+        1 -> state.original
+        2 -> state.enhanced ?: state.original
+        else -> state.overlay ?: state.original
+    } ?: return
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black)
+            .clickable(onClick = onClose),
+        contentAlignment = Alignment.Center,
+    ) {
+        Image(
+            bitmap = bitmap.asImageBitmap(),
+            contentDescription = stringResource(R.string.preview_fullscreen_close),
+            modifier = Modifier.fillMaxWidth().padding(12.dp),
+            contentScale = ContentScale.Fit,
+        )
     }
 }
 
@@ -300,29 +364,6 @@ private fun CellEditSheet(
                     Text(stringResource(R.string.action_save))
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun FullScreenImage(bitmap: Bitmap, onDismiss: () -> Unit) {
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false),
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color.Black)
-                .clickable(onClick = onDismiss),
-            contentAlignment = Alignment.Center,
-        ) {
-            Image(
-                bitmap = bitmap.asImageBitmap(),
-                contentDescription = stringResource(R.string.preview_fullscreen_close),
-                modifier = Modifier.fillMaxWidth(),
-                contentScale = ContentScale.Fit,
-            )
         }
     }
 }
