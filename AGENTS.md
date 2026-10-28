@@ -28,12 +28,12 @@
 
 ```bash
 mkdir -p ~/git-hooks
-cp .git/hooks/pre-commit ~/git-hooks/ 2>/dev/null || true
+cp ~/git-hooks/pre-commit ~/git-hooks/ 2>/dev/null || true
 chmod +x ~/git-hooks/pre-commit
 git config core.hooksPath ~/git-hooks
 ```
 
-- 名单在 `.git/sort-pii-names.txt`（**只在本机 .git 里，永不提交**）；
+- 名单只以 **sha256 哈希**存在 `.git/sort-pii-hashes.txt`（本机没有明文名单，`sort-pii-check.py` 负责比对）；
 - 钩子会拦：名单里的任何姓名、任何 10~13 位且不以 `9000`/`0000` 开头的数字；
 - `/sdcard` 上放不了可执行位，所以钩子必须放 `~/git-hooks` 并用 `core.hooksPath` 指过去。
 
