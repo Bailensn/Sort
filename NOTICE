@@ -6,13 +6,27 @@ Copyright 2026 Bailensn
 - AndroidX / Jetpack Compose
   Apache License 2.0 — https://developer.android.com/jetpack
 
-- PaddleOCR PP-OCRv6 small（预训练模型与推理配置）
+- Miuix（Compose Multiplatform 组件库：miuix-ui / miuix-icons / miuix-nav）
+  Apache License 2.0 — https://github.com/compose-miuix-ui/miuix
+
+- PaddleOCR 预训练模型（PP-OCRv6 medium det/rec、PP-OCRv5 server rec 及其推理配置）
   Apache License 2.0 — https://github.com/PaddlePaddle/PaddleOCR
 
 - ONNX Runtime
   MIT License — https://github.com/microsoft/onnxruntime
 
-- OpenCV（4.5.0 起为 Apache License 2.0）
-  https://github.com/opencv/opencv
+- OpenCV（5.x，4.5.0 起为 Apache License 2.0）
+  Apache License 2.0 — https://github.com/opencv/opencv
+
+- Kotlin 标准库与 kotlinx.coroutines
+  Apache License 2.0 — https://github.com/JetBrains/kotlin
+
+- XZ for Java（内置模型的 LZMA2 压缩）
+  Public Domain — https://tukaani.org/xz/java.html
+
+仅用于测试的组件（不随 APK 分发）：
+
+- JUnit 4
+  Eclipse Public License 1.0 — https://junit.org/junit4/
 
 上述组件的完整许可文本见各自分发的 AAR / 源码包。
