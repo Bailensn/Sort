@@ -60,6 +60,7 @@
     <string name="selfcheck_sum">합계 검증: %1$d개 열 → %2$d열</string>
     <string name="selfcheck_corrected">산술로 %1$d칸 수정</string>
     <string name="selfcheck_suspicious">불확실한 행 %1$d개</string>
+    <string name="selfcheck_partial_totals">%1$d개 행의 총점을 응시 과목으로 계산했습니다</string>
     <string name="action_save">저장</string>
     <string name="action_cancel">취소</string>
     <string name="edit_title">%1$d행 %2$d열 수정</string>

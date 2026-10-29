@@ -13,6 +13,9 @@ object TableSelfCheck {
     /** 求和校验至少要这么多行对得上，才认这对「科目列 + 总列」。 */
     private const val MIN_SUM_AGREEMENT = 0.75
 
+    /** 至少考了这么多科才补算总分：只填一科的，多半是根本没认出来。 */
+    private const val MIN_SUBJECTS_FOR_SUM = 2
+
     /** 科目列至少要有这么多行填了值：垃圾列通常只填了一半。 */
     private const val MIN_SUBJECT_FILL = 0.75
 
@@ -37,6 +40,9 @@ object TableSelfCheck {
         data class SequenceOk(val column: Int) : Note
         data class IdBreak(val column: Int, val breaks: Int) : Note
         data class SumChecked(val subjects: Int, val totalColumn: Int) : Note
+
+        /** 只考了部分科目、总分按已考科目补算的行数。 */
+        data class PartialTotals(val rows: Int) : Note
     }
 
     data class Result(val rows: List<List<String>>, val report: Report)
@@ -80,28 +86,39 @@ object TableSelfCheck {
         // 2) 求和校验 + 单格反推
         val total = findTotalColumn(rows, columns, numeric, constant, sequences, identifiers)
         var corrected = 0
+        var partialTotals = 0
         if (total != null) {
             val (totalColumn, subjectColumns) = total
             rows.forEachIndexed { index, row ->
-                val sum = subjectColumns.sumOf { column -> parseNumber(row.getOrNull(column)).orZero() }
-                val allSubjectsPresent = subjectColumns.all { column ->
+                val taken = subjectColumns.filter { column ->
                     parseNumber(row.getOrNull(column)) != null
                 }
-                // 总分格是空的：只要六科都在，就直接算出来填上。
+                val sum = taken.sumOf { column -> parseNumber(row.getOrNull(column)).orZero() }
+                val allSubjectsPresent = taken.size == subjectColumns.size
+                // 总分格是空的：考了的科目够两科就算出来填上。
+                // 只考了三科的人总分本来就等于那三科之和，不能因为「没考全」就空着。
                 // 写着「缺考」「免修」这类字的格子不是空，别拿求和盖掉。
                 val raw = row.getOrNull(totalColumn)?.trim().orEmpty()
                 val value = parseNumber(raw)
                 if (value == null) {
                     if (raw.isNotEmpty()) return@forEachIndexed
-                    if (allSubjectsPresent) {
+                    if (taken.size >= MIN_SUBJECTS_FOR_SUM) {
                         row[totalColumn] = formatNumber(sum)
                         corrected++
+                        if (!allSubjectsPresent) partialTotals++
                     } else {
                         suspicious.add(index)
                     }
                     return@forEachIndexed
                 }
                 if (kotlin.math.abs(sum - value) <= SUM_EPSILON) return@forEachIndexed
+
+                // 有科目没考：印出来的总分和「已考之和」对不上也不许反推，
+                // 只标存疑——缺的那几科可能就是差出来的部分。
+                if (!allSubjectsPresent) {
+                    suspicious.add(index)
+                    return@forEachIndexed
+                }
 
                 val fixed = fixSingleCell(row, index, subjectColumns, totalColumn, sum, value, confidences)
                 if (fixed != null) {
@@ -120,6 +137,7 @@ object TableSelfCheck {
                 }
             }
             notes += Note.SumChecked(subjectColumns.size, totalColumn)
+            if (partialTotals > 0) notes += Note.PartialTotals(partialTotals)
         }
 
         // 3) 数字列里仍然不是数字的格子

@@ -60,6 +60,7 @@
     <string name="selfcheck_sum">求和校驗 %1$d 列 → 第 %2$d 列</string>
     <string name="selfcheck_corrected">已用算術糾正 %1$d 格</string>
     <string name="selfcheck_suspicious">存疑 %1$d 行</string>
+    <string name="selfcheck_partial_totals">有 %1$d 行總分按已考科目補算</string>
     <string name="action_save">儲存</string>
     <string name="action_cancel">取消</string>
     <string name="edit_title">修改第 %1$d 列第 %2$d 欄</string>

@@ -431,6 +431,9 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
 
                 is TableSelfCheck.Note.SumChecked ->
                     app.getString(R.string.selfcheck_sum, note.subjects, note.totalColumn + 1)
+
+                is TableSelfCheck.Note.PartialTotals ->
+                    app.getString(R.string.selfcheck_partial_totals, note.rows)
             }
         }.toMutableList()
         if (report.correctedCells > 0) {

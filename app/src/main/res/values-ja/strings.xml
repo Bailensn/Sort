@@ -60,6 +60,7 @@
     <string name="selfcheck_sum">合計検証：%1$d 列 → %2$d 列目</string>
     <string name="selfcheck_corrected">計算で %1$d セルを修正</string>
     <string name="selfcheck_suspicious">不確かな行 %1$d 件</string>
+    <string name="selfcheck_partial_totals">%1$d 行の合計を受験科目から補算しました</string>
     <string name="action_save">保存</string>
     <string name="action_cancel">キャンセル</string>
     <string name="edit_title">%1$d 行 %2$d 列を編集</string>

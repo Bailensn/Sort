@@ -208,4 +208,54 @@ class TableSelfCheckTest {
         assertEquals("缺考", result.rows[2][5])
         assertEquals("180", result.rows[3][5])
     }
+
+    @Test
+    fun fillsTotalFromSubjectsActuallyTaken() {
+        // 示例丁只考了三科，其余空着、总分也空着：按已考三科补算，不能留白。
+        val rows = listOf(
+            listOf("序号", "姓名", "语文", "数学", "英语", "物理", "化学", "总分"),
+            listOf("1", "示例甲", "92", "88", "90", "80", "70", "420"),
+            listOf("2", "示例乙", "80", "70", "60", "75", "65", "350"),
+            listOf("3", "示例丙", "70", "60", "50", "55", "45", "280"),
+            listOf("4", "示例丁", "30", "25", "30", "", "", ""),
+        )
+
+        val result = TableSelfCheck.check(rows)
+
+        assertEquals("85", result.rows[4][7])
+        assertTrue(result.report.notes.any { it is TableSelfCheck.Note.PartialTotals })
+    }
+
+    @Test
+    fun partialRowWithMismatchingTotalIsFlaggedNotRewritten() {
+        // 缺考的人印出来的总分和「已考之和」对不上：只标存疑，绝不反推改分。
+        val rows = listOf(
+            listOf("序号", "姓名", "语文", "数学", "英语", "物理", "化学", "总分"),
+            listOf("1", "示例甲", "92", "88", "90", "80", "70", "420"),
+            listOf("2", "示例乙", "80", "70", "60", "75", "65", "350"),
+            listOf("3", "示例丙", "70", "60", "50", "55", "45", "280"),
+            listOf("4", "示例丁", "30", "25", "30", "", "", "200"),
+        )
+
+        val result = TableSelfCheck.check(rows)
+
+        assertEquals("200", result.rows[4][7])
+        assertTrue(result.report.suspiciousRows.contains(4))
+    }
+
+    @Test
+    fun absentMarkInSubjectColumnStillAllowsPartialTotal() {
+        // 科目格里写着「缺考」：等于没考，本行仍然按已考科目补算。
+        val rows = listOf(
+            listOf("序号", "姓名", "语文", "数学", "英语", "物理", "化学", "总分"),
+            listOf("1", "示例甲", "92", "88", "90", "80", "70", "420"),
+            listOf("2", "示例乙", "80", "70", "60", "75", "65", "350"),
+            listOf("3", "示例丙", "70", "60", "50", "55", "45", "280"),
+            listOf("4", "示例丁", "30", "25", "30", "缺考", "缺考", ""),
+        )
+
+        val result = TableSelfCheck.check(rows)
+
+        assertEquals("85", result.rows[4][7])
+    }
 }

@@ -60,6 +60,7 @@
     <string name="selfcheck_sum">Sum check: %1$d columns → column %2$d</string>
     <string name="selfcheck_corrected">%1$d cell(s) fixed by arithmetic</string>
     <string name="selfcheck_suspicious">%1$d row(s) uncertain</string>
+    <string name="selfcheck_partial_totals">%1$d total(s) filled from the subjects taken</string>
     <string name="action_save">Save</string>
     <string name="action_cancel">Cancel</string>
     <string name="edit_title">Edit row %1$d, column %2$d</string>
