@@ -16,10 +16,13 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -30,13 +33,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -325,16 +332,28 @@ private fun CellEditSheet(
     onConfirm: (String) -> Unit,
 ) {
     var text by remember(cell) { mutableStateOf(cell.value) }
+    val focusRequester = remember { FocusRequester() }
+
     OverlayBottomSheet(
         show = true,
         title = stringResource(R.string.edit_title, cell.row + 1, cell.column + 1),
         onDismissRequest = onDismiss,
     ) {
-        Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                // 底部弹层只补了 IME 内边距，手势条会压住按钮，这里自己补，再留一点呼吸。
+                .navigationBarsPadding()
+                .padding(top = 4.dp, bottom = 20.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
             TextField(
                 value = text,
                 onValueChange = { text = it },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().focusRequester(focusRequester),
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                keyboardActions = KeyboardActions(onDone = { onConfirm(text) }),
+                singleLine = true,
             )
             if (suggestions.isNotEmpty()) {
                 Text(
@@ -365,5 +384,12 @@ private fun CellEditSheet(
                 }
             }
         }
+    }
+
+    // 打开就聚焦：手不用先点一下输入框，键盘也会立即把弹层顶起来。
+    LaunchedEffect(cell) {
+        // 等进场那一帧，弹层还没量完的时候 requestFocus 打不中。
+        withFrameNanos { }
+        focusRequester.requestFocus()
     }
 }
