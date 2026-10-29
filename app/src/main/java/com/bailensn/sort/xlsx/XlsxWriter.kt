@@ -1,6 +1,5 @@
 package com.bailensn.sort.xlsx
 
-import com.bailensn.sort.table.TableGrid
 import java.io.BufferedOutputStream
 import java.io.OutputStream
 import java.util.zip.ZipEntry
@@ -8,8 +7,9 @@ import java.util.zip.ZipOutputStream
 
 object XlsxWriter {
 
-    fun write(grid: TableGrid, output: OutputStream) {
-        require(grid.rowCount > 0 && grid.columnCount > 0) { "empty table" }
+    /** 只认行数据：历史里的 rows.tsv 是什么，导出的就是什么。 */
+    fun write(rows: List<List<String>>, output: OutputStream) {
+        require(rows.isNotEmpty() && rows.any { row -> row.isNotEmpty() }) { "empty table" }
 
         ZipOutputStream(BufferedOutputStream(output)).use { zip ->
             putEntry(zip, "[Content_Types].xml", CONTENT_TYPES)
@@ -17,7 +17,7 @@ object XlsxWriter {
             putEntry(zip, "xl/workbook.xml", WORKBOOK)
             putEntry(zip, "xl/_rels/workbook.xml.rels", WORKBOOK_RELS)
             putEntry(zip, "xl/styles.xml", STYLES)
-            putEntry(zip, "xl/worksheets/sheet1.xml", sheetXml(grid))
+            putEntry(zip, "xl/worksheets/sheet1.xml", sheetXml(rows))
         }
     }
 
@@ -27,17 +27,17 @@ object XlsxWriter {
         zip.closeEntry()
     }
 
-    private fun sheetXml(grid: TableGrid): String {
-        val columnCount = grid.columnCount
+    private fun sheetXml(rows: List<List<String>>): String {
+        val columnCount = rows.maxOf { it.size }
         val widths = IntArray(columnCount)
-        for (row in grid.rows) {
+        for (row in rows) {
             for (column in 0 until columnCount) {
                 val width = displayWidth(row.getOrElse(column) { "" })
                 if (width > widths[column]) widths[column] = width
             }
         }
 
-        val lastCell = "${columnName(columnCount - 1)}${grid.rowCount}"
+        val lastCell = "${columnName(columnCount - 1)}${rows.size}"
         val xml = StringBuilder(4096)
         xml.append("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>")
         xml.append("<worksheet xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\">")
@@ -53,7 +53,7 @@ object XlsxWriter {
         xml.append("</cols>")
 
         xml.append("<sheetData>")
-        grid.rows.forEachIndexed { rowIndex, row ->
+        rows.forEachIndexed { rowIndex, row ->
             xml.append("<row r=\"${rowIndex + 1}\">")
             for (column in 0 until columnCount) {
                 val reference = "${columnName(column)}${rowIndex + 1}"
@@ -73,17 +73,6 @@ object XlsxWriter {
             xml.append("</row>")
         }
         xml.append("</sheetData>")
-
-        // 合并单元格：只写左上角的 ref，其余格子在 sheetData 里保持空。
-        if (grid.merges.isNotEmpty()) {
-            xml.append("<mergeCells count=\"${grid.merges.size}\">")
-            grid.merges.forEach { merge ->
-                val from = "${columnName(merge.column)}${merge.row + 1}"
-                val to = "${columnName(merge.column + merge.columnSpan - 1)}${merge.row + merge.rowSpan}"
-                xml.append("<mergeCell ref=\"$from:$to\"/>")
-            }
-            xml.append("</mergeCells>")
-        }
 
         xml.append("</worksheet>")
         return xml.toString()

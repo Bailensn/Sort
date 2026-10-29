@@ -59,8 +59,10 @@ object HistoryStore {
             }
     }.getOrDefault(emptyList())
 
-    fun rows(context: Context, entry: Entry): List<List<String>> = runCatching {
-        File(folder(context, entry.id), ROWS).readLines().map { it.split("\t") }
+    fun rows(context: Context, entry: Entry): List<List<String>> = rows(context, entry.id)
+
+    fun rows(context: Context, id: String): List<List<String>> = runCatching {
+        File(folder(context, id), ROWS).readLines().map { it.split("\t") }
     }.getOrDefault(emptyList())
 
     /** 读过程数据；老记录没有就返回 null。 */

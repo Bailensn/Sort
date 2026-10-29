@@ -413,8 +413,15 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             _state.update { it.copy(exporting = true) }
             try {
+                val app = getApplication<Application>()
                 val exported = withContext(Dispatchers.IO) {
-                    XlsxExporter.export(getApplication(), grid)
+                    // 以历史里的 rows.tsv 为准：存下来的是什么，导出的就是什么。
+                    val entryId = currentEntryId
+                    val rows = entryId
+                        ?.let { HistoryStore.rows(app, it) }
+                        ?.takeIf { it.isNotEmpty() }
+                        ?: grid.rows
+                    XlsxExporter.export(app, rows)
                 }
                 _exported.emit(exported)
             } catch (t: Throwable) {
