@@ -161,4 +161,51 @@ class TableSelfCheckTest {
         assertEquals("329.5", result.rows[0][10])
         assertEquals(0, result.report.correctedCells)
     }
+
+    @Test
+    fun keepsTotalLowerThanAnotherStudentsSubject() {
+        // 85 分比另一个人的单科 92 还低，但它是这一行真实的总分，不能因为「看着小」就丢掉。
+        val rows = listOf(
+            listOf("序号", "姓名", "语文", "数学", "英语", "总分"),
+            listOf("1", "示例甲", "92", "88", "90", "270"),
+            listOf("2", "示例乙", "30", "25", "30", "85"),
+        )
+
+        val result = TableSelfCheck.check(rows)
+
+        assertEquals("270", result.rows[1][5])
+        assertEquals("85", result.rows[2][5])
+    }
+
+    @Test
+    fun fillsBlankTotalEvenInTinyClass() {
+        // 只有两个学生时，表头那格「总分」会把数字占比拉到 0.8 以下；
+        // 总分列不能因此被放弃，空着的总分照样要算出来。
+        val rows = listOf(
+            listOf("序号", "姓名", "语文", "数学", "英语", "总分"),
+            listOf("1", "示例甲", "92", "88", "90", "270"),
+            listOf("2", "示例乙", "30", "25", "30", ""),
+        )
+
+        val result = TableSelfCheck.check(rows)
+
+        assertEquals("85", result.rows[2][5])
+        assertEquals("270", result.rows[1][5])
+    }
+
+    @Test
+    fun distinguishesAbsentMarkFromBlankTotal() {
+        // 「缺考」不是空：不要拿求和盖掉它；同列其它空着的总分照常补算。
+        val rows = listOf(
+            listOf("序号", "姓名", "语文", "数学", "英语", "总分"),
+            listOf("1", "示例甲", "92", "88", "90", "270"),
+            listOf("2", "示例乙", "30", "25", "30", "缺考"),
+            listOf("3", "示例丙", "70", "60", "50", ""),
+        )
+
+        val result = TableSelfCheck.check(rows)
+
+        assertEquals("缺考", result.rows[2][5])
+        assertEquals("180", result.rows[3][5])
+    }
 }

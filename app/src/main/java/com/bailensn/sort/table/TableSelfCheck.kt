@@ -88,8 +88,11 @@ object TableSelfCheck {
                     parseNumber(row.getOrNull(column)) != null
                 }
                 // 总分格是空的：只要六科都在，就直接算出来填上。
-                val value = parseNumber(row.getOrNull(totalColumn))
+                // 写着「缺考」「免修」这类字的格子不是空，别拿求和盖掉。
+                val raw = row.getOrNull(totalColumn)?.trim().orEmpty()
+                val value = parseNumber(raw)
                 if (value == null) {
+                    if (raw.isNotEmpty()) return@forEachIndexed
                     if (allSubjectsPresent) {
                         row[totalColumn] = formatNumber(sum)
                         corrected++
@@ -198,27 +201,21 @@ object TableSelfCheck {
                 fillRatio[column] >= MIN_SUBJECT_FILL
         }
 
-        // 总分 = 最右一列。两种算正常：
-        //   a) 最后一列装着数字；
-        //   b) 最后一列整列是空的——那是「等着被算出来」的总分列。
-        // 只有最后一列是「填了东西但不是数字」的垃圾列时，才往左退到第一个像样的数字列。
-        // 兜底：最后一列如果装着字母之类的垃圾（不是数字、也不是空），
-        // 绝不能把它当总分——否则算出来的分会被写进垃圾列，导出后多出一列。
+        // 业务规则：总分就是最右一列。只有最右一列明显不是分数——带拉丁字母，
+        // 或者整列一个数字都没有——才往左让一列。
+        // 不能按「数字占比」判：总分列里混着「缺考」、或者班级很小有几格没认出来，
+        // 占比一掉整列就被放弃，学生看到的就是「总分没写」。
         val last = columns - 1
-        val lastIsWritableTotal = fillRatio[last] == 0.0 ||
-            numericRatio[last] >= 0.8 ||
-            !hasLatinLetters(rows, last)
-        val totalColumn = if (fillRatio[last] == 0.0 || numericRatio[last] >= 0.8) {
+        val lastValues = rows.mapNotNull { row -> row.getOrNull(last)?.takeIf(String::isNotBlank) }
+        val lastIsScoreColumn = !hasLatinLetters(rows, last) &&
+            (lastValues.isEmpty() || lastValues.any { NUMBER.matches(it) })
+        val totalColumn = if (lastIsScoreColumn) {
             last
-        } else if (!lastIsWritableTotal) {
-            var candidate = last
-            while (candidate > 0 && !(fillRatio[candidate] >= 0.2 && numericRatio[candidate] >= 0.8)) {
-                candidate--
-            }
-            candidate
         } else {
             var candidate = last
-            while (candidate > 0 && !(fillRatio[candidate] >= 0.2 && numericRatio[candidate] >= 0.8)) {
+            while (candidate > 0 &&
+                !(fillRatio[candidate] >= 0.2 && numericRatio[candidate] >= MIN_TOTAL_NUMERIC_RATIO)
+            ) {
                 candidate--
             }
             candidate
