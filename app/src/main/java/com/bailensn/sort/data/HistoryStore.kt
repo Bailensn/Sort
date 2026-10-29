@@ -7,63 +7,92 @@ import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlin.math.max
 
+/**
+ * 一条记录一个文件夹，里面是 `rows.tsv` 和三张图（原图 / 网格 / 增强）。
+ * 存图统一缩到 1600px，二十条记录也不会把磁盘吃光。
+ */
 object HistoryStore {
 
+    private const val ROOT = "history"
+    private const val PREFIX = "entry-"
+    private const val ROWS = "rows.tsv"
     private const val MAX_ENTRIES = 20
-    private const val PREFIX = "history-"
-    private const val SUFFIX = ".tsv"
+    private const val MAX_SIDE = 1600
+    private const val QUALITY = 88
+
+    /** 界面上三种视图各自的图。 */
+    enum class Shot(val fileName: String) {
+        ORIGINAL("original.jpg"),
+        GRID("grid.jpg"),
+        ENHANCED("enhanced.jpg"),
+    }
 
     data class Entry(
         val id: String,
         val timestamp: Long,
         val rowCount: Int,
         val columnCount: Int,
-        val hasImage: Boolean = false,
+        val shots: Set<Shot> = emptySet(),
     )
 
     fun list(context: Context): List<Entry> = runCatching {
-        val dir = context.filesDir
-        dir.listFiles { file -> file.name.startsWith(PREFIX) && file.name.endsWith(SUFFIX) }
+        val root = rootDir(context)
+        root.listFiles { file -> file.isDirectory && file.name.startsWith(PREFIX) }
             .orEmpty()
             .sortedByDescending { it.name }
-            .mapNotNull { file ->
-                val lines = file.readLines()
-                val timestamp = file.name.removePrefix(PREFIX).removeSuffix(SUFFIX).toLongOrNull()
+            .mapNotNull { folder ->
+                val timestamp = folder.name.removePrefix(PREFIX).toLongOrNull()
                     ?: return@mapNotNull null
+                val lines = File(folder, ROWS).takeIf { it.isFile }?.readLines().orEmpty()
+                if (lines.isEmpty()) return@mapNotNull null
                 Entry(
-                    id = file.name,
+                    id = folder.name,
                     timestamp = timestamp,
                     rowCount = lines.size,
-                    columnCount = lines.firstOrNull()?.count { it == '\t' }?.plus(1) ?: 0,
-                    hasImage = File(dir, imageName(file.name)).isFile,
+                    // 取最宽的一行：中间某行多出一个分隔符时，列数不会因此变少。
+                    columnCount = lines.maxOfOrNull { line -> line.count { it == '\t' } + 1 } ?: 0,
+                    shots = Shot.entries.filterTo(mutableSetOf()) { File(folder, it.fileName).isFile },
                 )
             }
     }.getOrDefault(emptyList())
 
     fun rows(context: Context, entry: Entry): List<List<String>> = runCatching {
-        File(context.filesDir, entry.id).readLines().map { it.split("\t") }
+        File(folder(context, entry.id), ROWS).readLines().map { it.split("\t") }
     }.getOrDefault(emptyList())
 
-    fun save(context: Context, rows: List<List<String>>, original: Bitmap? = null): Entry? = runCatching {
+    /** 读某一种视图的图；那条记录没存这张就返回 null。 */
+    fun shot(context: Context, entry: Entry, shot: Shot): Bitmap? = runCatching {
+        File(folder(context, entry.id), shot.fileName)
+            .takeIf { it.isFile }
+            ?.let { BitmapFactory.decodeFile(it.absolutePath) }
+    }.getOrNull()
+
+    fun save(
+        context: Context,
+        rows: List<List<String>>,
+        original: Bitmap? = null,
+        grid: Bitmap? = null,
+        enhanced: Bitmap? = null,
+    ): Entry? = runCatching {
         if (rows.isEmpty()) return null
         val timestamp = System.currentTimeMillis()
-        val file = File(context.filesDir, "$PREFIX$timestamp$SUFFIX")
-        file.writeText(rows.joinToString("\n") { row -> row.joinToString("\t") })
-        if (original != null) {
-            runCatching {
-                File(context.filesDir, imageName(file.name)).outputStream().use { out ->
-                    original.compress(Bitmap.CompressFormat.JPEG, 90, out)
-                }
-            }
+        val folder = folder(context, "$PREFIX$timestamp")
+        folder.mkdirs()
+        File(folder, ROWS).writeText(rows.joinToString("\n") { row -> row.joinToString("\t") })
+        val saved = buildSet {
+            writeShot(folder, Shot.ORIGINAL, original)?.let { add(it) }
+            writeShot(folder, Shot.GRID, grid)?.let { add(it) }
+            writeShot(folder, Shot.ENHANCED, enhanced)?.let { add(it) }
         }
         prune(context)
         Entry(
-            id = file.name,
+            id = folder.name,
             timestamp = timestamp,
             rowCount = rows.size,
             columnCount = rows.maxOfOrNull { it.size } ?: 0,
-            hasImage = original != null,
+            shots = saved,
         )
     }.getOrNull()
 
@@ -71,37 +100,55 @@ object HistoryStore {
     fun update(context: Context, entryId: String, rows: List<List<String>>) {
         runCatching {
             if (rows.isEmpty()) return
-            File(context.filesDir, entryId).writeText(
-                rows.joinToString("\n") { row -> row.joinToString("\t") },
-            )
+            val folder = folder(context, entryId)
+            if (!folder.isDirectory) return
+            File(folder, ROWS).writeText(rows.joinToString("\n") { row -> row.joinToString("\t") })
         }
     }
-
-    /** 读回原图；没有就返回 null（旧记录、或当时没存）。 */
-    fun image(context: Context, entry: Entry): Bitmap? = runCatching {
-        val file = File(context.filesDir, imageName(entry.id))
-        if (file.isFile) BitmapFactory.decodeFile(file.absolutePath) else null
-    }.getOrNull()
 
     fun delete(context: Context, ids: Collection<String>) {
-        ids.forEach { id ->
-            runCatching { File(context.filesDir, id).delete() }
-            runCatching { File(context.filesDir, imageName(id)).delete() }
-        }
+        ids.forEach { id -> runCatching { folder(context, id).deleteRecursively() } }
     }
 
-    private fun imageName(tsvName: String): String =
-        tsvName.removeSuffix(SUFFIX) + ".jpg"
+    private fun rootDir(context: Context): File = File(context.filesDir, ROOT)
+
+    private fun folder(context: Context, id: String): File = File(rootDir(context), id)
+
+    /** 写一张图，返回真正写成功的 [Shot]，写失败就当没存。 */
+    private fun writeShot(folder: File, shot: Shot, bitmap: Bitmap?): Shot? {
+        if (bitmap == null || bitmap.isRecycled) return null
+        return runCatching {
+            val scaled = scaleDown(bitmap)
+            File(folder, shot.fileName).outputStream().use { out ->
+                if (!scaled.compress(Bitmap.CompressFormat.JPEG, QUALITY, out)) {
+                    throw IllegalStateException("compress failed")
+                }
+            }
+            // 缩放副本自己回收，原图归流水线管。
+            if (scaled !== bitmap) scaled.recycle()
+            shot
+        }.getOrNull()
+    }
+
+    private fun scaleDown(bitmap: Bitmap): Bitmap {
+        val longest = max(bitmap.width, bitmap.height)
+        if (longest <= MAX_SIDE) return bitmap
+        val ratio = MAX_SIDE.toFloat() / longest
+        return Bitmap.createScaledBitmap(
+            bitmap,
+            (bitmap.width * ratio).toInt().coerceAtLeast(1),
+            (bitmap.height * ratio).toInt().coerceAtLeast(1),
+            true,
+        )
+    }
 
     private fun prune(context: Context) {
-        val files = context.filesDir
-            .listFiles { file -> file.name.startsWith(PREFIX) && file.name.endsWith(SUFFIX) }
+        val root = rootDir(context)
+        root.listFiles { file -> file.isDirectory && file.name.startsWith(PREFIX) }
             .orEmpty()
             .sortedByDescending { it.name }
-        files.drop(MAX_ENTRIES).forEach { file ->
-            runCatching { file.delete() }
-            runCatching { File(file.parentFile, imageName(file.name)).delete() }
-        }
+            .drop(MAX_ENTRIES)
+            .forEach { folder -> runCatching { folder.deleteRecursively() } }
     }
 
     fun formatTime(timestamp: Long): String =

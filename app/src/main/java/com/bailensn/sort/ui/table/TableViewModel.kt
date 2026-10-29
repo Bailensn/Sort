@@ -235,7 +235,13 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
                 }
             } else {
                 val polished = applyNameMemory(analysis.grid)
-                currentEntryId = HistoryStore.save(getApplication(), polished.rows, bitmap)?.id
+                currentEntryId = HistoryStore.save(
+                    context = getApplication(),
+                    rows = polished.rows,
+                    original = bitmap,
+                    grid = analysis.overlay,
+                    enhanced = analysis.enhanced,
+                )?.id
                 _history.value = HistoryStore.list(getApplication())
                 _state.update {
                     it.copy(
@@ -320,21 +326,21 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun openHistory(entry: HistoryStore.Entry) {
-        val rows = HistoryStore.rows(getApplication(), entry)
+        val app = getApplication<Application>()
+        val rows = HistoryStore.rows(app, entry)
         if (rows.isEmpty()) return
-        val image = HistoryStore.image(getApplication(), entry)
         currentEntryId = entry.id
         _state.update {
             it.copy(
-                // 原图也一起恢复：历史里同样能看原图、网格图、增强图。
-                original = image,
+                // 三张图一起恢复：历史里同样能切原图 / 网格 / 增强。
+                original = HistoryStore.shot(app, entry, HistoryStore.Shot.ORIGINAL),
+                overlay = HistoryStore.shot(app, entry, HistoryStore.Shot.GRID),
+                enhanced = HistoryStore.shot(app, entry, HistoryStore.Shot.ENHANCED),
                 grid = TableGrid(rows, TableGrid.Mode.GRID_LINES),
                 phase = Phase.DONE,
                 stage = null,
                 message = null,
                 processed = null,
-                overlay = null,
-                enhanced = null,
             )
         }
     }
