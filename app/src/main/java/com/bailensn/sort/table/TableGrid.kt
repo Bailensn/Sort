@@ -24,7 +24,6 @@ data class GridLines(
 data class TableGrid(
     val rows: List<List<String>>,
     val mode: Mode,
-    val merges: List<TableMerge> = emptyList(),
 ) {
     enum class Mode {
         /** 靠检测到的横竖线切格。 */

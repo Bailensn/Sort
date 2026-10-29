@@ -134,7 +134,6 @@ object TableGridBuilder {
     internal fun normalize(
         cells: List<List<String>>,
         mode: TableGrid.Mode,
-        merges: List<TableMerge> = emptyList(),
     ): TableGrid? {
         if (cells.isEmpty()) return null
         val width = cells.maxOf { it.size }
@@ -159,20 +158,9 @@ object TableGridBuilder {
         }
         if (lastColumn < 0) return null
 
-        val shiftedMerges = merges.mapNotNull { merge ->
-            val row = merge.row - leading
-            if (row < 0 || row >= trimmedRows.size || merge.column > lastColumn) {
-                null
-            } else {
-                val columnSpan = merge.columnSpan.coerceAtMost(lastColumn - merge.column + 1)
-                if (columnSpan <= 0) null else TableMerge(row, merge.column, merge.rowSpan, columnSpan)
-            }
-        }
-
         return TableGrid(
             rows = trimmedRows.map { it.take(lastColumn + 1) },
             mode = mode,
-            merges = shiftedMerges,
         )
     }
 }

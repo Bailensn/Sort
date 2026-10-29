@@ -89,20 +89,12 @@ object TablePipeline {
         detection = TableEdgeLines.extend(working, detection)
 
         onStage(Stage.SEGMENT)
-        // 用二值图逐条边界确认有没有画线：没画线的地方就是合并单元格。
-        val probe = PixelBorderProbe.from(working)
-        var cellCount = 0
-        val cellGrid: CellGrid
-        val borderInset: Int
-        try {
-            cellGrid = CellGrid.fromLines(working.width, working.height, detection.toGridLines(), probe)
-            // 表格线宽估计 + 1px，用于裁格时把线整个切掉：
-            // 残留的线头会被识别成 "1" 或 "|"，这是空白格里出现 1 的主要原因。
-            borderInset = (probe?.maxThickness ?: 2) + 1
-            cellCount = cellGrid.cells.size
-        } finally {
-            probe?.release()
-        }
+        val gridLines = detection.toGridLines()
+        val cellGrid = CellGrid.fromLines(working.width, working.height, gridLines)
+        val cellCount = cellGrid.cells.size
+        // 表格线宽估计 + 1px，用于裁格时把线整个切掉：
+        // 残留的线头会被识别成 "1" 或 "|"，这是空白格里出现 1 的主要原因。
+        val borderInset = LineThickness.estimate(working, gridLines) + 1
 
         var grid = TableGrid(emptyList(), TableGrid.Mode.TEXT_CLUSTER)
         var correctedCells = 0
@@ -419,7 +411,7 @@ object TablePipeline {
         val trimmed = selfCheckResult.rows
         // 分数列里 5→S、0→O 这类错字按列纠正：整列大多是数字时才动手。
         val repaired = NumericColumnRepair.repair(trimmed)
-        val grid = TableGridBuilder.normalize(repaired, TableGrid.Mode.GRID_LINES, cellGrid.merges)
+        val grid = TableGridBuilder.normalize(repaired, TableGrid.Mode.GRID_LINES)
             ?: TableGrid(emptyList(), TableGrid.Mode.GRID_LINES)
         CellPass(
             grid = grid,
