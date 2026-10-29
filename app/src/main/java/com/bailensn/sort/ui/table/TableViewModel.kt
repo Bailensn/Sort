@@ -6,6 +6,7 @@ import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.bailensn.sort.R
+import com.bailensn.sort.data.HistoryMeta
 import com.bailensn.sort.data.HistoryStore
 import com.bailensn.sort.data.NameMemory
 import com.bailensn.sort.table.TableGrid
@@ -237,6 +238,21 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
                 val polished = applyNameMemory(analysis.grid)
                 // 三张图要缩放再压 JPEG，别放在主线程上做。
                 val app = getApplication<Application>()
+                val meta = HistoryMeta(
+                    averageConfidence = analysis.averageConfidence,
+                    lowConfidenceCells = analysis.lowConfidenceCells,
+                    elapsedMs = analysis.elapsedMs,
+                    cellMs = analysis.cellMs,
+                    detectMs = analysis.detectMs,
+                    correctedCells = analysis.correctedCells,
+                    horizontalLines = analysis.horizontalLines,
+                    verticalLines = analysis.verticalLines,
+                    cellCount = analysis.cellCount,
+                    deskewAngle = analysis.deskewAngle,
+                    rectified = analysis.rectified,
+                    suspiciousRows = analysis.selfCheck.suspiciousRows,
+                    notes = analysis.selfCheck.notes,
+                )
                 val entry = withContext(Dispatchers.IO) {
                     HistoryStore.save(
                         context = app,
@@ -244,6 +260,7 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
                         original = bitmap,
                         grid = analysis.overlay,
                         enhanced = analysis.enhanced,
+                        meta = meta,
                     )
                 }
                 currentEntryId = entry?.id
@@ -340,10 +357,12 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
                     original = HistoryStore.shot(app, entry, HistoryStore.Shot.ORIGINAL),
                     grid = HistoryStore.shot(app, entry, HistoryStore.Shot.GRID),
                     enhanced = HistoryStore.shot(app, entry, HistoryStore.Shot.ENHANCED),
+                    meta = HistoryStore.meta(app, entry),
                 )
             }
             if (loaded.rows.isEmpty()) return@launch
             currentEntryId = entry.id
+            val meta = loaded.meta
             _state.update {
                 it.copy(
                     // 三张图一起恢复：历史里同样能切原图 / 网格 / 增强。
@@ -355,6 +374,20 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
                     stage = null,
                     message = null,
                     processed = null,
+                    // 过程数据一起回填，统计栏不再是 0。
+                    elapsedMs = meta?.elapsedMs ?: 0L,
+                    cellMs = meta?.cellMs ?: 0L,
+                    detectMs = meta?.detectMs ?: 0L,
+                    correctedCells = meta?.correctedCells ?: 0,
+                    horizontalLines = meta?.horizontalLines ?: 0,
+                    verticalLines = meta?.verticalLines ?: 0,
+                    cellCount = meta?.cellCount ?: 0,
+                    averageConfidence = meta?.averageConfidence ?: 0f,
+                    lowConfidenceCells = meta?.lowConfidenceCells ?: 0,
+                    deskewAngle = meta?.deskewAngle ?: 0.0,
+                    rectified = meta?.rectified ?: false,
+                    selfCheckSummary = meta?.let { describeSelfCheck(it.report()) }.orEmpty(),
+                    suspiciousRows = meta?.suspiciousRows.orEmpty(),
                 )
             }
         }
@@ -414,6 +447,7 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
         val original: Bitmap?,
         val grid: Bitmap?,
         val enhanced: Bitmap?,
+        val meta: HistoryMeta?,
     )
 
     private fun describeSelfCheck(report: TableSelfCheck.Report): String {

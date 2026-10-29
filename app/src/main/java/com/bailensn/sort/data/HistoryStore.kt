@@ -18,6 +18,7 @@ object HistoryStore {
     private const val ROOT = "history"
     private const val PREFIX = "entry-"
     private const val ROWS = "rows.tsv"
+    private const val META = "meta.txt"
     private const val MAX_ENTRIES = 20
     private const val MAX_SIDE = 1600
     private const val QUALITY = 88
@@ -62,6 +63,13 @@ object HistoryStore {
         File(folder(context, entry.id), ROWS).readLines().map { it.split("\t") }
     }.getOrDefault(emptyList())
 
+    /** 读过程数据；老记录没有就返回 null。 */
+    fun meta(context: Context, entry: Entry): HistoryMeta? = runCatching {
+        File(folder(context, entry.id), META)
+            .takeIf { it.isFile }
+            ?.let { HistoryMeta.decode(it.readText()) }
+    }.getOrNull()
+
     /** 读某一种视图的图；那条记录没存这张就返回 null。 */
     fun shot(context: Context, entry: Entry, shot: Shot): Bitmap? = runCatching {
         File(folder(context, entry.id), shot.fileName)
@@ -75,12 +83,16 @@ object HistoryStore {
         original: Bitmap? = null,
         grid: Bitmap? = null,
         enhanced: Bitmap? = null,
+        meta: HistoryMeta? = null,
     ): Entry? = runCatching {
         if (rows.isEmpty()) return null
         val timestamp = System.currentTimeMillis()
         val folder = folder(context, "$PREFIX$timestamp")
         folder.mkdirs()
         File(folder, ROWS).writeText(rows.joinToString("\n") { row -> row.joinToString("\t") })
+        if (meta != null) {
+            runCatching { File(folder, META).writeText(meta.encode()) }
+        }
         val saved = buildSet {
             writeShot(folder, Shot.ORIGINAL, original)?.let { add(it) }
             writeShot(folder, Shot.GRID, grid)?.let { add(it) }

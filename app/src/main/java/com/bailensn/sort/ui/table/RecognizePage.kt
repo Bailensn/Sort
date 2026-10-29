@@ -161,8 +161,11 @@ internal fun RecognizePage(
                         }
 
                         TableUiState.Phase.DONE -> if (grid != null) {
-                            item("stats-title") { SmallTitle(stringResource(R.string.section_stats)) }
-                            item("stats") { StatsCard(state = state, grid = grid) }
+                            // 没有过程数据（老记录）就不摆统计栏，省得显示一堆 0。
+                            if (state.elapsedMs > 0) {
+                                item("stats-title") { SmallTitle(stringResource(R.string.section_stats)) }
+                                item("stats") { StatsCard(state = state, grid = grid) }
+                            }
                             if (state.selfCheckSummary.isNotEmpty()) {
                                 item("selfcheck-title") {
                                     SmallTitle(stringResource(R.string.stats_selfcheck))
