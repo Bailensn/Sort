@@ -235,14 +235,19 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
                 }
             } else {
                 val polished = applyNameMemory(analysis.grid)
-                currentEntryId = HistoryStore.save(
-                    context = getApplication(),
-                    rows = polished.rows,
-                    original = bitmap,
-                    grid = analysis.overlay,
-                    enhanced = analysis.enhanced,
-                )?.id
-                _history.value = HistoryStore.list(getApplication())
+                // 三张图要缩放再压 JPEG，别放在主线程上做。
+                val app = getApplication<Application>()
+                val entry = withContext(Dispatchers.IO) {
+                    HistoryStore.save(
+                        context = app,
+                        rows = polished.rows,
+                        original = bitmap,
+                        grid = analysis.overlay,
+                        enhanced = analysis.enhanced,
+                    )
+                }
+                currentEntryId = entry?.id
+                _history.value = HistoryStore.list(app)
                 _state.update {
                     it.copy(
                         phase = Phase.DONE,
@@ -327,21 +332,31 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
 
     fun openHistory(entry: HistoryStore.Entry) {
         val app = getApplication<Application>()
-        val rows = HistoryStore.rows(app, entry)
-        if (rows.isEmpty()) return
-        currentEntryId = entry.id
-        _state.update {
-            it.copy(
-                // 三张图一起恢复：历史里同样能切原图 / 网格 / 增强。
-                original = HistoryStore.shot(app, entry, HistoryStore.Shot.ORIGINAL),
-                overlay = HistoryStore.shot(app, entry, HistoryStore.Shot.GRID),
-                enhanced = HistoryStore.shot(app, entry, HistoryStore.Shot.ENHANCED),
-                grid = TableGrid(rows, TableGrid.Mode.GRID_LINES),
-                phase = Phase.DONE,
-                stage = null,
-                message = null,
-                processed = null,
-            )
+        viewModelScope.launch {
+            // 读三张图同样走 IO，点开历史不要卡一下。
+            val loaded = withContext(Dispatchers.IO) {
+                LoadedHistory(
+                    rows = HistoryStore.rows(app, entry),
+                    original = HistoryStore.shot(app, entry, HistoryStore.Shot.ORIGINAL),
+                    grid = HistoryStore.shot(app, entry, HistoryStore.Shot.GRID),
+                    enhanced = HistoryStore.shot(app, entry, HistoryStore.Shot.ENHANCED),
+                )
+            }
+            if (loaded.rows.isEmpty()) return@launch
+            currentEntryId = entry.id
+            _state.update {
+                it.copy(
+                    // 三张图一起恢复：历史里同样能切原图 / 网格 / 增强。
+                    original = loaded.original,
+                    overlay = loaded.grid,
+                    enhanced = loaded.enhanced,
+                    grid = TableGrid(loaded.rows, TableGrid.Mode.GRID_LINES),
+                    phase = Phase.DONE,
+                    stage = null,
+                    message = null,
+                    processed = null,
+                )
+            }
         }
     }
 
@@ -393,6 +408,13 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
             )
         }
     }
+
+    private class LoadedHistory(
+        val rows: List<List<String>>,
+        val original: Bitmap?,
+        val grid: Bitmap?,
+        val enhanced: Bitmap?,
+    )
 
     private fun describeSelfCheck(report: TableSelfCheck.Report): String {
         val app = getApplication<Application>()
