@@ -63,7 +63,7 @@ internal fun HistoryDetailPage(
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         topBar = {
-            BlurBar(backdrop = backdrop) {
+            ScrimBar {
                 SmallTopAppBar(
                     title = stringResource(R.string.history_title),
                     color = Color.Transparent,

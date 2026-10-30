@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
@@ -58,6 +59,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.FloatingNavigationBarDefaults
 import top.yukonga.miuix.kmp.basic.FloatingNavigationBarItem
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -67,6 +69,7 @@ import top.yukonga.miuix.kmp.basic.SnackbarHostState
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.GridView
 import top.yukonga.miuix.kmp.icon.extended.Share
 import top.yukonga.miuix.kmp.icon.extended.Timer
@@ -121,7 +124,8 @@ fun TableScreen(
             )
         }
         entry<Route.Image>(
-            transition = NavTransitions.Modal,
+            // 就是新的一页，从右侧推入，前一页跟着退到后面；不是盖在上面的模态。
+            transition = NavTransitions.MiuixDefault,
             // 和双指缩放/拖动画布抢手势，这里只留点按关闭和返回。
             swipeDismiss = NavSwipeDirection.None,
         ) { route ->
@@ -225,7 +229,7 @@ private fun MainPage(
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         topBar = {
-            BlurBar(backdrop = backdrop) {
+            ScrimBar {
                 SmallTopAppBar(
                     title = stringResource(
                         if (page == PAGE_HISTORY) R.string.history_title else R.string.app_name,
@@ -403,7 +407,7 @@ private fun BottomTabs(page: Int, onSelect: (Int) -> Unit) {
     }
 }
 
-/** 全屏看图：黑底，支持双指缩放和拖动，点一下关闭。 */
+/** 全屏看图：一页黑底，支持双指缩放和拖动，点一下或左上角返回。 */
 @Composable
 private fun ImageViewer(viewModel: TableViewModel, mode: Int, onClose: () -> Unit) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -414,5 +418,18 @@ private fun ImageViewer(viewModel: TableViewModel, mode: Int, onClose: () -> Uni
     } ?: return
     Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
         ZoomableImage(bitmap = bitmap, onTap = onClose)
+        IconButton(
+            onClick = onClose,
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .statusBarsPadding()
+                .padding(8.dp),
+        ) {
+            Icon(
+                imageVector = MiuixIcons.Back,
+                contentDescription = stringResource(R.string.action_back),
+                tint = Color.White,
+            )
+        }
     }
 }

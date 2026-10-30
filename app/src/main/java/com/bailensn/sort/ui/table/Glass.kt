@@ -135,83 +135,51 @@ internal fun GlassFab(
 }
 
 /**
- * 顶栏的模糊：**一遍高斯模糊 + 一条透明度渐变**。
+ * 顶栏用的渐隐遮罩：沿 [angle] 方向从 [startAlpha] 淡到 [endAlpha]。
  *
- * 之前是五层不同半径的模糊叠起来（真·progressive），每帧要跑五遍 RenderEffect，
- * 滚动时掉帧明显。现在只模糊一次，靠遮罩把下半段渐隐掉——观感几乎一样，
- * 开销是一层的。
+ * 之前这里是模糊（5 层 → 1 层 → 干脆不要了）：RenderEffect 每帧都要过一遍 GPU，
+ * 滚动时肉眼可见地掉帧，而顶栏只是给标题垫个底，一条渐变就够了。
  *
- * [angle] 顺时针，90 = 从上往下；模糊在 [fadeStart] 之前是满的，到 [fadeEnd] 淡成透明。
+ * [angle] 顺时针，90 = 从上往下；渐变在 [fadeStart] 之前是满的，到 [fadeEnd] 归零。
  */
-internal data class ProgressiveBlur(
+internal data class EdgeScrim(
     val angle: Float = 90f,
-    val fadeStart: Float = 0.3f,
-    val fadeEnd: Float = 0.95f,
-    val blurRadius: Dp = 12.dp,
-    val mode: BlurMode = BlurMode.Gaussian,
+    val fadeStart: Float = 0f,
+    val fadeEnd: Float = 1f,
+    val startAlpha: Float = 0.55f,
+    val endAlpha: Float = 0f,
 ) {
     companion object {
-        /** 上糊下清。 */
-        val Top: ProgressiveBlur = ProgressiveBlur()
+        /** 上浓下透明。 */
+        val Top: EdgeScrim = EdgeScrim()
 
-        /** 下糊上清。 */
-        val Bottom: ProgressiveBlur = ProgressiveBlur(angle = 270f)
+        /** 下浓上透明。 */
+        val Bottom: EdgeScrim = EdgeScrim(angle = 270f)
     }
 }
 
-/** 顶栏模糊的两种做法。 */
-internal enum class BlurMode {
-    /** 一遍 RenderEffect 高斯模糊：有磨砂质感，每帧一次 GPU 模糊。 */
-    Gaussian,
-
-    /** 只压一层渐变：零成本、零掉帧，但没有磨砂质感。 */
-    Scrim,
-}
-
-/** 顶栏：模糊（或纯渐变）+ 渐隐，标题在任何照片上都读得出来。 */
+/** 顶栏：一层渐隐遮罩，零 GPU 模糊。 */
 @Composable
-internal fun BlurBar(
-    backdrop: LayerBackdrop,
+internal fun ScrimBar(
     modifier: Modifier = Modifier,
-    blur: ProgressiveBlur = ProgressiveBlur.Top,
+    scrim: EdgeScrim = EdgeScrim.Top,
     content: @Composable () -> Unit,
 ) {
     val surface = MiuixTheme.colorScheme.surface
     Box(modifier) {
-        if (blur.mode == BlurMode.Gaussian) {
-            Box(
-                modifier = Modifier
-                    .matchParentSize()
-                    .drawBackdrop(
-                        backdrop = backdrop,
-                        shape = { RectangleShape },
-                        effects = { blur(blur.blurRadius.toPx()) },
-                        highlight = null,
-                        shadow = null,
-                    )
-                    .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
-                    .drawWithContent {
-                        drawContent()
-                        drawRect(
-                            brush = axisBrush(
-                                blur.angle,
-                                Color.Black,
-                                Color.Transparent,
-                                blur.fadeStart,
-                                blur.fadeEnd,
-                            ),
-                            blendMode = BlendMode.DstIn,
-                        )
-                    },
-            )
-        }
-        // 没有模糊时靠这层渐变把文字托住，所以浓一些。
-        val tintTop = if (blur.mode == BlurMode.Scrim) 0.55f else 0.16f
         Box(
             modifier = Modifier
                 .matchParentSize()
                 .drawBehind {
-                    drawRect(axisBrush(blur.angle, surface.copy(alpha = tintTop), surface.copy(alpha = 0f)))
+                    drawRect(
+                        axisBrush(
+                            scrim.angle,
+                            surface.copy(alpha = scrim.startAlpha),
+                            surface.copy(alpha = scrim.endAlpha),
+                            scrim.fadeStart,
+                            scrim.fadeEnd,
+                        ),
+                    )
                 },
         )
         content()
