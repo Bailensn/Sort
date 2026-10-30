@@ -148,3 +148,29 @@ internal fun GlassFab(
         )
     }
 }
+
+/** 顶栏专用：只做高斯模糊和一层淡色，不做折射高光；底部渐隐避免硬边。 */
+@Composable
+internal fun BlurBar(
+    backdrop: LayerBackdrop,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit,
+) {
+    val surface = MiuixTheme.colorScheme.surface
+    Box(modifier) {
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .drawBackdrop(
+                    backdrop = backdrop,
+                    shape = { RectangleShape },
+                    effects = { blur(18f.dp.toPx()) },
+                    highlight = null,
+                    shadow = null,
+                    onDrawSurface = { drawRect(surface.copy(alpha = 0.18f)) },
+                )
+                .fadeOutBottom(),
+        )
+        content()
+    }
+}

@@ -225,7 +225,7 @@ private fun MainPage(
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         topBar = {
-            GlassBar(backdrop = backdrop, fadeBottom = true) {
+            BlurBar(backdrop = backdrop) {
                 SmallTopAppBar(
                     title = stringResource(
                         if (page == PAGE_HISTORY) R.string.history_title else R.string.app_name,
