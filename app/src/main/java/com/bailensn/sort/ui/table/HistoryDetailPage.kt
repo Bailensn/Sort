@@ -43,7 +43,7 @@ import top.yukonga.miuix.kmp.icon.extended.Share
 @Composable
 internal fun HistoryDetailPage(
     viewModel: TableViewModel,
-    entryId: String,
+    entryId: Long,
     onClose: () -> Unit,
 ) {
     val view by viewModel.viewer.collectAsStateWithLifecycle()

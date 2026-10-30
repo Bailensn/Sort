@@ -41,18 +41,8 @@ data class HistoryMeta(
         append("cells=").append(cellCount).append('\n')
         append("angle=").append(deskewAngle).append('\n')
         append("rectified=").append(if (rectified) 1 else 0).append('\n')
-        append("suspicious=").append(suspiciousRows.joinToString(",")).append('\n')
-        append("notes=").append(
-            notes.joinToString("|") { note ->
-                when (note) {
-                    is TableSelfCheck.Note.SequenceBreak -> "sb:${note.column}:${note.breaks}"
-                    is TableSelfCheck.Note.SequenceOk -> "so:${note.column}"
-                    is TableSelfCheck.Note.IdBreak -> "ib:${note.column}:${note.breaks}"
-                    is TableSelfCheck.Note.SumChecked -> "sc:${note.subjects}:${note.totalColumn}"
-                    is TableSelfCheck.Note.PartialTotals -> "pt:${note.rows}"
-                }
-            },
-        )
+        append("suspicious=").append(encodeInts(suspiciousRows)).append('\n')
+        append("notes=").append(encodeNotes(notes))
     }
 
     companion object {
@@ -79,14 +69,28 @@ data class HistoryMeta(
                 cellCount = fields["cells"]?.toIntOrNull() ?: 0,
                 deskewAngle = fields["angle"]?.toDoubleOrNull() ?: 0.0,
                 rectified = fields["rectified"] == "1",
-                suspiciousRows = fields["suspicious"].orEmpty()
-                    .split(',')
-                    .mapNotNull(String::toIntOrNull),
+                suspiciousRows = decodeInts(fields["suspicious"].orEmpty()),
                 notes = decodeNotes(fields["notes"].orEmpty()),
             )
         }
 
-        private fun decodeNotes(raw: String): List<TableSelfCheck.Note> {
+        internal fun encodeInts(values: List<Int>): String = values.joinToString(",")
+
+        internal fun decodeInts(raw: String): List<Int> =
+            if (raw.isEmpty()) emptyList() else raw.split(',').mapNotNull(String::toIntOrNull)
+
+        internal fun encodeNotes(notes: List<TableSelfCheck.Note>): String =
+            notes.joinToString("|") { note ->
+                when (note) {
+                    is TableSelfCheck.Note.SequenceBreak -> "sb:${note.column}:${note.breaks}"
+                    is TableSelfCheck.Note.SequenceOk -> "so:${note.column}"
+                    is TableSelfCheck.Note.IdBreak -> "ib:${note.column}:${note.breaks}"
+                    is TableSelfCheck.Note.SumChecked -> "sc:${note.subjects}:${note.totalColumn}"
+                    is TableSelfCheck.Note.PartialTotals -> "pt:${note.rows}"
+                }
+            }
+
+        internal fun decodeNotes(raw: String): List<TableSelfCheck.Note> {
             if (raw.isEmpty()) return emptyList()
             return raw.split('|').mapNotNull { token ->
                 val parts = token.split(':')

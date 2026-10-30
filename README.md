@@ -51,7 +51,12 @@
 │       │   ├── java/com/bailensn/sort/
 │       │   │   ├── MainActivity.kt
 │       │   │   ├── NativeBridge.kt
-│       │   │   ├── data/                        # HistoryStore / NameMemory
+│       │   │   ├── data/
+│       │   │   │   ├── SortDatabase.kt          # sort.db：entries + cells
+│       │   │   │   ├── HistoryStore.kt          # 记录的读写（图片目录 + 数据库）
+│       │   │   │   ├── LegacyHistory.kt         # 老 TSV → SQLite 的一次性搬迁
+│       │   │   │   ├── HistoryMeta.kt           # 过程数据
+│       │   │   │   └── NameMemory.kt            # 姓名记忆 + 模糊搜索
 │       │   │   ├── ocr/ModelInstaller.kt        # 内置模型解压
 │       │   │   ├── table/
 │       │   │   │   ├── ContentCropper.kt        # 裁到有内容的那块
@@ -120,8 +125,11 @@
 - 历史记录点开是**新的一页**（`miuix-nav` 页面栈），主页正在识别的那张图不会被覆盖；
 - 识别时有横向进度条：阶段文案 + 按块推进的百分比（逐格识别会一边跑一边涨）；
 - 单元格编辑里的姓名候选默认不显示，输入之后才按字模糊筛（前缀 > 包含 > 顺序子序列 > 一位错字）；
-- 历史记录一条一个文件夹：`rows.tsv` + `meta.txt` + `original.jpg` / `grid.jpg` / `enhanced.jpg`，
-  打开历史同样能在三种视图间切换，置信度/用时/自检结论也一起回填（图统一缩到 1600px，最多留 20 条）；
+- 历史数据存在 `filesDir/sort.db`（SQLite）：`entries` 一条记录一行（含置信度/用时/结构/自检），
+  `cells` 每格一行（`entry_id / row_index / col_index / text`），跨次扫描按列统计、排序都靠它；
+- 三张图仍然放 `filesDir/history/entry-<id>/`（`original.jpg` / `grid.jpg` / `enhanced.jpg`，1600px JPEG），
+  一条记录一个文件夹，最多留 20 条；
+- 老版本的 `rows.tsv` / `meta.txt` 在第一次建库时自动搬进数据库，图片原地不动，搬完删掉旧文件；
 - 尺寸固定：表格行高 40dp、预览图 4:3、进度圈 22dp；表格格子带 0.5dp 横竖发丝线。
 
 识别页可以切「看网格 / 看原图 / 看增强」，绿线是实际参与切格的拟合线，可以直接对照原图检查。

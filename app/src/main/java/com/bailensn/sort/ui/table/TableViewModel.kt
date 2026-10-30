@@ -96,7 +96,7 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
     val suggestions: StateFlow<List<String>> = _suggestions.asStateFlow()
 
     /** 当前结果对应的历史条目文件名；手改格子时回写它。 */
-    private var currentEntryId: String? = null
+    private var currentEntryId: Long? = null
 
     private var engine: PaddleOCR? = null
     private var engineDeferred = CompletableDeferred<PaddleOCR>()
@@ -420,7 +420,7 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun deleteHistory(ids: Collection<String>) {
+    fun deleteHistory(ids: Collection<Long>) {
         if (currentEntryId in ids) currentEntryId = null
         viewModelScope.launch {
             val app = getApplication<Application>()

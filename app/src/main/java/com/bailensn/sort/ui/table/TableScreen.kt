@@ -88,7 +88,7 @@ private const val PAGE_HISTORY = 1
 private sealed interface Route : NavKey {
     data object Main : Route
     data class Image(val mode: Int) : Route
-    data class History(val id: String) : Route
+    data class History(val id: Long) : Route
 }
 
 @Composable
@@ -136,7 +136,7 @@ private fun MainPage(
     viewModel: TableViewModel,
     backEnabled: Boolean,
     onOpenImage: (Int) -> Unit,
-    onOpenHistory: (String) -> Unit,
+    onOpenHistory: (Long) -> Unit,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val history by viewModel.history.collectAsStateWithLifecycle()
@@ -159,8 +159,8 @@ private fun MainPage(
 
     var viewMode by rememberSaveable { mutableIntStateOf(0) }
     var editing by remember { mutableStateOf<CellEdit?>(null) }
-    var selected by remember { mutableStateOf(emptySet<String>()) }
-    var pendingDelete by remember { mutableStateOf(emptyList<String>()) }
+    var selected by remember { mutableStateOf(emptySet<Long>()) }
+    var pendingDelete by remember { mutableStateOf(emptyList<Long>()) }
 
     val chooserTitle = stringResource(R.string.share_chooser)
     val exportedText = stringResource(R.string.snack_exported)

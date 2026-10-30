@@ -21,12 +21,12 @@ import top.yukonga.miuix.kmp.basic.TextButton
 @Composable
 internal fun HistoryPage(
     entries: List<HistoryStore.Entry>,
-    selected: Set<String>,
-    onToggle: (String) -> Unit,
+    selected: Set<Long>,
+    onToggle: (Long) -> Unit,
     onSelectAll: () -> Unit,
     onClearSelection: () -> Unit,
     onOpen: (HistoryStore.Entry) -> Unit,
-    onDelete: (List<String>) -> Unit,
+    onDelete: (List<Long>) -> Unit,
     contentPadding: PaddingValues,
 ) {
     val allSelected = entries.isNotEmpty() && selected.size == entries.size
