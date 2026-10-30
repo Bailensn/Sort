@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.HorizontalPager
@@ -57,8 +58,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.NavigationBar
-import top.yukonga.miuix.kmp.basic.NavigationBarItem
+import top.yukonga.miuix.kmp.basic.FloatingNavigationBarDefaults
+import top.yukonga.miuix.kmp.basic.FloatingNavigationBarItem
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SmallTopAppBar
 import top.yukonga.miuix.kmp.basic.SnackbarHost
@@ -233,11 +234,20 @@ private fun MainPage(
             }
         },
         bottomBar = {
-            GlassBar(backdrop = backdrop) {
-                BottomTabs(
-                    page = page,
-                    onSelect = { target -> scope.launch { pager.animateScrollToPage(target) } },
-                )
+            // 悬浮胶囊底栏：Miuix 的 FloatingNavigationBarItem + 液态玻璃底板。
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
+                    .padding(bottom = 12.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                GlassBar(backdrop = backdrop, barShape = RoundedCornerShape(50.dp)) {
+                    BottomTabs(
+                        page = page,
+                        onSelect = { target -> scope.launch { pager.animateScrollToPage(target) } },
+                    )
+                }
             }
         },
         snackbarHost = { SnackbarHost(state = snackbar) },
@@ -370,18 +380,20 @@ private fun MainPage(
 /** 底栏内容：玻璃底板由 [GlassBar] 提供。 */
 @Composable
 private fun BottomTabs(page: Int, onSelect: (Int) -> Unit) {
-    NavigationBar(
-        color = Color.Transparent,
-        showDivider = false,
-        defaultWindowInsetsPadding = false,
+    Row(
+        modifier = Modifier
+            .height(52.dp)
+            .padding(horizontal = FloatingNavigationBarDefaults.HorizontalPadding),
+        horizontalArrangement = Arrangement.spacedBy(FloatingNavigationBarDefaults.ItemSpacing),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        NavigationBarItem(
+        FloatingNavigationBarItem(
             selected = page == PAGE_RECOGNIZE,
             onClick = { onSelect(PAGE_RECOGNIZE) },
             icon = MiuixIcons.GridView,
             label = stringResource(R.string.tab_recognize),
         )
-        NavigationBarItem(
+        FloatingNavigationBarItem(
             selected = page == PAGE_HISTORY,
             onClick = { onSelect(PAGE_HISTORY) },
             icon = MiuixIcons.Timer,
