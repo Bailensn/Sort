@@ -206,33 +206,34 @@ private fun MainPage(
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         topBar = {
-            SmallTopAppBar(
-                title = stringResource(
-                    if (page == PAGE_HISTORY) R.string.history_title else R.string.app_name,
-                ),
-            )
+            GlassBar(backdrop = backdrop) {
+                SmallTopAppBar(
+                    title = stringResource(
+                        if (page == PAGE_HISTORY) R.string.history_title else R.string.app_name,
+                    ),
+                    color = Color.Transparent,
+                )
+            }
         },
         bottomBar = {
-            GlassBottomBar(
-                backdrop = backdrop,
-                page = page,
-                onSelect = { target -> scope.launch { pager.animateScrollToPage(target) } },
-            )
+            GlassBar(backdrop = backdrop) {
+                BottomTabs(
+                    page = page,
+                    onSelect = { target -> scope.launch { pager.animateScrollToPage(target) } },
+                )
+            }
         },
         snackbarHost = { SnackbarHost(state = snackbar) },
     ) { padding ->
         Box(modifier = Modifier.fillMaxSize()) {
             // 内容铺到屏幕底部，底栏浮在上面；列表自己留出底栏那一段。
             val pagePadding = PaddingValues(
-                top = 8.dp,
+                top = padding.calculateTopPadding() + 8.dp,
                 bottom = padding.calculateBottomPadding() + 96.dp,
             )
             HorizontalPager(
                 state = pager,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(top = padding.calculateTopPadding())
-                    .layerBackdrop(backdrop),
+                modifier = Modifier.fillMaxSize().layerBackdrop(backdrop),
                 beyondViewportPageCount = 1,
             ) { index ->
                 if (index == PAGE_RECOGNIZE) {
@@ -339,35 +340,22 @@ private fun MainPage(
     }
 }
 
-/** 液态玻璃底栏：内容从它下面滚过去，模糊的是真实画面。 */
+/** 底栏内容：玻璃底板由 [GlassBar] 提供。 */
 @Composable
-private fun GlassBottomBar(backdrop: LayerBackdrop, page: Int, onSelect: (Int) -> Unit) {
-    Box(
-        modifier = Modifier.drawBackdrop(
-            backdrop = backdrop,
-            shape = { RectangleShape },
-            effects = {
-                blur(28f)
-                vibrancy()
-            },
-            highlight = { Highlight.Plain },
-            shadow = null,
-        ),
-    ) {
-        NavigationBar(color = Color.Transparent, showDivider = false) {
-            NavigationBarItem(
-                selected = page == PAGE_RECOGNIZE,
-                onClick = { onSelect(PAGE_RECOGNIZE) },
-                icon = MiuixIcons.GridView,
-                label = stringResource(R.string.tab_recognize),
-            )
-            NavigationBarItem(
-                selected = page == PAGE_HISTORY,
-                onClick = { onSelect(PAGE_HISTORY) },
-                icon = MiuixIcons.Timer,
-                label = stringResource(R.string.tab_history),
-            )
-        }
+private fun BottomTabs(page: Int, onSelect: (Int) -> Unit) {
+    NavigationBar(color = Color.Transparent, showDivider = false) {
+        NavigationBarItem(
+            selected = page == PAGE_RECOGNIZE,
+            onClick = { onSelect(PAGE_RECOGNIZE) },
+            icon = MiuixIcons.GridView,
+            label = stringResource(R.string.tab_recognize),
+        )
+        NavigationBarItem(
+            selected = page == PAGE_HISTORY,
+            onClick = { onSelect(PAGE_HISTORY) },
+            icon = MiuixIcons.Timer,
+            label = stringResource(R.string.tab_history),
+        )
     }
 }
 

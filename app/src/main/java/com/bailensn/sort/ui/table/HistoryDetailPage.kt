@@ -63,17 +63,20 @@ internal fun HistoryDetailPage(
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         topBar = {
-            SmallTopAppBar(
-                title = stringResource(R.string.history_title),
-                navigationIcon = {
-                    IconButton(onClick = onClose) {
-                        Icon(
-                            imageVector = MiuixIcons.Back,
-                            contentDescription = stringResource(R.string.action_back),
-                        )
-                    }
-                },
-            )
+            GlassBar(backdrop = backdrop) {
+                SmallTopAppBar(
+                    title = stringResource(R.string.history_title),
+                    color = Color.Transparent,
+                    navigationIcon = {
+                        IconButton(onClick = onClose) {
+                            Icon(
+                                imageVector = MiuixIcons.Back,
+                                contentDescription = stringResource(R.string.action_back),
+                            )
+                        }
+                    },
+                )
+            }
         },
     ) { padding ->
         Box(modifier = Modifier.fillMaxSize()) {
