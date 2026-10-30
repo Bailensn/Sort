@@ -1,22 +1,24 @@
 package com.bailensn.sort.ui.table
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.CornerBasedShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.foundation.shape.CornerBasedShape
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.RectangleShape
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.Dp
@@ -43,7 +45,7 @@ internal fun rememberGlassBackdrop(): LayerBackdrop {
 }
 
 /**
- * 液态玻璃的一整套效果：vibrancy + 模糊 + 边缘折射（lens）。
+ * 液态玻璃：vibrancy + 模糊 + 边缘折射（lens）。
  * 半径按 dp 换算成像素——直接写 20f 是 20px，在 3x 屏上只有 7dp，看着像没糊。
  */
 @Composable
@@ -72,22 +74,15 @@ private fun Modifier.liquidGlass(
     )
 }
 
-/**
- * 顶栏 / 底栏的玻璃底板。
- *
- * [fadeBottom] 让玻璃自上往下渐隐：顶栏直接切在内容上会有一条硬边，
- * 渐隐之后滚动内容从模糊过渡到清晰。
- */
+/** 底栏的玻璃底板。 */
 @Composable
 internal fun GlassBar(
     backdrop: LayerBackdrop,
     modifier: Modifier = Modifier,
     barShape: Shape = RectangleShape,
-    fadeBottom: Boolean = false,
     content: @Composable () -> Unit,
 ) {
     Box(modifier) {
-        // 玻璃单独一层，渐隐只作用在模糊上，标题文字不跟着变淡。
         Box(
             modifier = Modifier
                 .matchParentSize()
@@ -96,27 +91,11 @@ internal fun GlassBar(
                     shape = barShape,
                     highlight = { Highlight.Plain },
                     shadow = null,
-                )
-                .then(if (fadeBottom) Modifier.fadeOutBottom() else Modifier),
+                ),
         )
         content()
     }
 }
-
-/** 底部渐隐的遮罩：用 DstIn 把玻璃层的下半段擦成透明。 */
-private fun Modifier.fadeOutBottom(): Modifier = this
-    .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
-    .drawWithContent {
-        drawContent()
-        drawRect(
-            brush = Brush.verticalGradient(
-                0f to Color.Black,
-                0.55f to Color.Black,
-                1f to Color.Transparent,
-            ),
-            blendMode = BlendMode.DstIn,
-        )
-    }
 
 /** 液态玻璃悬浮按钮。 */
 @Composable
@@ -149,7 +128,13 @@ internal fun GlassFab(
     }
 }
 
-/** 顶栏专用：只做高斯模糊和一层淡色，不做折射高光；底部渐隐避免硬边。 */
+/**
+ * 顶栏：自上往下逐级减弱的高斯模糊（progressive blur）。
+ *
+ * Miuix 的 `progressiveTextureBlur(ProgressiveBlur.Top)` 在 `miuix-blur` 里，那个模块
+ * minSdk 是 33，我们用不了；这里按同样的思路自己叠：越强的模糊盖在越上面，
+ * 每层用错开的渐变遮罩收边，叠出来就是从糊到清晰的连续过渡，没有硬边。
+ */
 @Composable
 internal fun BlurBar(
     backdrop: LayerBackdrop,
@@ -158,19 +143,55 @@ internal fun BlurBar(
 ) {
     val surface = MiuixTheme.colorScheme.surface
     Box(modifier) {
+        // 从弱到强由下往上叠：弱的先画、盖得最远，强的压在最上面。
+        BlurLayer(backdrop, radius = 3.dp, fadeStart = 0.72f, fadeEnd = 1f)
+        BlurLayer(backdrop, radius = 10.dp, fadeStart = 0.42f, fadeEnd = 0.78f)
+        BlurLayer(backdrop, radius = 20.dp, fadeStart = 0.14f, fadeEnd = 0.52f)
+        // 一层很淡的表面色，保证标题在任何照片上都读得出来。
         Box(
             modifier = Modifier
                 .matchParentSize()
-                .drawBackdrop(
-                    backdrop = backdrop,
-                    shape = { RectangleShape },
-                    effects = { blur(18f.dp.toPx()) },
-                    highlight = null,
-                    shadow = null,
-                    onDrawSurface = { drawRect(surface.copy(alpha = 0.18f)) },
-                )
-                .fadeOutBottom(),
+                .background(
+                    Brush.verticalGradient(
+                        0f to surface.copy(alpha = 0.20f),
+                        1f to surface.copy(alpha = 0.04f),
+                    ),
+                ),
         )
         content()
     }
+}
+
+/** 一层模糊：整块是 blur，超出 [fadeStart]..[fadeEnd] 的部分用渐变吃掉。 */
+@Composable
+private fun BoxScope.BlurLayer(
+    backdrop: LayerBackdrop,
+    radius: Dp,
+    fadeStart: Float,
+    fadeEnd: Float,
+) {
+    Box(
+        modifier = Modifier
+            .matchParentSize()
+            .drawBackdrop(
+                backdrop = backdrop,
+                shape = { RectangleShape },
+                effects = { blur(radius.toPx()) },
+                highlight = null,
+                shadow = null,
+            )
+            .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+            .drawWithContent {
+                drawContent()
+                drawRect(
+                    brush = Brush.verticalGradient(
+                        0f to Color.Black,
+                        fadeStart to Color.Black,
+                        fadeEnd to Color.Transparent,
+                        1f to Color.Transparent,
+                    ),
+                    blendMode = BlendMode.DstIn,
+                )
+            },
+    )
 }
