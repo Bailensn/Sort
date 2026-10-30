@@ -8,6 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.shape.CornerBasedShape
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -42,18 +43,22 @@ internal fun rememberGlassBackdrop(): LayerBackdrop {
 @Composable
 private fun Modifier.liquidGlass(
     backdrop: LayerBackdrop,
-    shape: () -> Shape,
+    shape: Shape,
     highlight: (() -> Highlight?)?,
     shadow: (() -> Shadow?)?,
 ): Modifier {
     val surface = MiuixTheme.colorScheme.surface
+    val canRefract = shape is CornerBasedShape
     return drawBackdrop(
         backdrop = backdrop,
-        shape = shape,
+        shape = { shape },
         effects = {
             vibrancy()
             blur(4f.dp.toPx())
-            lens(refractionHeight = 16f.dp.toPx(), refractionAmount = 32f.dp.toPx())
+            // lens 只认 CornerBasedShape / RoundedRectangularShape，传别的形状会在测量时抛异常。
+            if (canRefract) {
+                lens(refractionHeight = 16f.dp.toPx(), refractionAmount = 32f.dp.toPx())
+            }
         },
         highlight = highlight,
         shadow = shadow,
@@ -72,7 +77,7 @@ internal fun GlassBar(
     Box(
         modifier = modifier.liquidGlass(
             backdrop = backdrop,
-            shape = { barShape },
+            shape = barShape,
             highlight = { Highlight.Plain },
             shadow = null,
         ),
@@ -95,7 +100,7 @@ internal fun GlassFab(
             .size(size)
             .liquidGlass(
                 backdrop = backdrop,
-                shape = { CircleShape },
+                shape = CircleShape,
                 highlight = { Highlight.Default },
                 shadow = { Shadow.Default },
             )
