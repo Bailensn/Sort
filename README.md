@@ -18,7 +18,7 @@
 
 | 组件 | 版本 | 说明 |
 | --- | --- | --- |
-| AGP | **9.4.1** | 最高支持 API 37；最低要求 Gradle 9.6.0 / JDK 17 |
+| AGP | **9.5.0** | 最高支持 API 37；最低要求 Gradle 9.6.0 / JDK 17 |
 | Gradle | **9.8.2** | 见 `gradle/wrapper/gradle-wrapper.properties` |
 | Kotlin | **2.4.21** | 用 buildscript classpath 覆盖 AGP 自带的 KGP 2.2.10 |
 | JDK | **21** | `compileOptions` 与 Kotlin `jvmTarget` 都是 21 |
@@ -29,11 +29,11 @@
 | Backdrop | **2.0.1** | 液态玻璃（minSdk 21，Android 12 起真模糊，更低的系统自动退化成半透明） |
 | Activity Compose | 1.13.0 | Photo Picker |
 | Lifecycle | 2.11.0 | ViewModel + `collectAsStateWithLifecycle` |
-| ONNX Runtime | **1.31.0** | OCR 推理 |
+| ONNX Runtime | **1.31.1** | OCR 推理 |
 | OpenCV | **5.0.0.1** | 纠偏、表格线、透视变换（几何 API 挪到 `org.opencv.geometry`） |
 | OCR 模型 | PP-OCRv6 medium + PP-OCRv5 server 复核 | det 62 MB、rec 76.5 MB、字符表 150 KB |
 | NDK | **30.0.16248370 (r30)** | sysroot 到 API 37 |
-| CMake | **3.22.1** | AGP 9.4 能驱动的最高 SDK CMake 版本 |
+| CMake | **3.22.1** | AGP 能驱动的最高 SDK CMake 版本 |
 | ABI | arm64-v8a | 模拟器用的 x86_64 默认不打，需要时用 ABI splits 出独立包 |
 
 ## 目录结构
@@ -221,7 +221,7 @@
 - 包名：`namespace` / `applicationId` / 源码目录 / JNI 符号 `Java_com_bailensn_sort_NativeBridge_*` 一起改；
 - native 库名：`CMakeLists.txt` 的 target（`main` → `libmain.so`）与 `NativeBridge.LIBRARY_NAME`；
 - Kotlin：同时改 `libs.versions.toml` 的 `kotlin` 和根 `build.gradle.kts` 的 classpath；
-- AGP / Gradle：一起升，AGP 9.4 要求 Gradle ≥ 9.6.0；
+- AGP / Gradle：一起升，AGP 9.5 要求 Gradle ≥ 9.6.0；
 - OpenCV：5.x 之后几何 API 在 `org.opencv.geometry`，native 库名是 `libopencv_java5.so`；
 - ONNX Runtime：升大版本前确认 `Utils.bitmapToMat`、`OrtSession` 等 API 未变。
 

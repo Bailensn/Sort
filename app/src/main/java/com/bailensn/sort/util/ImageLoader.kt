@@ -1,5 +1,6 @@
 package com.bailensn.sort.util
 
+import androidx.core.graphics.createBitmap
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -48,7 +49,7 @@ object ImageLoader {
 
     private fun flattenOnWhite(bitmap: Bitmap): Bitmap {
         if (!bitmap.hasAlpha()) return bitmap
-        val flattened = Bitmap.createBitmap(bitmap.width, bitmap.height, Bitmap.Config.ARGB_8888)
+        val flattened = createBitmap(bitmap.width, bitmap.height, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(flattened)
         canvas.drawColor(Color.WHITE)
         canvas.drawBitmap(bitmap, 0f, 0f, null)

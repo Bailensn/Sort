@@ -1,5 +1,7 @@
 package com.bailensn.sort.data
 
+import androidx.core.database.sqlite.transaction
+import androidx.core.graphics.scale
 import android.content.ContentValues
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
@@ -187,14 +189,9 @@ object HistoryStore {
             put(SortDatabase.COL_NOTES, HistoryMeta.encodeNotes(meta?.notes.orEmpty()))
             put(SortDatabase.COL_SHOTS, savedShots.fold(0) { acc, shot -> acc or shot.bit })
         }
-        val db = database(context)
-        db.beginTransaction()
-        try {
-            db.insertOrThrow(SortDatabase.TABLE_ENTRIES, null, values)
-            insertCells(db, timestamp, rows)
-            db.setTransactionSuccessful()
-        } finally {
-            db.endTransaction()
+        database(context).transaction {
+            insertOrThrow(SortDatabase.TABLE_ENTRIES, null, values)
+            insertCells(this, timestamp, rows)
         }
         prune(context)
         Entry(
@@ -210,24 +207,19 @@ object HistoryStore {
     fun update(context: Context, id: Long, rows: List<List<String>>) {
         if (rows.isEmpty()) return
         runCatching {
-            val db = database(context)
-            db.beginTransaction()
-            try {
-                db.delete(SortDatabase.TABLE_CELLS, "${SortDatabase.COL_ENTRY_ID} = ?", arrayOf(id.toString()))
-                insertCells(db, id, rows)
+            database(context).transaction {
+                delete(SortDatabase.TABLE_CELLS, "${SortDatabase.COL_ENTRY_ID} = ?", arrayOf(id.toString()))
+                insertCells(this, id, rows)
                 val values = ContentValues().apply {
                     put(SortDatabase.COL_ROWS, rows.size)
                     put(SortDatabase.COL_COLUMNS, rows.maxOfOrNull { it.size } ?: 0)
                 }
-                db.update(
+                update(
                     SortDatabase.TABLE_ENTRIES,
                     values,
                     "${SortDatabase.COL_ID} = ?",
                     arrayOf(id.toString()),
                 )
-                db.setTransactionSuccessful()
-            } finally {
-                db.endTransaction()
             }
         }
     }
@@ -235,16 +227,11 @@ object HistoryStore {
     fun delete(context: Context, ids: Collection<Long>) {
         if (ids.isEmpty()) return
         runCatching {
-            val db = database(context)
-            db.beginTransaction()
-            try {
+            database(context).transaction {
                 ids.forEach { id ->
-                    db.delete(SortDatabase.TABLE_CELLS, "${SortDatabase.COL_ENTRY_ID} = ?", arrayOf(id.toString()))
-                    db.delete(SortDatabase.TABLE_ENTRIES, "${SortDatabase.COL_ID} = ?", arrayOf(id.toString()))
+                    delete(SortDatabase.TABLE_CELLS, "${SortDatabase.COL_ENTRY_ID} = ?", arrayOf(id.toString()))
+                    delete(SortDatabase.TABLE_ENTRIES, "${SortDatabase.COL_ID} = ?", arrayOf(id.toString()))
                 }
-                db.setTransactionSuccessful()
-            } finally {
-                db.endTransaction()
             }
             ids.forEach { id -> runCatching { folder(context, id).deleteRecursively() } }
         }
@@ -296,8 +283,7 @@ object HistoryStore {
         val longest = max(bitmap.width, bitmap.height)
         if (longest <= MAX_SIDE) return bitmap
         val ratio = MAX_SIDE.toFloat() / longest
-        return Bitmap.createScaledBitmap(
-            bitmap,
+        return bitmap.scale(
             (bitmap.width * ratio).toInt().coerceAtLeast(1),
             (bitmap.height * ratio).toInt().coerceAtLeast(1),
             true,

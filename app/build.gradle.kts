@@ -20,7 +20,7 @@ android {
     namespace = "com.bailensn.sort"
     compileSdk = 37
 
-    // AGP 9.4 默认 NDK 是 28.2.13676358；这里显式用 r30（sysroot 支持到 API 37）。
+    // AGP 默认 NDK 是 28.2；这里显式用 r30（sysroot 支持到 API 37）。
     ndkVersion = libs.versions.ndk.get()
 
     defaultConfig {
@@ -57,7 +57,7 @@ android {
     externalNativeBuild {
         cmake {
             path = file("src/main/cpp/CMakeLists.txt")
-            // 见 libs.versions.toml 里的说明：AGP 9.4 只认 SDK CMake 3.22.1。
+            // 见 libs.versions.toml 里的说明：AGP 只认 SDK CMake 3.22.1。
             version = libs.versions.cmake.get()
         }
     }
@@ -76,6 +76,11 @@ android {
         // targetCompatibility，所以不需要再写 kotlin { compilerOptions { ... } }。
         sourceCompatibility = JavaVersion.VERSION_21
         targetCompatibility = JavaVersion.VERSION_21
+    }
+
+    lint {
+        // 只出 arm64-v8a，ChromeOS 的 x86_64 是刻意不支持（见 README「ABI」）。
+        disable += "ChromeOsAbiSupport"
     }
 
     packaging {

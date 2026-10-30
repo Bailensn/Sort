@@ -1,5 +1,6 @@
 package com.bailensn.sort.table
 
+import androidx.core.graphics.createBitmap
 import android.graphics.Bitmap
 import org.opencv.android.Utils
 import org.opencv.core.Core
@@ -147,7 +148,7 @@ object Deskewer {
                 Scalar(255.0, 255.0, 255.0, 255.0),
             )
 
-            val output = Bitmap.createBitmap(newWidth, newHeight, Bitmap.Config.ARGB_8888)
+            val output = createBitmap(newWidth, newHeight, Bitmap.Config.ARGB_8888)
             Utils.matToBitmap(dst, output)
             return output
         } finally {

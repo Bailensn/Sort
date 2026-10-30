@@ -1,5 +1,6 @@
 package com.bailensn.sort.table
 
+import androidx.core.graphics.get
 import android.graphics.Bitmap
 
 object TableEdgeLines {
@@ -60,7 +61,7 @@ object TableEdgeLines {
             var total = 0
             var x = 0
             while (x < bitmap.width) {
-                val pixel = bitmap.getPixel(x, y)
+                val pixel = bitmap[x, y]
                 val luminance = (
                     ((pixel shr 16) and 0xFF) * 299 +
                         ((pixel shr 8) and 0xFF) * 587 +
@@ -84,7 +85,7 @@ object TableEdgeLines {
             var total = 0
             var y = 0
             while (y < bitmap.height) {
-                val pixel = bitmap.getPixel(x, y)
+                val pixel = bitmap[x, y]
                 val luminance = (
                     ((pixel shr 16) and 0xFF) * 299 +
                         ((pixel shr 8) and 0xFF) * 587 +

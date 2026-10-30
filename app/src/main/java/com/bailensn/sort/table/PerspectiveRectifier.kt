@@ -1,5 +1,6 @@
 package com.bailensn.sort.table
 
+import androidx.core.graphics.createBitmap
 import android.graphics.Bitmap
 import org.opencv.android.Utils
 import org.opencv.core.Core
@@ -88,7 +89,7 @@ object PerspectiveRectifier {
                 matrix.release()
             }
 
-            val output = Bitmap.createBitmap(targetWidth, targetHeight, Bitmap.Config.ARGB_8888)
+            val output = createBitmap(targetWidth, targetHeight, Bitmap.Config.ARGB_8888)
             Utils.matToBitmap(warped, output)
             return output
         } finally {

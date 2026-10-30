@@ -1,5 +1,6 @@
 package com.bailensn.sort.table
 
+import androidx.core.graphics.createBitmap
 import android.graphics.Bitmap
 import org.opencv.android.Utils
 import org.opencv.core.Mat
@@ -25,7 +26,7 @@ object ImageEnhancer {
                 255.0,
                 Imgproc.THRESH_BINARY + Imgproc.THRESH_OTSU,
             )
-            val out = Bitmap.createBitmap(bitmap.width, bitmap.height, Bitmap.Config.ARGB_8888)
+            val out = createBitmap(bitmap.width, bitmap.height, Bitmap.Config.ARGB_8888)
             Utils.matToBitmap(gray, out)
             out
         } finally {
@@ -49,7 +50,7 @@ object ImageEnhancer {
             } finally {
                 clahe.collectGarbage()
             }
-            val out = Bitmap.createBitmap(bitmap.width, bitmap.height, Bitmap.Config.ARGB_8888)
+            val out = createBitmap(bitmap.width, bitmap.height, Bitmap.Config.ARGB_8888)
             Utils.matToBitmap(gray, out)
             return out
         } finally {

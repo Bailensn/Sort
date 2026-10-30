@@ -1,5 +1,6 @@
 package com.bailensn.sort.table
 
+import androidx.core.graphics.scale
 import android.graphics.Bitmap
 import android.graphics.Rect
 import android.graphics.RectF
@@ -76,8 +77,8 @@ object TablePipeline {
                 keepsInk(working, warped) &&
                 warpedDetection.isUsable
             if (usable) {
-                working = warped!!
-                detection = warpedDetection!!
+                working = warped
+                detection = warpedDetection
                 rectified = true
             } else {
                 warped?.recycle()
@@ -459,7 +460,7 @@ object TablePipeline {
     /** 抽 96x96 采样估暗像素占比。 */
     private fun darkRatio(bitmap: Bitmap): Double = runCatching {
         val size = 96
-        val small = Bitmap.createScaledBitmap(bitmap, size, size, false)
+        val small = bitmap.scale(size, size, false)
         val pixels = IntArray(size * size)
         small.getPixels(pixels, 0, size, 0, 0, size, size)
         if (small !== bitmap) small.recycle()
@@ -477,7 +478,7 @@ object TablePipeline {
     private fun looksBlank(bitmap: Bitmap): Boolean {
         return runCatching {
             val size = 64
-            val small = Bitmap.createScaledBitmap(bitmap, size, size, false)
+            val small = bitmap.scale(size, size, false)
             val pixels = IntArray(size * size)
             small.getPixels(pixels, 0, size, 0, 0, size, size)
             if (small !== bitmap) small.recycle()
