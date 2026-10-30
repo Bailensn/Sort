@@ -36,7 +36,6 @@ import com.kyant.backdrop.highlight.Highlight
 import com.kyant.backdrop.shadow.Shadow
 import kotlin.math.abs
 import kotlin.math.cos
-import kotlin.math.pow
 import kotlin.math.sin
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -136,43 +135,20 @@ internal fun GlassFab(
 }
 
 /**
- * 渐进模糊的参数模型：接口照 Miuix 的 `ProgressiveBlur` 抄，实现是自己写的。
+ * 顶栏的模糊：**一遍高斯模糊 + 一条透明度渐变**。
  *
- * [angle] 顺时针，90 = 从上往下；模糊在 [startFraction] 处最强，到 [endFraction] 衰减为零，
- * [curve] 是衰减曲线的指数（>1 更集中在顶部，<1 更均匀）。
+ * 之前是五层不同半径的模糊叠起来（真·progressive），每帧要跑五遍 RenderEffect，
+ * 滚动时掉帧明显。现在只模糊一次，靠遮罩把下半段渐隐掉——观感几乎一样，
+ * 开销是一层的。
+ *
+ * [angle] 顺时针，90 = 从上往下；模糊在 [fadeStart] 之前是满的，到 [fadeEnd] 淡成透明。
  */
 internal data class ProgressiveBlur(
     val angle: Float = 90f,
-    val startFraction: Float = 0f,
-    val endFraction: Float = 1f,
-    val curve: Float = 1.4f,
-    val maxRadius: Dp = 18.dp,
-    val steps: Int = 5,
+    val fadeStart: Float = 0.3f,
+    val fadeEnd: Float = 0.95f,
+    val blurRadius: Dp = 16.dp,
 ) {
-
-    /** 一层：模糊半径 + 这一层的遮罩从哪开始淡出。 */
-    internal data class Layer(val radius: Dp, val fadeStart: Float, val fadeEnd: Float)
-
-    /**
-     * 拆成若干层叠加：半径逐层减小，遮罩的收边位置逐层往下推。
-     * 层数越多过渡越顺，但每层都要多画一遍模糊，5 层是画质和开销的折中。
-     */
-    internal fun layers(): List<Layer> {
-        val span = (endFraction - startFraction).coerceAtLeast(0.01f)
-        val count = steps.coerceAtLeast(2)
-        return (0 until count).map { index ->
-            val progress = index / (count - 1).toFloat()
-            val strength = (1f - progress).pow(curve)
-            val fadeEnd = startFraction + span * (0.5f + 0.5f * progress)
-            val fadeStart = startFraction + (fadeEnd - startFraction) * 0.6f
-            Layer(
-                radius = maxRadius * strength,
-                fadeStart = fadeStart.coerceIn(0f, 1f),
-                fadeEnd = fadeEnd.coerceIn(0f, 1f),
-            )
-        }
-    }
-
     companion object {
         /** 上糊下清。 */
         val Top: ProgressiveBlur = ProgressiveBlur()
@@ -182,7 +158,7 @@ internal data class ProgressiveBlur(
     }
 }
 
-/** 顶栏：渐进模糊 + 一层淡色，标题在任何照片上都读得出来。 */
+/** 顶栏：一次模糊 + 渐变渐隐 + 一层淡色，标题在任何照片上都读得出来。 */
 @Composable
 internal fun BlurBar(
     backdrop: LayerBackdrop,
@@ -192,43 +168,37 @@ internal fun BlurBar(
 ) {
     val surface = MiuixTheme.colorScheme.surface
     Box(modifier) {
-        blur.layers().forEach { layer -> BlurLayer(backdrop, blur.angle, layer) }
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .drawBackdrop(
+                    backdrop = backdrop,
+                    shape = { RectangleShape },
+                    effects = { blur(blur.blurRadius.toPx()) },
+                    highlight = null,
+                    shadow = null,
+                )
+                .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+                .drawWithContent {
+                    drawContent()
+                    drawRect(
+                        brush = axisBrush(blur.angle, Color.Black, Color.Transparent, blur.fadeStart, blur.fadeEnd),
+                        blendMode = BlendMode.DstIn,
+                    )
+                },
+        )
         Box(
             modifier = Modifier
                 .matchParentSize()
                 .drawBehind {
-                    drawRect(axisBrush(blur.angle, surface.copy(alpha = 0.18f), surface.copy(alpha = 0.03f)))
+                    drawRect(axisBrush(blur.angle, surface.copy(alpha = 0.16f), surface.copy(alpha = 0f)))
                 },
         )
         content()
     }
 }
 
-/** 一层模糊：整块是 blur，超出 [layer] 遮罩范围的部分用渐变擦掉。 */
-@Composable
-private fun BoxScope.BlurLayer(backdrop: LayerBackdrop, angle: Float, layer: ProgressiveBlur.Layer) {
-    Box(
-        modifier = Modifier
-            .matchParentSize()
-            .drawBackdrop(
-                backdrop = backdrop,
-                shape = { RectangleShape },
-                effects = { blur(layer.radius.toPx()) },
-                highlight = null,
-                shadow = null,
-            )
-            .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
-            .drawWithContent {
-                drawContent()
-                drawRect(
-                    brush = axisBrush(angle, Color.Black, Color.Black, layer.fadeStart, layer.fadeEnd),
-                    blendMode = BlendMode.DstIn,
-                )
-            },
-    )
-}
-
-/** 沿 [angle] 方向的线性渐变；90 度时就是在竖直方向上 0 → 1。 */
+/** 沿 [angle] 方向的线性渐变；90 度时就是竖直方向 0 → 1。 */
 private fun DrawScope.axisBrush(
     angle: Float,
     startColor: Color,

@@ -116,8 +116,9 @@
 
 - 两个页签（识别 / 历史）放在 `HorizontalPager` 里，`NavigationBar` 的点按和左右滑动共用同一份状态，
   切页保留各自的滚动位置；
-- 顶栏是**渐进模糊**（progressive blur）：自己实现的一套 `ProgressiveBlur(angle, startFraction, endFraction, curve)`，
-  拆成 5 层由强到弱的高斯模糊，沿渐变方向错开遮罩收边，从顶部到底部连续过渡，没有分界线；
+- 顶栏的模糊是**一遍高斯模糊 + 一条透明度渐变**（`ProgressiveBlur(angle, fadeStart, fadeEnd, blurRadius)`）：
+  沿着渐变方向把下半段渐隐掉，观感接近渐进模糊，但每帧只跑一层 RenderEffect——
+  早先五层叠加的版本滚动时掉帧，不值得；
   底栏和悬浮按钮是**液态玻璃**：`backdrop` 把页面内容录一层，效果是
   `vibrancy() + blur(4.dp.toPx()) + lens(16.dp, 32.dp)`——模糊半径按 dp 换算，边缘折射那一下才是「玻璃」；
   Android 13+（含 16）三样全开，12 只有模糊，更低的系统退化成半透明底；
