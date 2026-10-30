@@ -99,7 +99,7 @@ internal fun HistoryDetailPage(
                     item("scope-title") { SmallTitle(stringResource(R.string.label_scope)) }
                     item("scope-tabs") { ViewModeTabs(viewMode, { viewMode = it }) }
                     item("scope-image") {
-                        ScopeCard(state = state, viewMode = viewMode) { fullScreen = it }
+                        ScopeCard(state = state, viewMode = viewMode) { bitmap, _ -> fullScreen = bitmap }
                     }
                     if (state.elapsedMs > 0) {
                         item("stats-title") { SmallTitle(stringResource(R.string.section_stats)) }

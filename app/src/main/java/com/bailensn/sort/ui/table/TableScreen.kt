@@ -25,6 +25,10 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutLinearInEasing
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -37,11 +41,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.util.lerp
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.unit.dp
@@ -88,10 +95,13 @@ private const val PAGE_HISTORY = 1
 /** 连按两次返回的间隔。 */
 private const val EXIT_CONFIRM_WINDOW_MS = 2000L
 
+/** 图片放大/缩回的动画时长。 */
+private const val ANIMATION_MS = 300
+
 /** 页面栈：主页面 → 全屏看图 / 历史详情。 */
 private sealed interface Route : NavKey {
     data object Main : Route
-    data class Image(val mode: Int) : Route
+    data class Image(val mode: Int, val from: Rect) : Route
     data class History(val id: Long) : Route
 }
 
@@ -119,17 +129,21 @@ fun TableScreen(
                 viewModel = viewModel,
                 // 别的页面压在上面时返回手势归它，主页面不要再抢。
                 backEnabled = stack.size == 1,
-                onOpenImage = { mode -> stack.add(Route.Image(mode)) },
+                onOpenImage = { mode, from -> stack.add(Route.Image(mode, from)) },
                 onOpenHistory = { id -> stack.add(Route.History(id)) },
             )
         }
         entry<Route.Image>(
-            // 就是新的一页，从右侧推入，前一页跟着退到后面；不是盖在上面的模态。
-            transition = NavTransitions.MiuixDefault,
-            // 和双指缩放/拖动画布抢手势，这里只留点按关闭和返回。
+            // 换页本身不做动画：图片自己从缩略图位置长到全屏，底下那一页保持可见。
+            transition = NavTransitions.None,
             swipeDismiss = NavSwipeDirection.None,
         ) { route ->
-            ImageViewer(viewModel = viewModel, mode = route.mode, onClose = pop)
+            ImageViewer(
+                viewModel = viewModel,
+                mode = route.mode,
+                from = route.from,
+                onClose = pop,
+            )
         }
         entry<Route.History>(swipeDismiss = NavSwipeDirection.LeftToRight) { route ->
             HistoryDetailPage(viewModel = viewModel, entryId = route.id, onClose = pop)
@@ -141,7 +155,7 @@ fun TableScreen(
 private fun MainPage(
     viewModel: TableViewModel,
     backEnabled: Boolean,
-    onOpenImage: (Int) -> Unit,
+    onOpenImage: (Int, Rect) -> Unit,
     onOpenHistory: (Long) -> Unit,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -289,7 +303,7 @@ private fun MainPage(
                         onRetryEngine = viewModel::retryEngine,
                         onRetryRecognition = viewModel::retryRecognition,
                         onReset = viewModel::reset,
-                        onImageClick = { onOpenImage(viewMode) },
+                        onImageClick = { _, bounds -> onOpenImage(viewMode, bounds) },
                         onCellClick = { row, column, value -> editing = CellEdit(row, column, value) },
                         contentPadding = pagePadding,
                     )
@@ -407,19 +421,70 @@ private fun BottomTabs(page: Int, onSelect: (Int) -> Unit) {
     }
 }
 
-/** 全屏看图：一页黑底，支持双指缩放和拖动，点一下或左上角返回。 */
+/** 全屏看图：从缩略图的位置放大到全屏，再缩回去；支持缩放和拖动。 */
 @Composable
-private fun ImageViewer(viewModel: TableViewModel, mode: Int, onClose: () -> Unit) {
+private fun ImageViewer(
+    viewModel: TableViewModel,
+    mode: Int,
+    from: Rect,
+    onClose: () -> Unit,
+) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val bitmap: Bitmap = when (mode) {
         1 -> state.original
         2 -> state.enhanced ?: state.original
         else -> state.overlay ?: state.original
     } ?: return
-    Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
-        ZoomableImage(bitmap = bitmap, onTap = onClose)
+
+    val window = LocalWindowInfo.current.containerSize
+    val progress = remember { Animatable(0f) }
+    var closing by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+    val animatable = window.width > 0 && window.height > 0 && !from.isEmpty
+
+    LaunchedEffect(Unit) {
+        if (animatable) {
+            progress.animateTo(1f, tween(ANIMATION_MS, easing = FastOutSlowInEasing))
+        } else {
+            progress.snapTo(1f)
+        }
+    }
+
+    val close: () -> Unit = {
+        if (!closing) {
+            closing = true
+            scope.launch {
+                if (animatable) {
+                    progress.animateTo(0f, tween(ANIMATION_MS, easing = FastOutLinearInEasing))
+                }
+                onClose()
+            }
+        }
+    }
+
+    val value = progress.value
+    val startScale = if (animatable) from.width / window.width else 1f
+    Box(modifier = Modifier.fillMaxSize()) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = value.coerceIn(0f, 1f))),
+        )
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer {
+                    val scale = lerp(startScale, 1f, value)
+                    scaleX = scale
+                    scaleY = scale
+                    translationX = lerp(from.center.x - window.width / 2f, 0f, value)
+                    translationY = lerp(from.center.y - window.height / 2f, 0f, value)
+                },
+        ) {
+            ZoomableImage(bitmap = bitmap, onTap = close)
+        }
         IconButton(
-            onClick = onClose,
+            onClick = close,
             modifier = Modifier
                 .align(Alignment.TopStart)
                 .statusBarsPadding()
