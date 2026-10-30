@@ -31,4 +31,38 @@ class NameMemoryTest {
         assertNull(NameMemory.nearest("张", memory))
         assertNull(NameMemory.nearest("完全不同的名字", memory))
     }
+
+    @Test
+    fun searchNeedsInputBeforeListingAnything() {
+        val memory = listOf("张三丰", "李四海", "王五岳")
+
+        assertEquals(emptyList<String>(), NameMemory.search("", memory))
+        assertEquals(emptyList<String>(), NameMemory.search("   ", memory))
+    }
+
+    @Test
+    fun searchRanksPrefixBeforeOtherMatches() {
+        val memory = listOf("张三丰", "李四海", "王五岳", "张三")
+
+        val matches = NameMemory.search("张", memory)
+
+        assertEquals(listOf("张三", "张三丰"), matches)
+    }
+
+    @Test
+    fun searchFindsBySubsequenceAndTypo() {
+        val memory = listOf("张三丰", "李四海", "王五岳", "钱七曜")
+
+        // 顺序子序列：三…丰
+        assertEquals(listOf("张三丰"), NameMemory.search("三丰", memory))
+        // 一位错字：钱七耀 → 钱七曜
+        assertEquals(listOf("钱七曜"), NameMemory.search("钱七耀", memory))
+    }
+
+    @Test
+    fun searchHonorsLimit() {
+        val memory = (1..20).map { "示例$it" }
+
+        assertEquals(6, NameMemory.search("示例", memory).size)
+    }
 }

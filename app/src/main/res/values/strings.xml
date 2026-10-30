@@ -64,6 +64,7 @@
     <string name="selfcheck_partial_totals">有 %1$d 行总分按已考科目补算</string>
     <string name="action_save">保存</string>
     <string name="action_cancel">取消</string>
+    <string name="action_back">返回</string>
     <string name="edit_title">修改第 %1$d 行第 %2$d 列</string>
     <string name="edit_suggestions">记忆里的人名</string>
     <string name="history_title">识别历史</string>
@@ -72,7 +73,6 @@
     <string name="action_pick">选择图片</string>
     <string name="snack_exported">已导出</string>
     <string name="snack_saved">已保存</string>
-    <string name="snack_loaded">已载入历史</string>
     <string name="action_delete">删除</string>
     <string name="history_selected">已选 %1$d 项</string>
     <string name="action_select_all">全选</string>

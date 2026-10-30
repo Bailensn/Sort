@@ -9,20 +9,18 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -33,24 +31,34 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.bailensn.sort.R
 import com.bailensn.sort.xlsx.XlsxExporter
+import com.kyant.backdrop.backdrops.LayerBackdrop
+import com.kyant.backdrop.backdrops.layerBackdrop
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop
+import com.kyant.backdrop.drawBackdrop
+import com.kyant.backdrop.effects.blur
+import com.kyant.backdrop.effects.vibrancy
+import com.kyant.backdrop.highlight.Highlight
+import com.kyant.backdrop.shadow.Shadow
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Button
+import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.NavigationBar
 import top.yukonga.miuix.kmp.basic.NavigationBarItem
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -59,9 +67,10 @@ import top.yukonga.miuix.kmp.basic.SnackbarHost
 import top.yukonga.miuix.kmp.basic.SnackbarHostState
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
-import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.GridView
+import top.yukonga.miuix.kmp.icon.extended.Photos
+import top.yukonga.miuix.kmp.icon.extended.Share
 import top.yukonga.miuix.kmp.icon.extended.Timer
 import top.yukonga.miuix.kmp.nav.core.NavDisplay
 import top.yukonga.miuix.kmp.nav.core.NavDisplayEffects
@@ -69,17 +78,17 @@ import top.yukonga.miuix.kmp.nav.core.NavKey
 import top.yukonga.miuix.kmp.nav.core.navBackStackOf
 import top.yukonga.miuix.kmp.nav.transition.NavSwipeDirection
 import top.yukonga.miuix.kmp.nav.transition.NavTransitions
-import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 private const val PAGE_RECOGNIZE = 0
 private const val PAGE_HISTORY = 1
 
-/** 页面栈只有两级：主页面 + 全屏看图。 */
+/** 页面栈：主页面 → 全屏看图 / 历史详情。 */
 private sealed interface Route : NavKey {
     data object Main : Route
     data class Image(val mode: Int) : Route
+    data class History(val id: String) : Route
 }
 
 @Composable
@@ -87,7 +96,7 @@ fun TableScreen(
     modifier: Modifier = Modifier,
     viewModel: TableViewModel = viewModel(),
 ) {
-    // 只在内存里：看图是临时页面，进程重建后回到主页面反而更合理。
+    // 只在内存里：看图、看历史都是临时页面，进程重建后回到主页面反而更合理。
     val stack = remember { navBackStackOf(Route.Main) }
     val pop: () -> Unit = { if (stack.size > 1) stack.removeAt(stack.lastIndex) }
 
@@ -104,9 +113,10 @@ fun TableScreen(
         entry<Route.Main> {
             MainPage(
                 viewModel = viewModel,
-                // 看图页压在上面时返回手势归它，主页面不要再抢。
+                // 别的页面压在上面时返回手势归它，主页面不要再抢。
                 backEnabled = stack.size == 1,
                 onOpenImage = { mode -> stack.add(Route.Image(mode)) },
+                onOpenHistory = { id -> stack.add(Route.History(id)) },
             )
         }
         entry<Route.Image>(
@@ -114,6 +124,9 @@ fun TableScreen(
             swipeDismiss = NavSwipeDirection.TopToBottom,
         ) { route ->
             ImageViewer(viewModel = viewModel, mode = route.mode, onClose = pop)
+        }
+        entry<Route.History>(swipeDismiss = NavSwipeDirection.LeftToRight) { route ->
+            HistoryDetailPage(viewModel = viewModel, entryId = route.id, onClose = pop)
         }
     }
 }
@@ -123,6 +136,7 @@ private fun MainPage(
     viewModel: TableViewModel,
     backEnabled: Boolean,
     onOpenImage: (Int) -> Unit,
+    onOpenHistory: (String) -> Unit,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val history by viewModel.history.collectAsStateWithLifecycle()
@@ -131,6 +145,13 @@ private fun MainPage(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val snackbar = remember { SnackbarHostState() }
+
+    // 底栏和悬浮按钮要模糊页面内容，先把内容录一层。
+    val backdropColor = MiuixTheme.colorScheme.background
+    val backdrop = rememberLayerBackdrop {
+        drawRect(backdropColor)
+        drawContent()
+    }
 
     // 两个页签共用一个 Pager：滑动和点按走同一条状态，切换是连续动画而不是硬切。
     val pager = rememberPagerState(pageCount = { 2 })
@@ -144,7 +165,6 @@ private fun MainPage(
     val chooserTitle = stringResource(R.string.share_chooser)
     val exportedText = stringResource(R.string.snack_exported)
     val savedText = stringResource(R.string.snack_saved)
-    val loadedText = stringResource(R.string.snack_loaded)
 
     val pick = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
         if (uri == null) return@rememberLauncherForActivityResult
@@ -187,27 +207,26 @@ private fun MainPage(
             )
         },
         bottomBar = {
-            NavigationBar {
-                NavigationBarItem(
-                    selected = page == PAGE_RECOGNIZE,
-                    onClick = { scope.launch { pager.animateScrollToPage(PAGE_RECOGNIZE) } },
-                    icon = MiuixIcons.GridView,
-                    label = stringResource(R.string.tab_recognize),
-                )
-                NavigationBarItem(
-                    selected = page == PAGE_HISTORY,
-                    onClick = { scope.launch { pager.animateScrollToPage(PAGE_HISTORY) } },
-                    icon = MiuixIcons.Timer,
-                    label = stringResource(R.string.tab_history),
-                )
-            }
+            GlassBottomBar(
+                backdrop = backdrop,
+                page = page,
+                onSelect = { target -> scope.launch { pager.animateScrollToPage(target) } },
+            )
         },
         snackbarHost = { SnackbarHost(state = snackbar) },
     ) { padding ->
         Box(modifier = Modifier.fillMaxSize()) {
+            // 内容铺到屏幕底部，底栏浮在上面；列表自己留出底栏那一段。
+            val pagePadding = PaddingValues(
+                top = 8.dp,
+                bottom = padding.calculateBottomPadding() + 96.dp,
+            )
             HorizontalPager(
                 state = pager,
-                modifier = Modifier.fillMaxSize().padding(padding),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(top = padding.calculateTopPadding())
+                    .layerBackdrop(backdrop),
                 beyondViewportPageCount = 1,
             ) { index ->
                 if (index == PAGE_RECOGNIZE) {
@@ -223,9 +242,9 @@ private fun MainPage(
                         onRetryEngine = viewModel::retryEngine,
                         onRetryRecognition = viewModel::retryRecognition,
                         onReset = viewModel::reset,
-                        onExport = viewModel::exportXlsx,
                         onImageClick = { onOpenImage(viewMode) },
                         onCellClick = { row, column, value -> editing = CellEdit(row, column, value) },
+                        contentPadding = pagePadding,
                     )
                 } else {
                     HistoryPage(
@@ -237,14 +256,38 @@ private fun MainPage(
                         onSelectAll = { selected = history.map { it.id }.toSet() },
                         onClearSelection = { selected = emptySet() },
                         onOpen = { entry ->
-                            viewModel.openHistory(entry)
                             selected = emptySet()
-                            scope.launch {
-                                pager.animateScrollToPage(PAGE_RECOGNIZE)
-                                snackbar.showSnackbar(loadedText)
-                            }
+                            viewModel.openHistory(entry)
+                            onOpenHistory(entry.id)
                         },
                         onDelete = { ids -> pendingDelete = ids },
+                        contentPadding = pagePadding,
+                    )
+                }
+            }
+
+            val grid = state.grid
+            if (page == PAGE_RECOGNIZE && grid != null && state.phase == TableUiState.Phase.DONE) {
+                Column(
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(end = 20.dp, bottom = padding.calculateBottomPadding() + 20.dp),
+                    horizontalAlignment = Alignment.End,
+                    verticalArrangement = Arrangement.spacedBy(14.dp),
+                ) {
+                    GlassFab(
+                        backdrop = backdrop,
+                        size = 48.dp,
+                        icon = MiuixIcons.Photos,
+                        description = stringResource(R.string.action_change_image),
+                        onClick = viewModel::reset,
+                    )
+                    GlassFab(
+                        backdrop = backdrop,
+                        size = 60.dp,
+                        icon = MiuixIcons.Share,
+                        description = stringResource(R.string.action_export),
+                        onClick = viewModel::exportXlsx,
                     )
                 }
             }
@@ -253,7 +296,7 @@ private fun MainPage(
             if (cell != null) {
                 CellEditSheet(
                     cell = cell,
-                    suggestions = suggestions,
+                    names = suggestions,
                     onDismiss = { editing = null },
                     onConfirm = { text ->
                         viewModel.updateCell(cell.row, cell.column, text)
@@ -297,6 +340,73 @@ private fun MainPage(
     }
 }
 
+/** 液态玻璃底栏：内容从它下面滚过去，模糊的是真实画面。 */
+@Composable
+private fun GlassBottomBar(backdrop: LayerBackdrop, page: Int, onSelect: (Int) -> Unit) {
+    Box(
+        modifier = Modifier.drawBackdrop(
+            backdrop = backdrop,
+            shape = { RectangleShape },
+            effects = {
+                blur(28f)
+                vibrancy()
+            },
+            highlight = { Highlight.Plain },
+            shadow = null,
+        ),
+    ) {
+        NavigationBar(color = Color.Transparent, showDivider = false) {
+            NavigationBarItem(
+                selected = page == PAGE_RECOGNIZE,
+                onClick = { onSelect(PAGE_RECOGNIZE) },
+                icon = MiuixIcons.GridView,
+                label = stringResource(R.string.tab_recognize),
+            )
+            NavigationBarItem(
+                selected = page == PAGE_HISTORY,
+                onClick = { onSelect(PAGE_HISTORY) },
+                icon = MiuixIcons.Timer,
+                label = stringResource(R.string.tab_history),
+            )
+        }
+    }
+}
+
+/** 液态玻璃悬浮按钮。 */
+@Composable
+private fun GlassFab(
+    backdrop: LayerBackdrop,
+    size: Dp,
+    icon: ImageVector,
+    description: String,
+    onClick: () -> Unit,
+) {
+    Box(
+        modifier = Modifier
+            .size(size)
+            .drawBackdrop(
+                backdrop = backdrop,
+                shape = { CircleShape },
+                effects = {
+                    blur(20f)
+                    vibrancy()
+                },
+                highlight = { Highlight.Default },
+                shadow = { Shadow.Default },
+            )
+            .clip(CircleShape)
+            .clickable(role = Role.Button, onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = description,
+            modifier = Modifier.size(size * 0.42f),
+            tint = MiuixTheme.colorScheme.primary,
+        )
+    }
+}
+
 /** 全屏看图：黑底、点一下关闭；下滑和系统返回由页面栈接管。 */
 @Composable
 private fun ImageViewer(viewModel: TableViewModel, mode: Int, onClose: () -> Unit) {
@@ -319,77 +429,5 @@ private fun ImageViewer(viewModel: TableViewModel, mode: Int, onClose: () -> Uni
             modifier = Modifier.fillMaxWidth().padding(12.dp),
             contentScale = ContentScale.Fit,
         )
-    }
-}
-
-private data class CellEdit(val row: Int, val column: Int, val value: String)
-
-@Composable
-private fun CellEditSheet(
-    cell: CellEdit,
-    suggestions: List<String>,
-    onDismiss: () -> Unit,
-    onConfirm: (String) -> Unit,
-) {
-    var text by remember(cell) { mutableStateOf(cell.value) }
-    val focusRequester = remember { FocusRequester() }
-
-    OverlayBottomSheet(
-        show = true,
-        title = stringResource(R.string.edit_title, cell.row + 1, cell.column + 1),
-        onDismissRequest = onDismiss,
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                // 底部弹层只补了 IME 内边距，手势条会压住按钮，这里自己补，再留一点呼吸。
-                .navigationBarsPadding()
-                .padding(top = 4.dp, bottom = 20.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            TextField(
-                value = text,
-                onValueChange = { text = it },
-                modifier = Modifier.fillMaxWidth().focusRequester(focusRequester),
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                keyboardActions = KeyboardActions(onDone = { onConfirm(text) }),
-                singleLine = true,
-            )
-            if (suggestions.isNotEmpty()) {
-                Text(
-                    text = stringResource(R.string.edit_suggestions),
-                    style = MiuixTheme.textStyles.footnote1,
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                )
-                Row(
-                    modifier = Modifier.horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    suggestions.take(12).forEach { name ->
-                        TextButton(text = name, onClick = { text = name })
-                    }
-                }
-            }
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                TextButton(
-                    text = stringResource(R.string.action_cancel),
-                    onClick = onDismiss,
-                    modifier = Modifier.weight(1f),
-                )
-                Button(
-                    onClick = { onConfirm(text) },
-                    modifier = Modifier.weight(1f),
-                ) {
-                    Text(stringResource(R.string.action_save))
-                }
-            }
-        }
-    }
-
-    // 打开就聚焦：手不用先点一下输入框，键盘也会立即把弹层顶起来。
-    LaunchedEffect(cell) {
-        // 等进场那一帧，弹层还没量完的时候 requestFocus 打不中。
-        withFrameNanos { }
-        focusRequester.requestFocus()
     }
 }

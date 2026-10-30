@@ -3,9 +3,14 @@ package com.bailensn.sort.ui.table
 import android.graphics.Bitmap
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -19,6 +24,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -35,7 +41,9 @@ import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
+import top.yukonga.miuix.kmp.basic.DividerDefaults
 import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
+import top.yukonga.miuix.kmp.basic.LinearProgressIndicator
 import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.TabRow
 import top.yukonga.miuix.kmp.basic.Text
@@ -58,13 +66,13 @@ internal fun RecognizePage(
     onRetryEngine: () -> Unit,
     onRetryRecognition: () -> Unit,
     onReset: () -> Unit,
-    onExport: () -> Unit,
     onImageClick: (Bitmap) -> Unit,
     onCellClick: (row: Int, column: Int, value: String) -> Unit,
+    contentPadding: PaddingValues,
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(bottom = 16.dp),
+        contentPadding = contentPadding,
     ) {
         when (val engine = state.engine) {
             is EngineState.Loading -> {
@@ -110,21 +118,7 @@ internal fun RecognizePage(
                 } else {
                     if (original != null) {
                         item("scope-title") { SmallTitle(stringResource(R.string.label_scope)) }
-                        item("scope-tabs") {
-                            TabRow(
-                                tabs = listOf(
-                                    stringResource(R.string.view_grid),
-                                    stringResource(R.string.view_original),
-                                    stringResource(R.string.view_enhanced),
-                                ),
-                                selectedTabIndex = viewMode,
-                                onTabSelected = onViewModeChange,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 12.dp)
-                                    .padding(bottom = 12.dp),
-                            )
-                        }
+                        item("scope-tabs") { ViewModeTabs(viewMode, onViewModeChange) }
                         item("scope-image") {
                             ScopeCard(
                                 state = state,
@@ -136,7 +130,7 @@ internal fun RecognizePage(
 
                     when (state.phase) {
                         TableUiState.Phase.RECOGNIZING -> item("progress") {
-                            NoticeCard(title = stageLabel(state.stage), progress = true)
+                            ProgressCard(state = state)
                         }
 
                         TableUiState.Phase.ERROR -> {
@@ -176,19 +170,6 @@ internal fun RecognizePage(
                             item("table") {
                                 TableCard(grid = grid, onCellClick = onCellClick)
                             }
-                            item("export") {
-                                PrimaryButton(
-                                    text = stringResource(R.string.action_export),
-                                    onClick = onExport,
-                                    enabled = !state.exporting,
-                                )
-                            }
-                            item("reset") {
-                                SecondaryButton(
-                                    text = stringResource(R.string.action_change_image),
-                                    onClick = onReset,
-                                )
-                            }
                         }
 
                         TableUiState.Phase.IDLE -> Unit
@@ -199,8 +180,26 @@ internal fun RecognizePage(
     }
 }
 
+/** 网格 / 原图 / 增强 三个视图的切换，识别页和历史详情共用。 */
 @Composable
-private fun ScopeCard(
+internal fun ViewModeTabs(viewMode: Int, onViewModeChange: (Int) -> Unit) {
+    TabRow(
+        tabs = listOf(
+            stringResource(R.string.view_grid),
+            stringResource(R.string.view_original),
+            stringResource(R.string.view_enhanced),
+        ),
+        selectedTabIndex = viewMode,
+        onTabSelected = onViewModeChange,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp)
+            .padding(bottom = 12.dp),
+    )
+}
+
+@Composable
+internal fun ScopeCard(
     state: TableUiState,
     viewMode: Int,
     onImageClick: (Bitmap) -> Unit,
@@ -238,7 +237,7 @@ private fun ScopeCard(
 }
 
 @Composable
-private fun StatsCard(state: TableUiState, grid: TableGrid) {
+internal fun StatsCard(state: TableUiState, grid: TableGrid) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -269,7 +268,7 @@ private fun StatsCard(state: TableUiState, grid: TableGrid) {
 }
 
 @Composable
-private fun StatRow(label: String, value: String) {
+internal fun StatRow(label: String, value: String) {
     BasicComponent(
         title = label,
         endActions = {
@@ -283,7 +282,7 @@ private fun StatRow(label: String, value: String) {
 }
 
 @Composable
-private fun SelfCheckCard(state: TableUiState) {
+internal fun SelfCheckCard(state: TableUiState) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -304,7 +303,7 @@ private fun SelfCheckCard(state: TableUiState) {
 }
 
 @Composable
-private fun TableCard(
+internal fun TableCard(
     grid: TableGrid,
     onCellClick: (row: Int, column: Int, value: String) -> Unit,
 ) {
@@ -340,6 +339,8 @@ private fun TableCard(
                                         MiuixTheme.colorScheme.surfaceContainerHigh
                                     },
                                 )
+                                // 横竖线：格子边界画一圈发丝线，行列才读得清楚。
+                                .border(0.5.dp, DividerDefaults.DividerColor)
                                 .clickable { onCellClick(rowIndex, columnIndex, cell) }
                                 .padding(horizontal = 10.dp),
                             contentAlignment = Alignment.CenterStart,
@@ -362,6 +363,33 @@ private fun TableCard(
                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                 )
             }
+        }
+    }
+}
+
+/** 横向进度条：阶段文字 + 平滑推进的进度。 */
+@Composable
+private fun ProgressCard(state: TableUiState) {
+    val animated by animateFloatAsState(
+        targetValue = state.progress.coerceIn(0f, 1f),
+        animationSpec = tween(durationMillis = 400),
+        label = "progress",
+    )
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp)
+            .padding(bottom = 12.dp),
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Text(text = stageLabel(state.stage), style = MiuixTheme.textStyles.body2)
+            LinearProgressIndicator(
+                progress = animated,
+                modifier = Modifier.fillMaxWidth(),
+            )
         }
     }
 }
@@ -415,10 +443,10 @@ private fun SecondaryButton(text: String, onClick: () -> Unit) {
     )
 }
 
-private fun seconds(millis: Long): String = String.format(Locale.US, "%.1f", millis / 1000.0)
+internal fun seconds(millis: Long): String = String.format(Locale.US, "%.1f", millis / 1000.0)
 
 @Composable
-private fun stageLabel(stage: TablePipeline.Stage?): String = stringResource(
+internal fun stageLabel(stage: TablePipeline.Stage?): String = stringResource(
     when (stage) {
         TablePipeline.Stage.RECTIFY -> R.string.stage_rectify
         TablePipeline.Stage.SEGMENT -> R.string.stage_segment

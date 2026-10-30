@@ -43,6 +43,43 @@ object NameMemory {
         return if (bestDistance <= 1) best else null
     }
 
+    /**
+     * 按已输入的字模糊找名字：前缀 > 包含 > 顺序子序列 > 编辑距离 1。
+     * 界面只在开始输入之后才列出来，不是一上来就把整份名单倒给用户。
+     */
+    fun search(query: String, memory: List<String>, limit: Int = 6): List<String> {
+        val text = query.trim()
+        if (text.isEmpty()) return emptyList()
+        val scored = memory.mapNotNull { name ->
+            val score = scoreName(text, name) ?: return@mapNotNull null
+            score to name
+        }
+        return scored.sortedWith(compareBy({ it.first }, { it.second })).map { it.second }.take(limit)
+    }
+
+    /** 分数越小越像；完全不像返回 null。 */
+    private fun scoreName(query: String, name: String): Int? {
+        if (name.length < 2 || name == query) return null
+        if (name.startsWith(query)) return 0
+        if (name.contains(query)) return 1
+        if (query.length >= 2 && isSubsequence(query, name)) return 2
+        if (kotlin.math.abs(name.length - query.length) <= 1 &&
+            editDistance(name, query) <= 1
+        ) {
+            return 3
+        }
+        return null
+    }
+
+    private fun isSubsequence(query: String, name: String): Boolean {
+        var index = 0
+        for (character in name) {
+            if (index < query.length && character == query[index]) index++
+            if (index == query.length) return true
+        }
+        return false
+    }
+
     /** 标准 Levenshtein 距离，短字符串够用。 */
     fun editDistance(a: String, b: String): Int {
         val previous = IntArray(b.length + 1) { it }

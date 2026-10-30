@@ -25,6 +25,7 @@
 | minSdk | **26** | 由 ONNX Runtime 决定 |
 | Compose BOM | 2026.09.00 | |
 | Miuix | **0.9.4** | `miuix-ui` / `miuix-icons` / `miuix-nav` |
+| Backdrop | **2.0.1** | 液态玻璃（minSdk 21，Android 12 起真模糊，更低的系统自动退化成半透明） |
 | Activity Compose | 1.13.0 | Photo Picker |
 | Lifecycle | 2.11.0 | ViewModel + `collectAsStateWithLifecycle` |
 | ONNX Runtime | **1.31.0** | OCR 推理 |
@@ -109,14 +110,19 @@
 
 - 两个页签（识别 / 历史）放在 `HorizontalPager` 里，`NavigationBar` 的点按和左右滑动共用同一份状态，
   切页保留各自的滚动位置；
+- 底栏和右下角两颗悬浮按钮是**液态玻璃**：用 `backdrop` 把页面内容录一层再模糊，内容从它们下面滚过去；
+- 导出和换图不再堆在页面底部，改成右下角两颗悬浮按钮（导出 60dp、换图 48dp）；
 - 顶部 `SmallTopAppBar`；分节用 `SmallTitle`，内容用 `Card` + `BasicComponent`，
   统计和历史条目都是等高行，不会因为文字长短忽大忽小；
 - 全屏看图是 `miuix-nav` 栈内的页面：底部上滑进场，下滑手势或系统返回退栈；
 - 单元格编辑是 `OverlayBottomSheet`，删除确认是 `OverlayDialog`，操作结果走 `Scaffold` 的 Snackbar；
 - 返回键按「编辑弹层 → 删除确认 → 回到识别页 → 退出」的顺序收；
+- 历史记录点开是**新的一页**（`miuix-nav` 页面栈），主页正在识别的那张图不会被覆盖；
+- 识别时有横向进度条：阶段文案 + 按块推进的百分比（逐格识别会一边跑一边涨）；
+- 单元格编辑里的姓名候选默认不显示，输入之后才按字模糊筛（前缀 > 包含 > 顺序子序列 > 一位错字）；
 - 历史记录一条一个文件夹：`rows.tsv` + `meta.txt` + `original.jpg` / `grid.jpg` / `enhanced.jpg`，
   打开历史同样能在三种视图间切换，置信度/用时/自检结论也一起回填（图统一缩到 1600px，最多留 20 条）；
-- 尺寸固定：表格行高 40dp、预览图 4:3、进度圈 22dp、按钮整行 40dp。
+- 尺寸固定：表格行高 40dp、预览图 4:3、进度圈 22dp；表格格子带 0.5dp 横竖发丝线。
 
 识别页可以切「看网格 / 看原图 / 看增强」，绿线是实际参与切格的拟合线，可以直接对照原图检查。
 

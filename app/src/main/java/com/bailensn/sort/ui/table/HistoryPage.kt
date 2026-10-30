@@ -27,11 +27,12 @@ internal fun HistoryPage(
     onClearSelection: () -> Unit,
     onOpen: (HistoryStore.Entry) -> Unit,
     onDelete: (List<String>) -> Unit,
+    contentPadding: PaddingValues,
 ) {
     val allSelected = entries.isNotEmpty() && selected.size == entries.size
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(bottom = 16.dp),
+        contentPadding = contentPadding,
     ) {
         if (entries.isEmpty()) {
             item("empty") {

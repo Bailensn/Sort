@@ -65,9 +65,17 @@ data class TableUiState(
     val lowConfidenceCells: Int = 0,
     val selfCheckSummary: String = "",
     val suspiciousRows: List<Int> = emptyList(),
+    /** 识别进度 0..1，界面用它画横向进度条。 */
+    val progress: Float = 0f,
 ) {
     enum class Phase { IDLE, RECOGNIZING, DONE, ERROR }
 }
+
+/** 历史详情页的数据：跟主页正在处理的那张表互不干扰。 */
+data class HistoryView(
+    val entry: HistoryStore.Entry,
+    val state: TableUiState,
+)
 
 class TableViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -76,6 +84,9 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _exported = MutableSharedFlow<ExportedFile>(extraBufferCapacity = 1)
     val exported: SharedFlow<ExportedFile> = _exported.asSharedFlow()
+
+    private val _viewer = MutableStateFlow<HistoryView?>(null)
+    val viewer: StateFlow<HistoryView?> = _viewer.asStateFlow()
 
     private val _history = MutableStateFlow<List<HistoryStore.Entry>>(emptyList())
     val history: StateFlow<List<HistoryStore.Entry>> = _history.asStateFlow()
@@ -92,7 +103,9 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
 
     init {
         loadEngine()
-        _suggestions.value = NameMemory.load(getApplication())
+        viewModelScope.launch {
+            _suggestions.value = withContext(Dispatchers.IO) { NameMemory.load(getApplication()) }
+        }
     }
 
     fun retryEngine() {
@@ -161,6 +174,7 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
                     message = null,
                     elapsedMs = 0L,
                     correctedCells = 0,
+                    progress = 0f,
                 )
             }
             try {
@@ -199,9 +213,12 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
         try {
             val ocr = engineDeferred.await()
             val analysis = withContext(Dispatchers.Default) {
-                TablePipeline.analyze(ocr, bitmap) { stage ->
-                    _state.update { it.copy(stage = stage) }
-                }
+                TablePipeline.analyze(
+                    ocr = ocr,
+                    source = bitmap,
+                    onStage = { stage -> _state.update { it.copy(stage = stage) } },
+                    onProgress = { value -> _state.update { it.copy(progress = value) } },
+                )
             }
 
             // 一行都没读到也是失败：界面上会摆出一张空表，看着像「渲染成空白」。
@@ -235,7 +252,7 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
                     )
                 }
             } else {
-                val polished = applyNameMemory(analysis.grid)
+                val polished = withContext(Dispatchers.IO) { applyNameMemory(analysis.grid) }
                 // 三张图要缩放再压 JPEG，别放在主线程上做。
                 val app = getApplication<Application>()
                 val meta = HistoryMeta(
@@ -264,7 +281,7 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
                     )
                 }
                 currentEntryId = entry?.id
-                _history.value = HistoryStore.list(app)
+                _history.value = withContext(Dispatchers.IO) { HistoryStore.list(app) }
                 _state.update {
                     it.copy(
                         phase = Phase.DONE,
@@ -330,27 +347,37 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
         if (column !in newRows[row].indices) return
         newRows[row][column] = text.trim()
         _state.update { it.copy(grid = grid.copy(rows = newRows)) }
-        // 改完立刻落盘：下次从历史记录进来，看到的还是改过的版本。
-        currentEntryId?.let { entryId ->
-            HistoryStore.update(getApplication(), entryId, newRows)
-            _history.value = HistoryStore.list(getApplication())
-        }
-        // 改对了的名字记下来，下次自动纠。
-        val value = text.trim()
-        if (value.length in 2..4 && value.all { it.code > 0x2E80 }) {
-            NameMemory.remember(getApplication(), listOf(value))
-            _suggestions.value = NameMemory.load(getApplication())
+        // 落盘和记忆都在后台做：主线程只负责重绘。
+        viewModelScope.launch {
+            val app = getApplication<Application>()
+            val entryId = currentEntryId
+            val value = text.trim()
+            val remembered = value.length in 2..4 && value.all { it.code > 0x2E80 }
+            withContext(Dispatchers.IO) {
+                // 改完立刻落盘：下次从历史记录进来，看到的还是改过的版本。
+                if (entryId != null) {
+                    HistoryStore.update(app, entryId, newRows)
+                    _history.value = HistoryStore.list(app)
+                }
+                // 改对了的名字记下来，下次自动纠。
+                if (remembered) NameMemory.remember(app, listOf(value))
+            }
+            if (remembered) {
+                _suggestions.value = withContext(Dispatchers.IO) { NameMemory.load(app) }
+            }
         }
     }
 
     fun refreshHistory() {
-        _history.value = HistoryStore.list(getApplication())
+        viewModelScope.launch {
+            _history.value = withContext(Dispatchers.IO) { HistoryStore.list(getApplication()) }
+        }
     }
 
+    /** 打开历史详情：装进独立状态，主页正在处理的表格原样留着。 */
     fun openHistory(entry: HistoryStore.Entry) {
         val app = getApplication<Application>()
         viewModelScope.launch {
-            // 读三张图同样走 IO，点开历史不要卡一下。
             val loaded = withContext(Dispatchers.IO) {
                 LoadedHistory(
                     rows = HistoryStore.rows(app, entry),
@@ -361,53 +388,59 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
                 )
             }
             if (loaded.rows.isEmpty()) return@launch
-            currentEntryId = entry.id
-            val meta = loaded.meta
-            _state.update {
-                it.copy(
-                    // 三张图一起恢复：历史里同样能切原图 / 网格 / 增强。
-                    original = loaded.original,
-                    overlay = loaded.grid,
-                    enhanced = loaded.enhanced,
-                    grid = TableGrid(loaded.rows, TableGrid.Mode.GRID_LINES),
-                    phase = Phase.DONE,
-                    stage = null,
-                    message = null,
-                    processed = null,
-                    // 过程数据一起回填，统计栏不再是 0。
-                    elapsedMs = meta?.elapsedMs ?: 0L,
-                    cellMs = meta?.cellMs ?: 0L,
-                    detectMs = meta?.detectMs ?: 0L,
-                    correctedCells = meta?.correctedCells ?: 0,
-                    horizontalLines = meta?.horizontalLines ?: 0,
-                    verticalLines = meta?.verticalLines ?: 0,
-                    cellCount = meta?.cellCount ?: 0,
-                    averageConfidence = meta?.averageConfidence ?: 0f,
-                    lowConfidenceCells = meta?.lowConfidenceCells ?: 0,
-                    deskewAngle = meta?.deskewAngle ?: 0.0,
-                    rectified = meta?.rectified ?: false,
-                    selfCheckSummary = meta?.let { describeSelfCheck(it.report()) }.orEmpty(),
-                    suspiciousRows = meta?.suspiciousRows.orEmpty(),
-                )
+            _viewer.value = HistoryView(entry = entry, state = viewerState(loaded))
+        }
+    }
+
+    fun closeHistory() {
+        _viewer.value = null
+    }
+
+    /** 历史详情里改格子：只动那一条记录，不影响主页结果。 */
+    fun updateHistoryCell(row: Int, column: Int, text: String) {
+        val view = _viewer.value ?: return
+        val grid = view.state.grid ?: return
+        if (row !in grid.rows.indices) return
+        val rows = grid.rows.map { it.toMutableList() }
+        if (column !in rows[row].indices) return
+        val value = text.trim()
+        rows[row][column] = value
+        _viewer.value = view.copy(state = view.state.copy(grid = grid.copy(rows = rows)))
+        viewModelScope.launch {
+            val app = getApplication<Application>()
+            val remembered = value.length in 2..4 && value.all { it.code > 0x2E80 }
+            withContext(Dispatchers.IO) {
+                HistoryStore.update(app, view.entry.id, rows)
+                _history.value = HistoryStore.list(app)
+                if (remembered) NameMemory.remember(app, listOf(value))
+            }
+            if (remembered) {
+                _suggestions.value = withContext(Dispatchers.IO) { NameMemory.load(app) }
             }
         }
     }
 
     fun deleteHistory(ids: Collection<String>) {
-        HistoryStore.delete(getApplication(), ids)
         if (currentEntryId in ids) currentEntryId = null
-        refreshHistory()
+        viewModelScope.launch {
+            val app = getApplication<Application>()
+            withContext(Dispatchers.IO) { HistoryStore.delete(app, ids) }
+            _history.value = withContext(Dispatchers.IO) { HistoryStore.list(app) }
+        }
     }
 
     fun exportXlsx() {
         val grid = _state.value.grid ?: return
-        runCatching {
-            val names = grid.rows.flatMap { row ->
-                row.filter { it.length in 2..4 && it.all { character -> character.code > 0x2E80 } }
-            }
-            if (names.isNotEmpty()) {
-                NameMemory.remember(getApplication(), names)
-                _suggestions.value = NameMemory.load(getApplication())
+        viewModelScope.launch {
+            val app = getApplication<Application>()
+            withContext(Dispatchers.IO) {
+                val names = grid.rows.flatMap { row ->
+                    row.filter { it.length in 2..4 && it.all { character -> character.code > 0x2E80 } }
+                }
+                if (names.isNotEmpty()) {
+                    NameMemory.remember(app, names)
+                }
+                _suggestions.value = NameMemory.load(app)
             }
         }
         viewModelScope.launch {
@@ -446,6 +479,55 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
                 elapsedMs = 0L,
                 correctedCells = 0,
             )
+        }
+    }
+
+    private fun viewerState(loaded: LoadedHistory): TableUiState {
+        val meta = loaded.meta
+        return TableUiState(
+            engine = EngineState.Ready(0L),
+            original = loaded.original,
+            overlay = loaded.grid,
+            enhanced = loaded.enhanced,
+            grid = TableGrid(loaded.rows, TableGrid.Mode.GRID_LINES),
+            phase = Phase.DONE,
+            progress = 1f,
+            elapsedMs = meta?.elapsedMs ?: 0L,
+            cellMs = meta?.cellMs ?: 0L,
+            detectMs = meta?.detectMs ?: 0L,
+            correctedCells = meta?.correctedCells ?: 0,
+            horizontalLines = meta?.horizontalLines ?: 0,
+            verticalLines = meta?.verticalLines ?: 0,
+            cellCount = meta?.cellCount ?: 0,
+            averageConfidence = meta?.averageConfidence ?: 0f,
+            lowConfidenceCells = meta?.lowConfidenceCells ?: 0,
+            deskewAngle = meta?.deskewAngle ?: 0.0,
+            rectified = meta?.rectified ?: false,
+            selfCheckSummary = meta?.let { describeSelfCheck(it.report()) }.orEmpty(),
+            suspiciousRows = meta?.suspiciousRows.orEmpty(),
+        )
+    }
+
+    /** 历史详情页的导出：同样以那条记录的 rows.tsv 为准。 */
+    fun exportHistory() {
+        val view = _viewer.value ?: return
+        _viewer.value = view.copy(state = view.state.copy(exporting = true))
+        viewModelScope.launch {
+            val app = getApplication<Application>()
+            try {
+                val exported = withContext(Dispatchers.IO) {
+                    val rows = HistoryStore.rows(app, view.entry.id)
+                        .ifEmpty { view.state.grid?.rows.orEmpty() }
+                    XlsxExporter.export(app, rows)
+                }
+                _exported.emit(exported)
+            } catch (t: Throwable) {
+                _state.update { it.copy(message = app.getString(R.string.error_export)) }
+            } finally {
+                _viewer.value = _viewer.value?.let { current ->
+                    current.copy(state = current.state.copy(exporting = false))
+                }
+            }
         }
     }
 

@@ -63,6 +63,7 @@
     <string name="selfcheck_partial_totals">%1$d total(s) filled from the subjects taken</string>
     <string name="action_save">Save</string>
     <string name="action_cancel">Cancel</string>
+    <string name="action_back">Back</string>
     <string name="edit_title">Edit row %1$d, column %2$d</string>
     <string name="edit_suggestions">Remembered names</string>
     <string name="history_title">History</string>
@@ -71,7 +72,6 @@
     <string name="action_pick">Pick image</string>
     <string name="snack_exported">Exported</string>
     <string name="snack_saved">Saved</string>
-    <string name="snack_loaded">Loaded history</string>
     <string name="action_delete">Delete</string>
     <string name="history_selected">%1$d selected</string>
     <string name="action_select_all">Select all</string>
