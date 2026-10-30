@@ -8,8 +8,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.foundation.shape.CornerBasedShape
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
@@ -66,25 +72,51 @@ private fun Modifier.liquidGlass(
     )
 }
 
-/** 顶栏 / 底栏的玻璃底板。 */
+/**
+ * 顶栏 / 底栏的玻璃底板。
+ *
+ * [fadeBottom] 让玻璃自上往下渐隐：顶栏直接切在内容上会有一条硬边，
+ * 渐隐之后滚动内容从模糊过渡到清晰。
+ */
 @Composable
 internal fun GlassBar(
     backdrop: LayerBackdrop,
     modifier: Modifier = Modifier,
     barShape: Shape = RectangleShape,
+    fadeBottom: Boolean = false,
     content: @Composable () -> Unit,
 ) {
-    Box(
-        modifier = modifier.liquidGlass(
-            backdrop = backdrop,
-            shape = barShape,
-            highlight = { Highlight.Plain },
-            shadow = null,
-        ),
-    ) {
+    Box(modifier) {
+        // 玻璃单独一层，渐隐只作用在模糊上，标题文字不跟着变淡。
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .liquidGlass(
+                    backdrop = backdrop,
+                    shape = barShape,
+                    highlight = { Highlight.Plain },
+                    shadow = null,
+                )
+                .then(if (fadeBottom) Modifier.fadeOutBottom() else Modifier),
+        )
         content()
     }
 }
+
+/** 底部渐隐的遮罩：用 DstIn 把玻璃层的下半段擦成透明。 */
+private fun Modifier.fadeOutBottom(): Modifier = this
+    .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+    .drawWithContent {
+        drawContent()
+        drawRect(
+            brush = Brush.verticalGradient(
+                0f to Color.Black,
+                0.55f to Color.Black,
+                1f to Color.Transparent,
+            ),
+            blendMode = BlendMode.DstIn,
+        )
+    }
 
 /** 液态玻璃悬浮按钮。 */
 @Composable

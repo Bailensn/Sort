@@ -63,7 +63,7 @@ internal fun HistoryDetailPage(
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         topBar = {
-            GlassBar(backdrop = backdrop) {
+            GlassBar(backdrop = backdrop, fadeBottom = true) {
                 SmallTopAppBar(
                     title = stringResource(R.string.history_title),
                     color = Color.Transparent,
@@ -138,19 +138,8 @@ internal fun HistoryDetailPage(
 
             val image = fullScreen
             if (image != null) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color.Black)
-                        .clickable { fullScreen = null },
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Image(
-                        bitmap = image.asImageBitmap(),
-                        contentDescription = stringResource(R.string.preview_fullscreen_close),
-                        modifier = Modifier.fillMaxWidth().padding(12.dp),
-                        contentScale = ContentScale.Fit,
-                    )
+                Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
+                    ZoomableImage(bitmap = image, onTap = { fullScreen = null })
                 }
             }
 

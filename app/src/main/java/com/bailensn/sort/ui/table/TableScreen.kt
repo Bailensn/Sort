@@ -122,7 +122,8 @@ fun TableScreen(
         }
         entry<Route.Image>(
             transition = NavTransitions.Modal,
-            swipeDismiss = NavSwipeDirection.TopToBottom,
+            // 和双指缩放/拖动画布抢手势，这里只留点按关闭和返回。
+            swipeDismiss = NavSwipeDirection.None,
         ) { route ->
             ImageViewer(viewModel = viewModel, mode = route.mode, onClose = pop)
         }
@@ -224,7 +225,7 @@ private fun MainPage(
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         topBar = {
-            GlassBar(backdrop = backdrop) {
+            GlassBar(backdrop = backdrop, fadeBottom = true) {
                 SmallTopAppBar(
                     title = stringResource(
                         if (page == PAGE_HISTORY) R.string.history_title else R.string.app_name,
@@ -402,7 +403,7 @@ private fun BottomTabs(page: Int, onSelect: (Int) -> Unit) {
     }
 }
 
-/** 全屏看图：黑底、点一下关闭；下滑和系统返回由页面栈接管。 */
+/** 全屏看图：黑底，支持双指缩放和拖动，点一下关闭。 */
 @Composable
 private fun ImageViewer(viewModel: TableViewModel, mode: Int, onClose: () -> Unit) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -411,18 +412,7 @@ private fun ImageViewer(viewModel: TableViewModel, mode: Int, onClose: () -> Uni
         2 -> state.enhanced ?: state.original
         else -> state.overlay ?: state.original
     } ?: return
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.Black)
-            .clickable(onClick = onClose),
-        contentAlignment = Alignment.Center,
-    ) {
-        Image(
-            bitmap = bitmap.asImageBitmap(),
-            contentDescription = stringResource(R.string.preview_fullscreen_close),
-            modifier = Modifier.fillMaxWidth().padding(12.dp),
-            contentScale = ContentScale.Fit,
-        )
+    Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
+        ZoomableImage(bitmap = bitmap, onTap = onClose)
     }
 }
