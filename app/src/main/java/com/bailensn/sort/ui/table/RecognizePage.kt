@@ -116,6 +116,15 @@ internal fun RecognizePage(
                         )
                     }
                 } else {
+                    // 换一张放在最顶上，普通按钮，别藏在角落。
+                    if (grid != null) {
+                        item("change-image") {
+                            SecondaryButton(
+                                text = stringResource(R.string.action_change_image),
+                                onClick = onReset,
+                            )
+                        }
+                    }
                     if (original != null) {
                         // 只有出结果（或失败要看校正效果）时才给三视图切换；
                         // 识别过程中还没生成网格图和增强图，摆个切换按钮只会让人困惑。

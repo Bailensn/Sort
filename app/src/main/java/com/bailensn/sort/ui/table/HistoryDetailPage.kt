@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -28,7 +27,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bailensn.sort.R
-import top.yukonga.miuix.kmp.basic.FloatingActionButton
+import com.kyant.backdrop.backdrops.layerBackdrop
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
@@ -58,6 +57,7 @@ internal fun HistoryDetailPage(
         onDispose { viewModel.closeHistory() }
     }
 
+    val backdrop = rememberGlassBackdrop()
     val state = view?.let { if (it.entry.id == entryId) it.state else null }
 
     Scaffold(
@@ -87,7 +87,7 @@ internal fun HistoryDetailPage(
             } else {
                 val grid = state.grid
                 LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier.fillMaxSize().layerBackdrop(backdrop),
                     contentPadding = PaddingValues(
                         top = padding.calculateTopPadding() + 8.dp,
                         bottom = 96.dp,
@@ -118,16 +118,17 @@ internal fun HistoryDetailPage(
                     }
                 }
 
-                FloatingActionButton(
-                    onClick = viewModel::exportHistory,
+                Box(
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
                         .padding(end = 20.dp, bottom = 24.dp),
                 ) {
-                    Icon(
-                        imageVector = MiuixIcons.Share,
-                        contentDescription = stringResource(R.string.action_export),
-                        modifier = Modifier.size(24.dp),
+                    GlassFab(
+                        backdrop = backdrop,
+                        size = 60.dp,
+                        icon = MiuixIcons.Share,
+                        description = stringResource(R.string.action_export),
+                        onClick = viewModel::exportHistory,
                     )
                 }
             }

@@ -64,6 +64,7 @@
     <string name="action_save">Save</string>
     <string name="action_cancel">Cancel</string>
     <string name="action_back">Back</string>
+    <string name="snack_exit_hint">Press back again to exit</string>
     <string name="edit_title">Edit row %1$d, column %2$d</string>
     <string name="edit_suggestions">Remembered names</string>
     <string name="history_title">History</string>

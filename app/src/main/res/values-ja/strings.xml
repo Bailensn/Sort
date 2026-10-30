@@ -64,6 +64,7 @@
     <string name="action_save">保存</string>
     <string name="action_cancel">キャンセル</string>
     <string name="action_back">戻る</string>
+    <string name="snack_exit_hint">もう一度戻ると終了します</string>
     <string name="edit_title">%1$d 行 %2$d 列を編集</string>
     <string name="edit_suggestions">記憶した氏名</string>
     <string name="history_title">認識履歴</string>

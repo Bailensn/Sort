@@ -64,6 +64,7 @@
     <string name="action_save">儲存</string>
     <string name="action_cancel">取消</string>
     <string name="action_back">返回</string>
+    <string name="snack_exit_hint">再按一次返回退出</string>
     <string name="edit_title">修改第 %1$d 列第 %2$d 欄</string>
     <string name="edit_suggestions">記憶中的人名</string>
     <string name="history_title">辨識歷史</string>

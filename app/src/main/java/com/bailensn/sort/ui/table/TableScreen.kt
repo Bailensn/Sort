@@ -1,5 +1,6 @@
 package com.bailensn.sort.ui.table
 
+import android.app.Activity
 import android.content.Intent
 import android.graphics.Bitmap
 import androidx.activity.compose.BackHandler
@@ -17,10 +18,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -33,16 +32,12 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -50,12 +45,11 @@ import com.bailensn.sort.R
 import com.bailensn.sort.xlsx.XlsxExporter
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import com.kyant.backdrop.backdrops.layerBackdrop
-import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
 import com.kyant.backdrop.effects.vibrancy
 import com.kyant.backdrop.highlight.Highlight
-import com.kyant.backdrop.shadow.Shadow
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Icon
@@ -69,7 +63,6 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.GridView
-import top.yukonga.miuix.kmp.icon.extended.Photos
 import top.yukonga.miuix.kmp.icon.extended.Share
 import top.yukonga.miuix.kmp.icon.extended.Timer
 import top.yukonga.miuix.kmp.nav.core.NavDisplay
@@ -83,6 +76,9 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 private const val PAGE_RECOGNIZE = 0
 private const val PAGE_HISTORY = 1
+
+/** 连按两次返回的间隔。 */
+private const val EXIT_CONFIRM_WINDOW_MS = 2000L
 
 /** 页面栈：主页面 → 全屏看图 / 历史详情。 */
 private sealed interface Route : NavKey {
@@ -147,11 +143,7 @@ private fun MainPage(
     val snackbar = remember { SnackbarHostState() }
 
     // 底栏和悬浮按钮要模糊页面内容，先把内容录一层。
-    val backdropColor = MiuixTheme.colorScheme.background
-    val backdrop = rememberLayerBackdrop {
-        drawRect(backdropColor)
-        drawContent()
-    }
+    val backdrop = rememberGlassBackdrop()
 
     // 两个页签共用一个 Pager：滑动和点按走同一条状态，切换是连续动画而不是硬切。
     val pager = rememberPagerState(pageCount = { 2 })
@@ -188,12 +180,26 @@ private fun MainPage(
         }
     }
 
-    val canGoBack = editing != null || pendingDelete.isNotEmpty() || page != PAGE_RECOGNIZE
-    BackHandler(enabled = backEnabled && canGoBack) {
+    // 主页的返回全在这里收口：弹层 → 回识别页 → 再按一次退出。
+    val activity = LocalContext.current as? Activity
+    var exitArmed by remember { mutableStateOf(false) }
+    val exitHint = stringResource(R.string.snack_exit_hint)
+    LaunchedEffect(exitArmed) {
+        if (exitArmed) {
+            delay(EXIT_CONFIRM_WINDOW_MS)
+            exitArmed = false
+        }
+    }
+    BackHandler(enabled = backEnabled) {
         when {
             editing != null -> editing = null
             pendingDelete.isNotEmpty() -> pendingDelete = emptyList()
-            else -> scope.launch { pager.animateScrollToPage(PAGE_RECOGNIZE) }
+            page != PAGE_RECOGNIZE -> scope.launch { pager.animateScrollToPage(PAGE_RECOGNIZE) }
+            exitArmed -> activity?.finish()
+            else -> {
+                exitArmed = true
+                scope.launch { snackbar.showSnackbar(exitHint) }
+            }
         }
     }
 
@@ -275,13 +281,6 @@ private fun MainPage(
                     horizontalAlignment = Alignment.End,
                     verticalArrangement = Arrangement.spacedBy(14.dp),
                 ) {
-                    GlassFab(
-                        backdrop = backdrop,
-                        size = 48.dp,
-                        icon = MiuixIcons.Photos,
-                        description = stringResource(R.string.action_change_image),
-                        onClick = viewModel::reset,
-                    )
                     GlassFab(
                         backdrop = backdrop,
                         size = 60.dp,
@@ -369,41 +368,6 @@ private fun GlassBottomBar(backdrop: LayerBackdrop, page: Int, onSelect: (Int) -
                 label = stringResource(R.string.tab_history),
             )
         }
-    }
-}
-
-/** 液态玻璃悬浮按钮。 */
-@Composable
-private fun GlassFab(
-    backdrop: LayerBackdrop,
-    size: Dp,
-    icon: ImageVector,
-    description: String,
-    onClick: () -> Unit,
-) {
-    Box(
-        modifier = Modifier
-            .size(size)
-            .drawBackdrop(
-                backdrop = backdrop,
-                shape = { CircleShape },
-                effects = {
-                    blur(20f)
-                    vibrancy()
-                },
-                highlight = { Highlight.Default },
-                shadow = { Shadow.Default },
-            )
-            .clip(CircleShape)
-            .clickable(role = Role.Button, onClick = onClick),
-        contentAlignment = Alignment.Center,
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = description,
-            modifier = Modifier.size(size * 0.42f),
-            tint = MiuixTheme.colorScheme.primary,
-        )
     }
 }
 
