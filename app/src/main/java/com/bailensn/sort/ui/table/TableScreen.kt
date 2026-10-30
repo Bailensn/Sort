@@ -3,7 +3,7 @@ package com.bailensn.sort.ui.table
 import android.app.Activity
 import android.content.Intent
 import android.graphics.Bitmap
-import androidx.activity.compose.BackHandler
+import androidx.activity.compose.PredictiveBackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -24,6 +24,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -33,6 +34,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
@@ -190,7 +192,8 @@ private fun MainPage(
             exitArmed = false
         }
     }
-    BackHandler(enabled = backEnabled) {
+
+    val handleBack: () -> Unit = {
         when {
             editing != null -> editing = null
             pendingDelete.isNotEmpty() -> pendingDelete = emptyList()
@@ -200,6 +203,18 @@ private fun MainPage(
                 exitArmed = true
                 scope.launch { snackbar.showSnackbar(exitHint) }
             }
+        }
+    }
+
+    // 用预测性返回：手势进度直接驱动页面缩小淡出，松手才真正走上面那套逻辑。
+    // Android 13+ 是系统真手势，更低的系统由 activity-compose 退化成一次完成事件。
+    var backProgress by remember { mutableFloatStateOf(0f) }
+    PredictiveBackHandler(enabled = backEnabled) { progress ->
+        try {
+            progress.collect { event -> backProgress = event.progress }
+            handleBack()
+        } finally {
+            backProgress = 0f
         }
     }
 
@@ -226,6 +241,14 @@ private fun MainPage(
         snackbarHost = { SnackbarHost(state = snackbar) },
     ) { padding ->
         Box(modifier = Modifier.fillMaxSize()) {
+            Box(
+                modifier = Modifier.fillMaxSize().graphicsLayer {
+                    val progress = backProgress.coerceIn(0f, 1f)
+                    scaleX = 1f - 0.05f * progress
+                    scaleY = 1f - 0.05f * progress
+                    alpha = 1f - 0.35f * progress
+                },
+            ) {
             // 内容铺到屏幕底部，底栏浮在上面；列表自己留出底栏那一段。
             val pagePadding = PaddingValues(
                 top = padding.calculateTopPadding() + 8.dp,
@@ -271,6 +294,8 @@ private fun MainPage(
                         contentPadding = pagePadding,
                     )
                 }
+            }
+
             }
 
             val grid = state.grid
