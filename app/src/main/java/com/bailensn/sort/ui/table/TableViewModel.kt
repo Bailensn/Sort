@@ -573,7 +573,6 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     override fun onCleared() {
-        super.onCleared()
         val current = engine ?: return
         engine = null
         // viewModelScope 此时已经被取消，释放 native 资源要用独立作用域。

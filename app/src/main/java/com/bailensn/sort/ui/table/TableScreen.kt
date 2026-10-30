@@ -1,8 +1,8 @@
 package com.bailensn.sort.ui.table
 
-import android.app.Activity
 import android.content.Intent
 import android.graphics.Bitmap
+import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.PredictiveBackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -186,7 +186,7 @@ private fun MainPage(
     }
 
     // 主页的返回全在这里收口：弹层 → 回识别页 → 再按一次退出。
-    val activity = LocalContext.current as? Activity
+    val activity = LocalActivity.current
     var exitArmed by remember { mutableStateOf(false) }
     val exitHint = stringResource(R.string.snack_exit_hint)
     LaunchedEffect(exitArmed) {
