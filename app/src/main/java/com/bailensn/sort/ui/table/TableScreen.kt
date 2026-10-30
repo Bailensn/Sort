@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -40,6 +41,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -368,7 +370,11 @@ private fun MainPage(
 /** 底栏内容：玻璃底板由 [GlassBar] 提供。 */
 @Composable
 private fun BottomTabs(page: Int, onSelect: (Int) -> Unit) {
-    NavigationBar(color = Color.Transparent, showDivider = false) {
+    NavigationBar(
+        color = Color.Transparent,
+        showDivider = false,
+        defaultWindowInsetsPadding = false,
+    ) {
         NavigationBarItem(
             selected = page == PAGE_RECOGNIZE,
             onClick = { onSelect(PAGE_RECOGNIZE) },
