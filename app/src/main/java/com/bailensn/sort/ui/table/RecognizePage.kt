@@ -117,12 +117,18 @@ internal fun RecognizePage(
                     }
                 } else {
                     if (original != null) {
+                        // 只有出结果（或失败要看校正效果）时才给三视图切换；
+                        // 识别过程中还没生成网格图和增强图，摆个切换按钮只会让人困惑。
+                        val hasViews = state.phase == TableUiState.Phase.DONE ||
+                            state.phase == TableUiState.Phase.ERROR
                         item("scope-title") { SmallTitle(stringResource(R.string.label_scope)) }
-                        item("scope-tabs") { ViewModeTabs(viewMode, onViewModeChange) }
+                        if (hasViews) {
+                            item("scope-tabs") { ViewModeTabs(viewMode, onViewModeChange) }
+                        }
                         item("scope-image") {
                             ScopeCard(
                                 state = state,
-                                viewMode = viewMode,
+                                viewMode = if (hasViews) viewMode else 1,
                                 onImageClick = onImageClick,
                             )
                         }
@@ -385,7 +391,17 @@ private fun ProgressCard(state: TableUiState) {
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Text(text = stageLabel(state.stage), style = MiuixTheme.textStyles.body2)
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                // 转圈和进度条都留着：转圈表示还活着，进度条说明跑到哪了。
+                InfiniteProgressIndicator(
+                    color = MiuixTheme.colorScheme.primary,
+                    size = 22.dp,
+                )
+                Text(text = stageLabel(state.stage), style = MiuixTheme.textStyles.body2)
+            }
             LinearProgressIndicator(
                 progress = animated,
                 modifier = Modifier.fillMaxWidth(),
