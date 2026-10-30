@@ -20,16 +20,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.animation.core.Animatable
-import kotlinx.coroutines.CancellationException
-import androidx.compose.animation.core.FastOutLinearInEasing
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.tween
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -42,14 +36,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.util.lerp
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.unit.dp
@@ -96,16 +87,9 @@ private const val PAGE_HISTORY = 1
 /** 连按两次返回的间隔。 */
 private const val EXIT_CONFIRM_WINDOW_MS = 2000L
 
-/** 图片放大/缩回的动画时长。 */
-private const val ANIMATION_MS = 300
-
-/** 全屏时背景最多压到多黑，留一点让下面那一页透出来。 */
-private const val MAX_SCRIM_ALPHA = 0.92f
-
 /** 页面栈：主页面 → 全屏看图 / 历史详情。 */
 private sealed interface Route : NavKey {
     data object Main : Route
-    data class Image(val mode: Int, val from: Rect) : Route
     data class History(val id: Long) : Route
 }
 
@@ -117,15 +101,11 @@ fun TableScreen(
     // 只在内存里：看图、看历史都是临时页面，进程重建后回到主页面反而更合理。
     val stack = remember { navBackStackOf(Route.Main) }
     val pop: () -> Unit = { if (stack.size > 1) stack.removeAt(stack.lastIndex) }
-    // 系统返回若被 NavDisplay 抢走，就用这个计数通知看图页自己关闭（仍然带缩回动画）。
-    var imageCloseTick by remember { mutableIntStateOf(0) }
 
     NavDisplay(
         backStack = stack,
         modifier = modifier.fillMaxSize(),
-        onBack = {
-            if (stack.lastOrNull() is Route.Image) imageCloseTick++ else pop()
-        },
+        onBack = pop,
         effects = NavDisplayEffects(
             enableCornerClip = false,
             backdropColor = MiuixTheme.colorScheme.background,
@@ -137,21 +117,7 @@ fun TableScreen(
                 viewModel = viewModel,
                 // 别的页面压在上面时返回手势归它，主页面不要再抢。
                 backEnabled = stack.size == 1,
-                onOpenImage = { mode, from -> stack.add(Route.Image(mode, from)) },
                 onOpenHistory = { id -> stack.add(Route.History(id)) },
-            )
-        }
-        entry<Route.Image>(
-            // 换页本身不做动画：图片自己从缩略图位置长到全屏，底下那一页保持可见。
-            transition = NavTransitions.None,
-            swipeDismiss = NavSwipeDirection.None,
-        ) { route ->
-            ImageViewer(
-                viewModel = viewModel,
-                mode = route.mode,
-                from = route.from,
-                closeTick = imageCloseTick,
-                onClose = pop,
             )
         }
         entry<Route.History>(swipeDismiss = NavSwipeDirection.LeftToRight) { route ->
@@ -164,7 +130,6 @@ fun TableScreen(
 private fun MainPage(
     viewModel: TableViewModel,
     backEnabled: Boolean,
-    onOpenImage: (Int, Rect) -> Unit,
     onOpenHistory: (Long) -> Unit,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -312,7 +277,9 @@ private fun MainPage(
                         onRetryEngine = viewModel::retryEngine,
                         onRetryRecognition = viewModel::retryRecognition,
                         onReset = viewModel::reset,
-                        onImageClick = { _, bounds -> onOpenImage(viewMode, bounds) },
+                        onImageClick = { bitmap ->
+                            scope.launch { openInGallery(context, bitmap, "scope-$viewMode.jpg") }
+                        },
                         onCellClick = { row, column, value -> editing = CellEdit(row, column, value) },
                         contentPadding = pagePadding,
                     )
@@ -430,99 +397,3 @@ private fun BottomTabs(page: Int, onSelect: (Int) -> Unit) {
     }
 }
 
-/** 全屏看图：从缩略图的位置放大到全屏，再缩回去；支持缩放和拖动。 */
-@Composable
-private fun ImageViewer(
-    viewModel: TableViewModel,
-    mode: Int,
-    from: Rect,
-    closeTick: Int,
-    onClose: () -> Unit,
-) {
-    val state by viewModel.state.collectAsStateWithLifecycle()
-    val bitmap: Bitmap = when (mode) {
-        1 -> state.original
-        2 -> state.enhanced ?: state.original
-        else -> state.overlay ?: state.original
-    } ?: return
-
-    val window = LocalWindowInfo.current.containerSize
-    val progress = remember { Animatable(0f) }
-    var closing by remember { mutableStateOf(false) }
-    val scope = rememberCoroutineScope()
-    val animatable = window.width > 0 && window.height > 0 && !from.isEmpty
-
-    LaunchedEffect(Unit) {
-        if (animatable) {
-            progress.animateTo(1f, tween(ANIMATION_MS, easing = FastOutSlowInEasing))
-        } else {
-            progress.snapTo(1f)
-        }
-    }
-
-    // 系统返回手势：手指拖多少，图片就缩回多少；松手要么出栈、要么弹回全屏。
-    PredictiveBackHandler(enabled = animatable && !closing) { events ->
-        try {
-            events.collect { event -> progress.snapTo((1f - event.progress).coerceIn(0f, 1f)) }
-            closing = true
-            onClose()
-        } catch (cancelled: CancellationException) {
-            progress.animateTo(1f, tween(200, easing = FastOutSlowInEasing))
-            throw cancelled
-        }
-    }
-
-    val close: () -> Unit = {
-        if (!closing) {
-            closing = true
-            scope.launch {
-                if (animatable) {
-                    progress.animateTo(0f, tween(ANIMATION_MS, easing = FastOutLinearInEasing))
-                }
-                onClose()
-            }
-        }
-    }
-
-    // NavDisplay 把返回吃掉了的话，这里照样缩回去再出栈。
-    LaunchedEffect(closeTick) {
-        if (closeTick > 0) close()
-    }
-
-    val value = progress.value
-    val startScale = if (animatable) from.width / window.width else 1f
-    Box(modifier = Modifier.fillMaxSize()) {
-        // 背景不透满：下面那一页始终透出来一点，像微信/QQ 那样图片浮在列表上。
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color.Black.copy(alpha = (value * MAX_SCRIM_ALPHA).coerceIn(0f, 1f))),
-        )
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .graphicsLayer {
-                    val scale = lerp(startScale, 1f, value)
-                    scaleX = scale
-                    scaleY = scale
-                    translationX = lerp(from.center.x - window.width / 2f, 0f, value)
-                    translationY = lerp(from.center.y - window.height / 2f, 0f, value)
-                },
-        ) {
-            ZoomableImage(bitmap = bitmap, onTap = close)
-        }
-        IconButton(
-            onClick = close,
-            modifier = Modifier
-                .align(Alignment.TopStart)
-                .statusBarsPadding()
-                .padding(8.dp),
-        ) {
-            Icon(
-                imageVector = MiuixIcons.Back,
-                contentDescription = stringResource(R.string.action_back),
-                tint = Color.White,
-            )
-        }
-    }
-}

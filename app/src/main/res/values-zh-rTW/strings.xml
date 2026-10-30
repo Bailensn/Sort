@@ -69,7 +69,6 @@
     <string name="edit_suggestions">記憶中的人名</string>
     <string name="history_title">辨識歷史</string>
     <string name="history_empty">尚無紀錄</string>
-    <string name="preview_fullscreen_close">點擊關閉</string>
     <string name="action_pick">選擇圖片</string>
     <string name="snack_exported">已匯出</string>
     <string name="snack_saved">已儲存</string>

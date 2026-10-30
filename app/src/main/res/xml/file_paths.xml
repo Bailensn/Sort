@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<paths xmlns:android="http://schemas.android.com/apk/res/android">
-    <cache-path
-        name="exports"
-        path="exports/" />
+<paths>
+    <external-cache-path name="preview" path="preview/" />
+    <external-cache-path name="exports" path="exports/" />
+    <!-- 存储不可用时 externalCacheDir 会退回内部缓存。 -->
+    <cache-path name="preview_internal" path="preview/" />
+    <cache-path name="exports_internal" path="exports/" />
+    <files-path name="history" path="history/" />
 </paths>

@@ -69,7 +69,6 @@
     <string name="edit_suggestions">Remembered names</string>
     <string name="history_title">History</string>
     <string name="history_empty">No records yet</string>
-    <string name="preview_fullscreen_close">Tap to close</string>
     <string name="action_pick">Pick image</string>
     <string name="snack_exported">Exported</string>
     <string name="snack_saved">Saved</string>

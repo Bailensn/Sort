@@ -31,12 +31,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.layout.boundsInWindow
-import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -73,7 +70,7 @@ internal fun RecognizePage(
     onRetryEngine: () -> Unit,
     onRetryRecognition: () -> Unit,
     onReset: () -> Unit,
-    onImageClick: (Bitmap, Rect) -> Unit,
+    onImageClick: (Bitmap) -> Unit,
     onCellClick: (row: Int, column: Int, value: String) -> Unit,
     contentPadding: PaddingValues,
 ) {
@@ -224,14 +221,13 @@ internal fun ViewModeTabs(viewMode: Int, onViewModeChange: (Int) -> Unit) {
 internal fun ScopeCard(
     state: TableUiState,
     viewMode: Int,
-    onImageClick: (Bitmap, Rect) -> Unit,
+    onImageClick: (Bitmap) -> Unit,
 ) {
     val bitmap = when (viewMode) {
         1 -> state.original
         2 -> state.enhanced ?: state.original
         else -> state.overlay ?: state.original
     } ?: return
-    var bounds by remember { mutableStateOf(Rect.Zero) }
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -253,8 +249,7 @@ internal fun ScopeCard(
                 // 固定比例：换图、切页签时卡片高度不变。
                 .aspectRatio(4f / 3f)
                 .clip(RoundedCornerShape(12.dp))
-                .onGloballyPositioned { bounds = it.boundsInWindow() }
-                .clickable { onImageClick(bitmap, bounds) },
+                .clickable { onImageClick(bitmap) },
             contentScale = ContentScale.Fit,
         )
     }

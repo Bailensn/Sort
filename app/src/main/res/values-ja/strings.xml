@@ -69,7 +69,6 @@
     <string name="edit_suggestions">記憶した氏名</string>
     <string name="history_title">認識履歴</string>
     <string name="history_empty">記録はまだありません</string>
-    <string name="preview_fullscreen_close">タップで閉じる</string>
     <string name="action_pick">画像を選択</string>
     <string name="snack_exported">出力しました</string>
     <string name="snack_saved">保存しました</string>

@@ -14,6 +14,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -48,9 +51,10 @@ internal fun HistoryDetailPage(
     val view by viewModel.viewer.collectAsStateWithLifecycle()
     val names by viewModel.suggestions.collectAsStateWithLifecycle()
 
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     var viewMode by rememberSaveable { mutableIntStateOf(0) }
     var editing by remember { mutableStateOf<CellEdit?>(null) }
-    var fullScreen by remember { mutableStateOf<Bitmap?>(null) }
 
     // 页面退出时把详情状态清掉，下次点开重新读盘。
     DisposableEffect(entryId) {
@@ -99,7 +103,11 @@ internal fun HistoryDetailPage(
                     item("scope-title") { SmallTitle(stringResource(R.string.label_scope)) }
                     item("scope-tabs") { ViewModeTabs(viewMode, { viewMode = it }) }
                     item("scope-image") {
-                        ScopeCard(state = state, viewMode = viewMode) { bitmap, _ -> fullScreen = bitmap }
+                        ScopeCard(state = state, viewMode = viewMode) { bitmap ->
+                            scope.launch {
+                                openInGallery(context, bitmap, "history-$entryId-$viewMode.jpg")
+                            }
+                        }
                     }
                     if (state.elapsedMs > 0) {
                         item("stats-title") { SmallTitle(stringResource(R.string.section_stats)) }
@@ -133,13 +141,6 @@ internal fun HistoryDetailPage(
                         description = stringResource(R.string.action_export),
                         onClick = viewModel::exportHistory,
                     )
-                }
-            }
-
-            val image = fullScreen
-            if (image != null) {
-                Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
-                    ZoomableImage(bitmap = image, onTap = { fullScreen = null })
                 }
             }
 

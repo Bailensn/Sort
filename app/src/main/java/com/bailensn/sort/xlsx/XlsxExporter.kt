@@ -20,7 +20,9 @@ object XlsxExporter {
     const val MIME_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
     fun export(context: Context, rows: List<List<String>>): ExportedFile {
-        val directory = File(context.cacheDir, "exports").apply { mkdirs() }
+        // 外部缓存，导出的文件在文件管理器里能直接看到。
+        val base = context.externalCacheDir ?: context.cacheDir
+        val directory = File(base, "exports").apply { mkdirs() }
         val stamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
         val file = File(directory, "table_$stamp.xlsx")
         file.outputStream().buffered().use { output ->
