@@ -116,7 +116,8 @@
 
 - 两个页签（识别 / 历史）放在 `HorizontalPager` 里，`NavigationBar` 的点按和左右滑动共用同一份状态，
   切页保留各自的滚动位置；
-- 顶栏的模糊是**一遍高斯模糊 + 一条透明度渐变**（`ProgressiveBlur(angle, fadeStart, fadeEnd, blurRadius)`）：
+- 顶栏的模糊是**一遍高斯模糊 + 一条透明度渐变**（`ProgressiveBlur(angle, fadeStart, fadeEnd, blurRadius, mode)`）：
+  `mode = Scrim` 时可以完全关掉模糊、只留渐变（零成本），`Gaussian` 是一层 RenderEffect；
   沿着渐变方向把下半段渐隐掉，观感接近渐进模糊，但每帧只跑一层 RenderEffect——
   早先五层叠加的版本滚动时掉帧，不值得；
   底栏和悬浮按钮是**液态玻璃**：`backdrop` 把页面内容录一层，效果是

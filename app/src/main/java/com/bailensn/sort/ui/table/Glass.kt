@@ -147,7 +147,8 @@ internal data class ProgressiveBlur(
     val angle: Float = 90f,
     val fadeStart: Float = 0.3f,
     val fadeEnd: Float = 0.95f,
-    val blurRadius: Dp = 16.dp,
+    val blurRadius: Dp = 12.dp,
+    val mode: BlurMode = BlurMode.Gaussian,
 ) {
     companion object {
         /** 上糊下清。 */
@@ -158,7 +159,16 @@ internal data class ProgressiveBlur(
     }
 }
 
-/** 顶栏：一次模糊 + 渐变渐隐 + 一层淡色，标题在任何照片上都读得出来。 */
+/** 顶栏模糊的两种做法。 */
+internal enum class BlurMode {
+    /** 一遍 RenderEffect 高斯模糊：有磨砂质感，每帧一次 GPU 模糊。 */
+    Gaussian,
+
+    /** 只压一层渐变：零成本、零掉帧，但没有磨砂质感。 */
+    Scrim,
+}
+
+/** 顶栏：模糊（或纯渐变）+ 渐隐，标题在任何照片上都读得出来。 */
 @Composable
 internal fun BlurBar(
     backdrop: LayerBackdrop,
@@ -168,30 +178,40 @@ internal fun BlurBar(
 ) {
     val surface = MiuixTheme.colorScheme.surface
     Box(modifier) {
-        Box(
-            modifier = Modifier
-                .matchParentSize()
-                .drawBackdrop(
-                    backdrop = backdrop,
-                    shape = { RectangleShape },
-                    effects = { blur(blur.blurRadius.toPx()) },
-                    highlight = null,
-                    shadow = null,
-                )
-                .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
-                .drawWithContent {
-                    drawContent()
-                    drawRect(
-                        brush = axisBrush(blur.angle, Color.Black, Color.Transparent, blur.fadeStart, blur.fadeEnd),
-                        blendMode = BlendMode.DstIn,
+        if (blur.mode == BlurMode.Gaussian) {
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .drawBackdrop(
+                        backdrop = backdrop,
+                        shape = { RectangleShape },
+                        effects = { blur(blur.blurRadius.toPx()) },
+                        highlight = null,
+                        shadow = null,
                     )
-                },
-        )
+                    .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+                    .drawWithContent {
+                        drawContent()
+                        drawRect(
+                            brush = axisBrush(
+                                blur.angle,
+                                Color.Black,
+                                Color.Transparent,
+                                blur.fadeStart,
+                                blur.fadeEnd,
+                            ),
+                            blendMode = BlendMode.DstIn,
+                        )
+                    },
+            )
+        }
+        // 没有模糊时靠这层渐变把文字托住，所以浓一些。
+        val tintTop = if (blur.mode == BlurMode.Scrim) 0.55f else 0.16f
         Box(
             modifier = Modifier
                 .matchParentSize()
                 .drawBehind {
-                    drawRect(axisBrush(blur.angle, surface.copy(alpha = 0.16f), surface.copy(alpha = 0f)))
+                    drawRect(axisBrush(blur.angle, surface.copy(alpha = tintTop), surface.copy(alpha = 0f)))
                 },
         )
         content()
