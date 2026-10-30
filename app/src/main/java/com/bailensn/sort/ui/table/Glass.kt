@@ -11,6 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
@@ -19,6 +20,8 @@ import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.Dp
@@ -31,6 +34,10 @@ import com.kyant.backdrop.effects.lens
 import com.kyant.backdrop.effects.vibrancy
 import com.kyant.backdrop.highlight.Highlight
 import com.kyant.backdrop.shadow.Shadow
+import kotlin.math.abs
+import kotlin.math.cos
+import kotlin.math.pow
+import kotlin.math.sin
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -129,54 +136,84 @@ internal fun GlassFab(
 }
 
 /**
- * 顶栏：自上往下逐级减弱的高斯模糊（progressive blur）。
+ * 渐进模糊的参数模型：接口照 Miuix 的 `ProgressiveBlur` 抄，实现是自己写的。
  *
- * Miuix 的 `progressiveTextureBlur(ProgressiveBlur.Top)` 在 `miuix-blur` 里，那个模块
- * minSdk 是 33，我们用不了；这里按同样的思路自己叠：越强的模糊盖在越上面，
- * 每层用错开的渐变遮罩收边，叠出来就是从糊到清晰的连续过渡，没有硬边。
+ * [angle] 顺时针，90 = 从上往下；模糊在 [startFraction] 处最强，到 [endFraction] 衰减为零，
+ * [curve] 是衰减曲线的指数（>1 更集中在顶部，<1 更均匀）。
  */
+internal data class ProgressiveBlur(
+    val angle: Float = 90f,
+    val startFraction: Float = 0f,
+    val endFraction: Float = 1f,
+    val curve: Float = 1.4f,
+    val maxRadius: Dp = 18.dp,
+    val steps: Int = 5,
+) {
+
+    /** 一层：模糊半径 + 这一层的遮罩从哪开始淡出。 */
+    internal data class Layer(val radius: Dp, val fadeStart: Float, val fadeEnd: Float)
+
+    /**
+     * 拆成若干层叠加：半径逐层减小，遮罩的收边位置逐层往下推。
+     * 层数越多过渡越顺，但每层都要多画一遍模糊，5 层是画质和开销的折中。
+     */
+    internal fun layers(): List<Layer> {
+        val span = (endFraction - startFraction).coerceAtLeast(0.01f)
+        val count = steps.coerceAtLeast(2)
+        return (0 until count).map { index ->
+            val progress = index / (count - 1).toFloat()
+            val strength = (1f - progress).pow(curve)
+            val fadeEnd = startFraction + span * (0.5f + 0.5f * progress)
+            val fadeStart = startFraction + (fadeEnd - startFraction) * 0.6f
+            Layer(
+                radius = maxRadius * strength,
+                fadeStart = fadeStart.coerceIn(0f, 1f),
+                fadeEnd = fadeEnd.coerceIn(0f, 1f),
+            )
+        }
+    }
+
+    companion object {
+        /** 上糊下清。 */
+        val Top: ProgressiveBlur = ProgressiveBlur()
+
+        /** 下糊上清。 */
+        val Bottom: ProgressiveBlur = ProgressiveBlur(angle = 270f)
+    }
+}
+
+/** 顶栏：渐进模糊 + 一层淡色，标题在任何照片上都读得出来。 */
 @Composable
 internal fun BlurBar(
     backdrop: LayerBackdrop,
     modifier: Modifier = Modifier,
+    blur: ProgressiveBlur = ProgressiveBlur.Top,
     content: @Composable () -> Unit,
 ) {
     val surface = MiuixTheme.colorScheme.surface
     Box(modifier) {
-        // 从弱到强由下往上叠：弱的先画、盖得最远，强的压在最上面。
-        BlurLayer(backdrop, radius = 3.dp, fadeStart = 0.72f, fadeEnd = 1f)
-        BlurLayer(backdrop, radius = 10.dp, fadeStart = 0.42f, fadeEnd = 0.78f)
-        BlurLayer(backdrop, radius = 20.dp, fadeStart = 0.14f, fadeEnd = 0.52f)
-        // 一层很淡的表面色，保证标题在任何照片上都读得出来。
+        blur.layers().forEach { layer -> BlurLayer(backdrop, blur.angle, layer) }
         Box(
             modifier = Modifier
                 .matchParentSize()
-                .background(
-                    Brush.verticalGradient(
-                        0f to surface.copy(alpha = 0.20f),
-                        1f to surface.copy(alpha = 0.04f),
-                    ),
-                ),
+                .drawBehind {
+                    drawRect(axisBrush(blur.angle, surface.copy(alpha = 0.18f), surface.copy(alpha = 0.03f)))
+                },
         )
         content()
     }
 }
 
-/** 一层模糊：整块是 blur，超出 [fadeStart]..[fadeEnd] 的部分用渐变吃掉。 */
+/** 一层模糊：整块是 blur，超出 [layer] 遮罩范围的部分用渐变擦掉。 */
 @Composable
-private fun BoxScope.BlurLayer(
-    backdrop: LayerBackdrop,
-    radius: Dp,
-    fadeStart: Float,
-    fadeEnd: Float,
-) {
+private fun BoxScope.BlurLayer(backdrop: LayerBackdrop, angle: Float, layer: ProgressiveBlur.Layer) {
     Box(
         modifier = Modifier
             .matchParentSize()
             .drawBackdrop(
                 backdrop = backdrop,
                 shape = { RectangleShape },
-                effects = { blur(radius.toPx()) },
+                effects = { blur(layer.radius.toPx()) },
                 highlight = null,
                 shadow = null,
             )
@@ -184,14 +221,37 @@ private fun BoxScope.BlurLayer(
             .drawWithContent {
                 drawContent()
                 drawRect(
-                    brush = Brush.verticalGradient(
-                        0f to Color.Black,
-                        fadeStart to Color.Black,
-                        fadeEnd to Color.Transparent,
-                        1f to Color.Transparent,
-                    ),
+                    brush = axisBrush(angle, Color.Black, Color.Black, layer.fadeStart, layer.fadeEnd),
                     blendMode = BlendMode.DstIn,
                 )
             },
+    )
+}
+
+/** 沿 [angle] 方向的线性渐变；90 度时就是在竖直方向上 0 → 1。 */
+private fun DrawScope.axisBrush(
+    angle: Float,
+    startColor: Color,
+    endColor: Color,
+    fadeStart: Float = 0f,
+    fadeEnd: Float = 1f,
+): Brush {
+    val radians = Math.toRadians(angle.toDouble())
+    val dx = cos(radians).toFloat()
+    val dy = sin(radians).toFloat()
+    val center = Offset(size.width / 2f, size.height / 2f)
+    val half = (abs(size.width * dx) + abs(size.height * dy)) / 2f
+    val from = Offset(center.x - dx * half, center.y - dy * half)
+    val to = Offset(center.x + dx * half, center.y + dy * half)
+    val solidEnd = fadeEnd.coerceIn(fadeStart + 0.01f, 1f)
+    return Brush.linearGradient(
+        colorStops = arrayOf(
+            0f to startColor,
+            fadeStart.coerceIn(0f, solidEnd) to startColor,
+            solidEnd to endColor,
+            1f to endColor,
+        ),
+        start = from,
+        end = to,
     )
 }
