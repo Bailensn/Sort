@@ -9,7 +9,8 @@
 - 回读纠错：原图 / 增强图 / 二值图多遍识别，两套模型投票，低置信度格子再认一次
 - 算术自检：序号与学号连续性、科目列求和校验、单格反推纠正，仍对不上的行标成存疑
 - 抗噪：裁格按实测线宽内缩，表格线不会残留成「1」；单元格文本统一去线头、去汉字间空格；末尾垃圾列按「线头字符 / 字母占比」整列裁掉
-- 导出：手写 OOXML（不引 Apache POI），**照抄历史里的 `rows.tsv`**，细边框、自动换行、按内容估宽
+- 导出：手写 OOXML，数据以 `sort.db` 的 `cells` 为准，细边框、自动换行、按内容估宽。
+  不引 Apache POI 的原因：XSSF 的配色/样式 API 直接引用 `java.awt.Color`，流式读写还要 StAX（`javax.xml.stream`），这两个 Android 都没有；再加上 xmlbeans 的反射式 schema 加载、十几 MB 的依赖和一堆 R8 keep 规则——为了一张平表不值得
 - 分享：`FileProvider` + `ACTION_SEND`
 - 保留 C++ `libmain.so`（CMake/JNI 模板）
 
