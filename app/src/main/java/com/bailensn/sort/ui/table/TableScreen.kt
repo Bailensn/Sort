@@ -117,11 +117,15 @@ fun TableScreen(
     // 只在内存里：看图、看历史都是临时页面，进程重建后回到主页面反而更合理。
     val stack = remember { navBackStackOf(Route.Main) }
     val pop: () -> Unit = { if (stack.size > 1) stack.removeAt(stack.lastIndex) }
+    // 系统返回若被 NavDisplay 抢走，就用这个计数通知看图页自己关闭（仍然带缩回动画）。
+    var imageCloseTick by remember { mutableIntStateOf(0) }
 
     NavDisplay(
         backStack = stack,
         modifier = modifier.fillMaxSize(),
-        onBack = pop,
+        onBack = {
+            if (stack.lastOrNull() is Route.Image) imageCloseTick++ else pop()
+        },
         effects = NavDisplayEffects(
             enableCornerClip = false,
             backdropColor = MiuixTheme.colorScheme.background,
@@ -146,6 +150,7 @@ fun TableScreen(
                 viewModel = viewModel,
                 mode = route.mode,
                 from = route.from,
+                closeTick = imageCloseTick,
                 onClose = pop,
             )
         }
@@ -431,6 +436,7 @@ private fun ImageViewer(
     viewModel: TableViewModel,
     mode: Int,
     from: Rect,
+    closeTick: Int,
     onClose: () -> Unit,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -476,6 +482,11 @@ private fun ImageViewer(
                 onClose()
             }
         }
+    }
+
+    // NavDisplay 把返回吃掉了的话，这里照样缩回去再出栈。
+    LaunchedEffect(closeTick) {
+        if (closeTick > 0) close()
     }
 
     val value = progress.value
