@@ -119,21 +119,31 @@ class PaddleOCR private constructor(
         }
     }
 
-    suspend fun recognizeCells(bitmap: Bitmap, cells: List<Rect>, scale: Float = 1f): List<CellReading> {
+    suspend fun recognizeCells(
+        bitmap: Bitmap,
+        cells: List<Rect>,
+        scale: Float = 1f,
+        onProgress: ((Float) -> Unit)? = null,
+    ): List<CellReading> {
         if (bitmap.width == 0 || bitmap.height == 0) {
             throw OCRError.InvalidImage()
         }
         if (cells.isEmpty()) return emptyList()
         return withContext(Dispatchers.IO) {
-            engine.recognizeCells(bitmap, cells, scale)
+            engine.recognizeCells(bitmap, cells, scale, onProgress)
         }
     }
 
     /** 用复核模型（更大更准）再认一遍；没有复核模型时返回空列表。 */
-    suspend fun recognizeCellsReferee(bitmap: Bitmap, cells: List<Rect>, scale: Float = 1f): List<CellReading> {
+    suspend fun recognizeCellsReferee(
+        bitmap: Bitmap,
+        cells: List<Rect>,
+        scale: Float = 1f,
+        onProgress: ((Float) -> Unit)? = null,
+    ): List<CellReading> {
         if (cells.isEmpty()) return emptyList()
         return withContext(Dispatchers.IO) {
-            engine.recognizeCellsReferee(bitmap, cells, scale)
+            engine.recognizeCellsReferee(bitmap, cells, scale, onProgress)
         }
     }
 

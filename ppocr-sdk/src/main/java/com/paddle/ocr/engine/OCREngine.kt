@@ -206,13 +206,22 @@ class OCREngine(
         )
     }
 
-    fun recognizeCells(bitmap: Bitmap, cells: List<Rect>, scale: Float = 1f): List<CellReading> =
-        recognizeCellsWith(bitmap, cells, scale, recognitionEngine)
+    fun recognizeCells(
+        bitmap: Bitmap,
+        cells: List<Rect>,
+        scale: Float = 1f,
+        onProgress: ((Float) -> Unit)? = null,
+    ): List<CellReading> = recognizeCellsWith(bitmap, cells, scale, recognitionEngine, onProgress)
 
     /** 用复核模型再认一遍；没有复核模型时返回空列表。 */
-    fun recognizeCellsReferee(bitmap: Bitmap, cells: List<Rect>, scale: Float = 1f): List<CellReading> {
+    fun recognizeCellsReferee(
+        bitmap: Bitmap,
+        cells: List<Rect>,
+        scale: Float = 1f,
+        onProgress: ((Float) -> Unit)? = null,
+    ): List<CellReading> {
         val engine = refereeEngine ?: return emptyList()
-        return recognizeCellsWith(bitmap, cells, scale, engine)
+        return recognizeCellsWith(bitmap, cells, scale, engine, onProgress)
     }
 
     private fun recognizeCellsWith(
@@ -220,6 +229,7 @@ class OCREngine(
         cells: List<Rect>,
         scale: Float,
         recEngine: RecognitionEngine,
+        onProgress: ((Float) -> Unit)? = null,
     ): List<CellReading> {
         if (cells.isEmpty()) return emptyList()
         val src = BitmapUtils.bitmapToBGRMat(bitmap)
@@ -246,11 +256,14 @@ class OCREngine(
                 // 低端机会直接 OOM（曾经整张表退化成文字聚类）。
                 if (pending.size >= CHUNK_CELLS) {
                     runBatch(output, pending, recEngine)
+                    // 逐块回调进度：格子多的表要跑十几秒，没进度条像卡死。
+                    onProgress?.invoke((index + 1).toFloat() / cells.size)
                     pending = ArrayList(CHUNK_CELLS)
                 }
             }
 
             runBatch(output, pending, recEngine)
+            onProgress?.invoke(1f)
             pending = ArrayList(0)
         } finally {
             pending.forEach { runCatching { it.crop.release() } }

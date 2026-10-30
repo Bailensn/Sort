@@ -51,10 +51,12 @@ object TablePipeline {
         ocr: PaddleOCR,
         source: Bitmap,
         onStage: (Stage) -> Unit = {},
+        onProgress: (Float) -> Unit = {},
     ): Analysis {
         val start = SystemClock.elapsedRealtime()
 
         onStage(Stage.RECTIFY)
+        onProgress(0.02f)
         // 第一步就把画面裁到有内容的那块：大片桌面、黑边、灰底在这里就被扔掉，
         // 后面的纠偏和线检测不会被它们带偏。
         val cropped = ContentCropper.crop(source)
@@ -89,6 +91,7 @@ object TablePipeline {
         detection = TableEdgeLines.extend(working, detection)
 
         onStage(Stage.SEGMENT)
+        onProgress(0.2f)
         val gridLines = detection.toGridLines()
         val cellGrid = CellGrid.fromLines(working.width, working.height, gridLines)
         val cellCount = cellGrid.cells.size
@@ -105,7 +108,7 @@ object TablePipeline {
         var selfCheck = TableSelfCheck.Report()
 
         if (cellGrid.cells.isNotEmpty()) {
-            val pass = recognizeByCells(ocr, working, enhanced, cellGrid, borderInset, onStage)
+            val pass = recognizeByCells(ocr, working, enhanced, cellGrid, borderInset, onStage, onProgress)
             grid = pass.grid
             correctedCells = pass.corrected
             cellMs = pass.cellMs
@@ -125,6 +128,7 @@ object TablePipeline {
         }
 
         val overlay = runCatching { GridOverlay.draw(working, detection) }.getOrElse { working }
+        onProgress(1f)
         return Analysis(
             bitmap = working,
             overlay = overlay,
@@ -162,8 +166,10 @@ object TablePipeline {
         cellGrid: CellGrid,
         borderInset: Int,
         onStage: (Stage) -> Unit,
+        onProgress: (Float) -> Unit,
     ): CellPass = kotlinx.coroutines.coroutineScope {
         onStage(Stage.RECOGNIZE)
+        onProgress(0.25f)
         // 整图检测和逐格识别互不依赖，先并行开跑，最后再汇合。
         val detectionJob = async(kotlinx.coroutines.Dispatchers.Default) {
             val started = SystemClock.elapsedRealtime()
@@ -184,7 +190,10 @@ object TablePipeline {
         // 逐格识别整批失败（曾经因为一次把所有裁剪图攒在内存里而 OOM）时，
         // 先退回原尺寸再试一次；还不行就保留网格结构、留空，别退回文字聚类——
         // 聚类出来的列数对不上，导出的表直接没法用。
-        val recognizedResult = runCatching { ocr.recognizeCells(bitmap, rects) }
+        val recognizedResult = runCatching {
+            // 一整遍逐格识别占大头，按块把进度从 25% 推到 58%。
+            ocr.recognizeCells(bitmap, rects) { fraction -> onProgress(0.25f + 0.33f * fraction) }
+        }
         var recognized: List<CellReading> = recognizedResult.getOrElse {
             runCatching { ocr.recognizeCells(bitmap, rects, scale = 1f) }.getOrElse {
                 return@coroutineScope CellPass(TableGrid(emptyList(), TableGrid.Mode.GRID_LINES), 0)
@@ -199,6 +208,7 @@ object TablePipeline {
             reading.hasInk && reading.confidence < TRUSTED_CONFIDENCE
         }
         if (strictIndices.isNotEmpty()) {
+            onProgress(0.62f)
             val strictSource = enhanced ?: bitmap
             val strictRects = strictIndices.map { rects[it] }
             // 串行跑：两个会话共享同一个 ORT 环境，并发调用没在真机上验证过，
@@ -252,6 +262,7 @@ object TablePipeline {
             reading.hasInk && reading.confidence < THIRD_CONFIDENCE
         }
         if (thirdIndices.isNotEmpty()) {
+            onProgress(0.72f)
             val rects3 = thirdIndices.map { rects[it] }
             // 二遍已经在增强图上跑过 2 倍，这里不再重复「增强图 3 倍」；
             // 换成原图 3 倍 + 复核模型，保证三路来自不同的输入形态。
@@ -283,6 +294,7 @@ object TablePipeline {
             reading.hasInk && reading.confidence < HOPELESS_CONFIDENCE
         }
         if (hopelessIndices.isNotEmpty()) {
+            onProgress(0.8f)
             val binary = ImageEnhancer.binarize(bitmap)
             if (binary != null) {
                 val hopelessRects = hopelessIndices.map { rects[it] }
@@ -301,6 +313,7 @@ object TablePipeline {
             }
         }
 
+        onProgress(0.88f)
         // 统计用：只看有墨迹的格子，空白格不该拉低置信度。
         val scored = recognized.filter { it.hasInk }
         val averageConfidence = if (scored.isEmpty()) 0f else scored.sumOf { it.confidence.toDouble() }.toFloat() / scored.size
@@ -312,6 +325,7 @@ object TablePipeline {
 
         // 回读：整图再检测一遍，用它的结果和逐格结果互相校对。
         onStage(Stage.VERIFY)
+        onProgress(0.9f)
         val (detections, detectMs) = detectionJob.await()
         val byCell = mutableMapOf<Int, Pair<String, Float>>()
 
