@@ -82,8 +82,8 @@ internal fun ZoomableImage(
             .onSizeChanged { viewport = it }
             .pointerInput(Unit) {
                 detectTapGestures(
-                    // 放大状态点一下不关闭，避免拖图时手一滑就退出去。
-                    onTap = { if (scale <= MIN_SCALE) onTap() },
+                    // 点哪儿都返回：照片、黑边、空白一视同仁。
+                    onTap = { onTap() },
                     onDoubleTap = {
                         scale = if (scale > MIN_SCALE) MIN_SCALE else DOUBLE_TAP_SCALE
                         glideTo(Offset.Zero)

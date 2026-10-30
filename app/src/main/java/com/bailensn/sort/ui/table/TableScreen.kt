@@ -26,6 +26,7 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.animation.core.Animatable
+import kotlinx.coroutines.CancellationException
 import androidx.compose.animation.core.FastOutLinearInEasing
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
@@ -97,6 +98,9 @@ private const val EXIT_CONFIRM_WINDOW_MS = 2000L
 
 /** 图片放大/缩回的动画时长。 */
 private const val ANIMATION_MS = 300
+
+/** 全屏时背景最多压到多黑，留一点让下面那一页透出来。 */
+private const val MAX_SCRIM_ALPHA = 0.92f
 
 /** 页面栈：主页面 → 全屏看图 / 历史详情。 */
 private sealed interface Route : NavKey {
@@ -450,6 +454,18 @@ private fun ImageViewer(
         }
     }
 
+    // 系统返回手势：手指拖多少，图片就缩回多少；松手要么出栈、要么弹回全屏。
+    PredictiveBackHandler(enabled = animatable && !closing) { events ->
+        try {
+            events.collect { event -> progress.snapTo((1f - event.progress).coerceIn(0f, 1f)) }
+            closing = true
+            onClose()
+        } catch (cancelled: CancellationException) {
+            progress.animateTo(1f, tween(200, easing = FastOutSlowInEasing))
+            throw cancelled
+        }
+    }
+
     val close: () -> Unit = {
         if (!closing) {
             closing = true
@@ -465,10 +481,11 @@ private fun ImageViewer(
     val value = progress.value
     val startScale = if (animatable) from.width / window.width else 1f
     Box(modifier = Modifier.fillMaxSize()) {
+        // 背景不透满：下面那一页始终透出来一点，像微信/QQ 那样图片浮在列表上。
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.Black.copy(alpha = value.coerceIn(0f, 1f))),
+                .background(Color.Black.copy(alpha = (value * MAX_SCRIM_ALPHA).coerceIn(0f, 1f))),
         )
         Box(
             modifier = Modifier
