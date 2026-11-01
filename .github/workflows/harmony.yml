@@ -17,8 +17,7 @@ jobs:
     # Ubuntu 也能跑：镜像里带着 DevEco 命令行工具（hvigorw + HarmonyOS SDK）。
     runs-on: ubuntu-24.04
     timeout-minutes: 45
-    # 镜像里的 hvigor 必须不低于工程的 modelVersion（当前 26.0.0）。
-    # v5.0.4 自带的 hvigor 只认 5.0.4，会直接 BUILD FAILED，所以跟 latest。
+    # 工程已降到 modelVersion 6.0.2 / SDK 6.0.0(20)，跟镜像里的 hvigor 对齐。
     container: ghcr.io/sanchuanhehe/harmony-next-pipeline-docker/harmonyos-ci-image:latest
     defaults:
       run:
