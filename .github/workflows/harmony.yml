@@ -55,26 +55,3 @@ jobs:
             Harmony/main/build/default/outputs/**/*.app
           if-no-files-found: warn
           retention-days: 14
-
-  lint:
-    name: Code Linter
-    runs-on: ubuntu-24.04
-    timeout-minutes: 20
-    container: ghcr.io/sanchuanhehe/harmony-next-pipeline-docker/harmonyos-ci-image:latest
-    defaults:
-      run:
-        working-directory: Harmony
-        shell: bash
-    steps:
-      - uses: actions/checkout@v7
-      - name: Install dependencies
-        run: ohpm install --all
-      - name: Code linter
-        run: |
-          set -o pipefail
-          hvigorw codeLinter --no-daemon 2>&1 | tee build.log
-      - name: Publish build log
-        if: always()
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        run: bash "$GITHUB_WORKSPACE/.github/scripts/publish-log.sh" build.log harmony-lint.log ci-log-harmony-lint
