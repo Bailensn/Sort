@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: ios-${{ github.ref }}
@@ -28,22 +28,24 @@ jobs:
         run: xcodegen generate
       - name: Build simulator
         run: |
+          set -o pipefail
           xcodebuild -project MyApp.xcodeproj -scheme MyApp \
             -configuration Debug -sdk iphonesimulator \
             -destination 'generic/platform=iOS Simulator' \
             -derivedDataPath build-sim \
-            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build 2>&1 | tee build.log
       - name: Package simulator app
         run: |
           cd build-sim/Build/Products/Debug-iphonesimulator
           zip -qry "$GITHUB_WORKSPACE/MyApp-simulator.zip" MyApp.app
       - name: Build device
         run: |
+          set -o pipefail
           xcodebuild -project MyApp.xcodeproj -scheme MyApp \
             -configuration Release -sdk iphoneos \
             -destination 'generic/platform=iOS' \
             -derivedDataPath build-device \
-            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build 2>&1 | tee -a build.log
       - name: Package unsigned ipa
         run: |
           APP=build-device/Build/Products/Release-iphoneos/MyApp.app
@@ -72,3 +74,9 @@ jobs:
           path: MyApp-unsigned.ipa
           if-no-files-found: error
           retention-days: 14
+
+      - name: Publish build log
+        if: always()
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: bash "$GITHUB_WORKSPACE/.github/scripts/publish-log.sh" build.log ios.log

@@ -5,7 +5,8 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  # 失败时要把日志推到 ci-logs 分支
+  contents: write
 
 concurrency:
   group: harmony-${{ github.ref }}
@@ -39,6 +40,11 @@ jobs:
           set -o pipefail
           hvigorw clean --no-daemon
           hvigorw assembleHap --mode module -p product=default -p buildMode=debug --no-daemon 2>&1 | tee build.log
+      - name: Publish build log
+        if: always()
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: bash "$GITHUB_WORKSPACE/.github/scripts/publish-log.sh" build.log harmony.log
       - name: Upload HAP
         if: always()
         uses: actions/upload-artifact@v7
