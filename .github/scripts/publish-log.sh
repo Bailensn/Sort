@@ -4,6 +4,7 @@ set -uo pipefail
 
 source_file="${1:-build.log}"
 target="${2:-build.log}"
+branch="${3:-ci-logs}"
 
 if [ ! -f "$source_file" ]; then
     echo "没有日志可发：$source_file"
@@ -21,4 +22,4 @@ cd "$work" || exit 0
 git init -q
 git -c user.name=ci -c user.email=ci@localhost add "$target"
 git -c user.name=ci -c user.email=ci@localhost commit -qm "CI 日志：$target"
-git push -f "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:ci-logs
+git push -f "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:"$branch"

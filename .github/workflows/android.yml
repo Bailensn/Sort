@@ -1,13 +1,12 @@
 name: CI
 
 on:
-  push:
-    branches: [ "main" ]
-  pull_request:
+  # 只手动跑：Kotlin 那套还没在 CI 上验证过，先别跟着每次推送烧时间。
   workflow_dispatch:
 
 permissions:
-  contents: read
+  # 失败时要把日志推到 ci-log-* 分支
+  contents: write
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -74,6 +73,12 @@ jobs:
           set -o pipefail
           ./gradlew --stacktrace --warning-mode=all --build-cache :app:assembleRelease 2>&1 | tee build.log \
             || { bash "$GITHUB_WORKSPACE/.github/scripts/print-errors.sh" build.log; exit 1; }
+
+      - name: Publish build log
+        if: always()
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: bash "$GITHUB_WORKSPACE/.github/scripts/publish-log.sh" build.log "${{ github.job }}.log" "ci-log-${{ github.job }}"
       - name: Upload release APK
         if: success()
         uses: actions/upload-artifact@v7
@@ -118,6 +123,12 @@ jobs:
           set -o pipefail
           ./gradlew --stacktrace --warning-mode=all --build-cache :app:lintDebug 2>&1 | tee build.log \
             || { bash "$GITHUB_WORKSPACE/.github/scripts/print-errors.sh" build.log; exit 1; }
+
+      - name: Publish build log
+        if: always()
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: bash "$GITHUB_WORKSPACE/.github/scripts/publish-log.sh" build.log "${{ github.job }}.log" "ci-log-${{ github.job }}"
       - name: Check lint findings
         id: lint-findings
         if: always()
@@ -181,6 +192,12 @@ jobs:
           ./gradlew --stacktrace --warning-mode=all --build-cache :app:testDebugUnitTest 2>&1 | tee build.log \
             || { bash "$GITHUB_WORKSPACE/.github/scripts/print-errors.sh" build.log; exit 1; }
 
+      - name: Publish build log
+        if: always()
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: bash "$GITHUB_WORKSPACE/.github/scripts/publish-log.sh" build.log "${{ github.job }}.log" "ci-log-${{ github.job }}"
+
   android-test:
     name: Instrumentation APK
     runs-on: ubuntu-24.04
@@ -216,3 +233,9 @@ jobs:
           set -o pipefail
           ./gradlew --stacktrace --warning-mode=all --build-cache :app:assembleDebugAndroidTest 2>&1 | tee build.log \
             || { bash "$GITHUB_WORKSPACE/.github/scripts/print-errors.sh" build.log; exit 1; }
+
+      - name: Publish build log
+        if: always()
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: bash "$GITHUB_WORKSPACE/.github/scripts/publish-log.sh" build.log "${{ github.job }}.log" "ci-log-${{ github.job }}"
