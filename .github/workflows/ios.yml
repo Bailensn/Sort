@@ -33,7 +33,8 @@ jobs:
             -configuration Debug -sdk iphonesimulator \
             -destination 'generic/platform=iOS Simulator' \
             -derivedDataPath build-sim \
-            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build 2>&1 | tee build.log
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO \
+            ONLY_ACTIVE_ARCH=YES build 2>&1 | tee build.log
       - name: Package simulator app
         run: |
           cd build-sim/Build/Products/Debug-iphonesimulator
@@ -94,7 +95,8 @@ jobs:
           xcodebuild test -project MyApp.xcodeproj -scheme MyApp \
             -destination "platform=iOS Simulator,id=$DEVICE" \
             -derivedDataPath build-test \
-            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO 2>&1 | tee build.log
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO \
+            ONLY_ACTIVE_ARCH=YES 2>&1 | tee build.log
       - name: Publish test log
         if: always()
         env:
