@@ -51,7 +51,7 @@ bool readString(napi_env env, napi_value value, std::string &out) {
     size_t length = 0;
     if (napi_get_value_string_utf8(env, value, nullptr, 0, &length) != napi_ok) return false;
     out.assign(length + 1, '\0');
-    return napi_get_value_string_utf8(env, value, out.data(), length + 1, &length) == napi_ok;
+    return napi_get_value_string_utf8(env, value, &out[0], length + 1, &length) == napi_ok;
 }
 
 bool readInt64(napi_env env, napi_value value, int64_t &out) {

@@ -1,4 +1,4 @@
-name: iOS
+name: iOS CI
 
 on:
   # 没有苹果设备，只在手动验证时跑；不要跟着每次推送占 macOS 机时。
@@ -79,4 +79,4 @@ jobs:
         if: always()
         env:
           GITHUB_TOKEN: ${{ github.token }}
-        run: bash "$GITHUB_WORKSPACE/.github/scripts/publish-log.sh" build.log ios.log
+        run: bash "$GITHUB_WORKSPACE/.github/scripts/publish-log.sh" build.log ios.log ci-log-ios-build

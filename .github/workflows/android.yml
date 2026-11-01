@@ -1,4 +1,4 @@
-name: CI
+name: Android CI
 
 on:
   # 只手动跑：Kotlin 那套还没在 CI 上验证过，先别跟着每次推送烧时间。
@@ -25,9 +25,16 @@ jobs:
       - name: Configure
         run: cmake -S Native -B Native/build -DSORT_BUILD_TESTS=ON -DSORT_BUILD_TOOLS=ON
       - name: Build
-        run: cmake --build Native/build --parallel 2
+        run: |
+          set -o pipefail
+          cmake --build Native/build --parallel 2 2>&1 | tee build.log
       - name: Smoke test
         run: ctest --test-dir Native/build --output-on-failure
+      - name: Publish build log
+        if: always()
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: bash "$GITHUB_WORKSPACE/.github/scripts/publish-log.sh" build.log native-core.log ci-log-native-core
       - name: C ABI headers stay pure C
         run: |
           printf '#include "engine_errors.h"\n#include "engine_ocr_capi.h"\nint main(void){return 0;}\n' > /tmp/abi_check.c

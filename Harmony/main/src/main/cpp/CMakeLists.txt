@@ -2,6 +2,9 @@ cmake_minimum_required(VERSION 3.22.0)
 project(main)
 
 # 核心在仓库根的 Native/，这里只编 NAPI 胶水。
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 set(NATIVERENDER_ROOT_PATH ${CMAKE_CURRENT_SOURCE_DIR})
 set(SHARED_ROOT ${NATIVERENDER_ROOT_PATH}/../../../../../Native)
 

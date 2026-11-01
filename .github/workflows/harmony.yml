@@ -1,4 +1,4 @@
-name: HarmonyOS
+name: HarmonyOS CI
 
 on:
   # 鸿蒙还是骨架，别在每次推送时白跑；等有界面了再打开 push 触发。
@@ -44,7 +44,7 @@ jobs:
         if: always()
         env:
           GITHUB_TOKEN: ${{ github.token }}
-        run: bash "$GITHUB_WORKSPACE/.github/scripts/publish-log.sh" build.log harmony.log
+        run: bash "$GITHUB_WORKSPACE/.github/scripts/publish-log.sh" build.log harmony-build.log ci-log-harmony-build
       - name: Upload HAP
         if: always()
         uses: actions/upload-artifact@v7
@@ -70,4 +70,11 @@ jobs:
       - name: Install dependencies
         run: ohpm install --all
       - name: Code linter
-        run: hvigorw codeLinter --no-daemon
+        run: |
+          set -o pipefail
+          hvigorw codeLinter --no-daemon 2>&1 | tee build.log
+      - name: Publish build log
+        if: always()
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: bash "$GITHUB_WORKSPACE/.github/scripts/publish-log.sh" build.log harmony-lint.log ci-log-harmony-lint
