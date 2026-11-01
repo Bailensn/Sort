@@ -1,0 +1,49 @@
+name: HarmonyOS
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "main" ]
+    paths: [ "Harmony/**" ]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: harmony-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build HAP
+    # DevEco 命令行工具要授权、只在装好的机器上有；GitHub 托管 runner 跑不了。
+    runs-on: [ self-hosted, harmonyos ]
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: Harmony
+    steps:
+      - uses: actions/checkout@v7
+      - name: Check project present
+        run: |
+          if [ ! -f build-profile.json5 ]; then
+            echo "::error::Harmony/ 不在仓库里（当前在 .gitignore），先解除忽略并提交"
+            exit 1
+          fi
+      - name: Build
+        run: |
+          set -o pipefail
+          if command -v hvigorw > /dev/null; then
+            hvigorw assembleHap --no-daemon 2>&1 | tee build.log
+          else
+            # 没有 wrapper 时用 DevEco 工具链里的 hvigor
+            "$DEVECO_SDK_HOME/tools/hvigor/bin/hvigorw" assembleHap --no-daemon 2>&1 | tee build.log
+          fi
+      - name: Upload HAP
+        if: success()
+        uses: actions/upload-artifact@v7
+        with:
+          name: harmony-hap
+          path: Harmony/main/build/default/outputs/**/*.hap
+          if-no-files-found: warn
+          retention-days: 14

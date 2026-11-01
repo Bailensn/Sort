@@ -1,0 +1,5 @@
+{
+  "libmain.so": {
+    "source": "src/mock/Libmain.mock.ets"
+  }
+}

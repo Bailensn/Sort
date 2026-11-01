@@ -13,6 +13,3 @@ ci-report/
 
 # 本地 cmake 构建目录
 /Native/build/
-
-# 鸿蒙工程先不上传
-/Harmony/
