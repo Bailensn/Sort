@@ -11,7 +11,9 @@ permissions:
 
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  # main 上的推送要跑完：连着推几次时，取消旧的那次等于哪个都跑不完。
+  # PR 仍然只在最新提交上跑。
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   # 纯 C++ 核心：不依赖任何平台 SDK，跑得最快，挂在这里先挡一道。
