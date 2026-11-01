@@ -1,4 +1,4 @@
-name: HarmonyOS CI
+name: Harmony CI
 
 on:
   # 鸿蒙还是骨架，别在每次推送时白跑；等有界面了再打开 push 触发。
