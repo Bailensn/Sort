@@ -1,21 +1,18 @@
-cmake_minimum_required(VERSION 3.5.0)
+cmake_minimum_required(VERSION 3.22.0)
 project(main)
 
-# 共享层在仓库根的 Native/，这里只留 NAPI 胶水
+# 核心在仓库根的 Native/，这里只编 NAPI 胶水。
 set(NATIVERENDER_ROOT_PATH ${CMAKE_CURRENT_SOURCE_DIR})
 set(SHARED_ROOT ${NATIVERENDER_ROOT_PATH}/../../../../../Native)
 
-include_directories(${NATIVERENDER_ROOT_PATH} ${SHARED_ROOT}/capi)
+# 只编 OCR 核心，测试和命令行工具留给本地/CI 的 host 构建。
+set(SORT_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(SORT_BUILD_TOOLS OFF CACHE BOOL "" FORCE)
+add_subdirectory(${SHARED_ROOT} native_build)
 
 add_definitions("-DLOG_DOMAIN=0x0000")
 add_definitions("-DLOG_TAG=\"engine\"")
 
-# 共享层（core + cabi）—— 和 Android 那份 CMakeLists 编的是同一批源文件
-add_library(engine_core STATIC
-        ${SHARED_ROOT}/core/Engine.cpp
-        ${SHARED_ROOT}/capi/engine_capi.cpp)
-target_compile_options(engine_core PRIVATE -std=c++17)
-
 # 三端产物统一叫 libmain.so，ArkTS 的 import 和 types/libmain 都不用动
 add_library(main SHARED napi_init.cpp)
-target_link_libraries(main PUBLIC engine_core libace_napi.z.so libhilog_ndk.z.so)
+target_link_libraries(main PUBLIC ocr_core libace_napi.z.so libhilog_ndk.z.so)
