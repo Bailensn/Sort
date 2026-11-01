@@ -14,9 +14,10 @@ concurrency:
 jobs:
   build:
     name: Build HAP
-    # DevEco 命令行工具要授权、只在装好的机器上有；GitHub 托管 runner 跑不了。
-    runs-on: [ self-hosted, harmonyos ]
+    # Ubuntu 也能跑：镜像里带着 DevEco 命令行工具（hvigorw + HarmonyOS SDK）。
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
+    container: ghcr.io/sanchuanhehe/harmony-next-pipeline-docker/harmonyos-ci-image:v5.0.4
     defaults:
       run:
         working-directory: Harmony
@@ -25,18 +26,16 @@ jobs:
       - name: Check project present
         run: |
           if [ ! -f build-profile.json5 ]; then
-            echo "::error::Harmony/ 不在仓库里（当前在 .gitignore），先解除忽略并提交"
+            echo "::error::Harmony/ 不在工作区，检查 checkout 是否完整"
             exit 1
           fi
+      - name: Install dependencies
+        run: ohpm install --all
       - name: Build
         run: |
           set -o pipefail
-          if command -v hvigorw > /dev/null; then
-            hvigorw assembleHap --no-daemon 2>&1 | tee build.log
-          else
-            # 没有 wrapper 时用 DevEco 工具链里的 hvigor
-            "$DEVECO_SDK_HOME/tools/hvigor/bin/hvigorw" assembleHap --no-daemon 2>&1 | tee build.log
-          fi
+          hvigorw clean --no-daemon
+          hvigorw assembleHap --mode module -p product=default -p buildMode=debug --no-daemon 2>&1 | tee build.log
       - name: Upload HAP
         if: success()
         uses: actions/upload-artifact@v7
