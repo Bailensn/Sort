@@ -1,9 +1,7 @@
 name: iOS
 
 on:
-  push:
-    branches: [ "main" ]
-  pull_request:
+  # 没有苹果设备，只在手动验证时跑；不要跟着每次推送占 macOS 机时。
   workflow_dispatch:
 
 permissions:
