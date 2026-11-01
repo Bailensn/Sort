@@ -31,4 +31,16 @@ jobs:
           xcodebuild -project MyApp.xcodeproj -scheme MyApp \
             -configuration Debug -sdk iphonesimulator \
             -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build \
             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build
+      - name: Package app
+        run: |
+          cd build/Build/Products/Debug-iphonesimulator
+          zip -qry "$GITHUB_WORKSPACE/MyApp-simulator.zip" MyApp.app
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: ios-simulator-app
+          path: MyApp-simulator.zip
+          if-no-files-found: error
+          retention-days: 14
