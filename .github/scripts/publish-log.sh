@@ -1,5 +1,4 @@
-#!/usr/bin/env bash
-# 把构建日志的尾巴推到 ci-logs 分支：谁都能直接 fetch 下来看，不用人肉复制。
+# 把完整构建日志推到 ci-log-* 分支：谁都能直接 fetch 下来看，不用人肉复制。
 set -uo pipefail
 
 source_file="${1:-build.log}"
@@ -16,7 +15,14 @@ if ! command -v git > /dev/null; then
 fi
 
 work="$(mktemp -d)"
-tail -c 40000 "$source_file" > "$work/$target" 2>/dev/null || cp "$source_file" "$work/$target"
+# 全文照发，不截断；只有特别大的日志才压一下（内容还是全的）。
+size=$(wc -c < "$source_file" 2>/dev/null || echo 0)
+if [ "$size" -gt 20971520 ]; then
+    gzip -c "$source_file" > "$work/$target.gz"
+    target="$target.gz"
+else
+    cp "$source_file" "$work/$target"
+fi
 
 cd "$work" || exit 0
 git init -q
