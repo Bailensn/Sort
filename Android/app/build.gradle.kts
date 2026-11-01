@@ -9,7 +9,14 @@ buildscript {
     }
 }
 
+import java.io.File
 import java.net.URI
+import java.util.zip.ZipFile
+import org.gradle.api.file.ConfigurableFileCollection
+import org.gradle.api.file.DirectoryProperty
+import org.gradle.api.tasks.InputFiles
+import org.gradle.api.tasks.OutputDirectory
+import org.gradle.api.tasks.TaskAction
 
 plugins {
     alias(libs.plugins.android.application)
@@ -246,26 +253,46 @@ dependencies {
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
 }
 
-/** 把 onnxruntime-android 的 C++ 头和 libonnxruntime.so 解到 build/ort，供 CMake 链接。 */
-val prepareOrt = tasks.register("prepareOrt") {
-    val target = layout.buildDirectory.dir("ort")
-    outputs.dir(target)
-    doLast {
-        val aar = configurations.detachedConfiguration(
-            dependencies.create(
-                "com.microsoft.onnxruntime:onnxruntime-android:${libs.versions.onnxruntime.get()}",
-            ),
-        ).singleFile
-        val out = target.get().asFile
+/**
+ * 把 onnxruntime-android 的 C++ 头和 libonnxruntime.so 解到 build/ort，供 CMake 链接。
+ *
+ * 用 java.util.zip 自己解包，而不是 project.copy：任务动作里碰 Project 和配置缓存冲突
+ * （报 `$$implicitReceiver_Project ... $this is null`）。
+ */
+abstract class PrepareOrtTask : DefaultTask() {
+
+    @get:InputFiles
+    abstract val aar: ConfigurableFileCollection
+
+    @get:OutputDirectory
+    abstract val outputDir: DirectoryProperty
+
+    @TaskAction
+    fun extract() {
+        val out = outputDir.get().asFile
         out.deleteRecursively()
-        project.copy {
-            from(zipTree(aar)) {
-                include("headers/**")
-                include("jni/**/libonnxruntime.so")
+        ZipFile(aar.singleFile).use { zip ->
+            for (entry in zip.entries()) {
+                val name = entry.name
+                val wanted = name.startsWith("headers/") ||
+                    (name.startsWith("jni/") && name.endsWith("/libonnxruntime.so"))
+                if (entry.isDirectory || !wanted) continue
+                val target = File(out, name)
+                target.parentFile?.mkdirs()
+                zip.getInputStream(entry).use { input ->
+                    target.outputStream().use { output -> input.copyTo(output) }
+                }
             }
-            into(out)
         }
     }
+}
+
+val ortCoordinates =
+    "com.microsoft.onnxruntime:onnxruntime-android:${libs.versions.onnxruntime.get()}"
+
+val prepareOrt = tasks.register<PrepareOrtTask>("prepareOrt") {
+    aar.from(configurations.detachedConfiguration(dependencies.create(ortCoordinates)))
+    outputDir.set(layout.buildDirectory.dir("ort"))
 }
 
 // CMake 配置阶段就要读 ORT_ROOT，所以得排在 configureCMake* 之前。
