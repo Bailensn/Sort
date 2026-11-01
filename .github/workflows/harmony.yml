@@ -49,3 +49,19 @@ jobs:
             Harmony/main/build/default/outputs/**/*.app
           if-no-files-found: warn
           retention-days: 14
+
+  lint:
+    name: Code Linter
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    container: ghcr.io/sanchuanhehe/harmony-next-pipeline-docker/harmonyos-ci-image:latest
+    defaults:
+      run:
+        working-directory: Harmony
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install dependencies
+        run: ohpm install --all
+      - name: Code linter
+        run: hvigorw codeLinter --no-daemon

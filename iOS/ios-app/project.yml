@@ -51,3 +51,25 @@ targets:
     # dependencies:
     #   - framework: Vendor/onnxruntime.xcframework
     #     embed: true
+
+  MyAppTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: Tests
+    dependencies:
+      - target: MyApp
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.bailensn.sort.tests
+        GENERATE_INFOPLIST_FILE: YES
+
+schemes:
+  MyApp:
+    build:
+      targets:
+        MyApp: all
+        MyAppTests: [ test ]
+    test:
+      targets:
+        - MyAppTests

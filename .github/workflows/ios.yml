@@ -57,6 +57,14 @@ jobs:
           path: MyApp-simulator.zip
           if-no-files-found: error
           retention-days: 14
+      - name: Test
+        run: |
+          # 具体机型名字随 Xcode 变，直接取第一个可用的模拟器。
+          DEVICE=$(xcrun simctl list devices available -j \
+            | jq -r '[.devices[][] | select(.isAvailable)][0].udid')
+          xcodebuild test -project MyApp.xcodeproj -scheme MyApp \
+            -destination "platform=iOS Simulator,id=$DEVICE" \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO
       - name: Upload unsigned ipa
         uses: actions/upload-artifact@v7
         with:
