@@ -10,3 +10,7 @@
 /.clang-tidy
 **/.test
 /.appanalyzer
+# 模板自带的 mock 与示例测试，用不上
+/main/src/mock
+/main/src/ohosTest
+/main/src/test
