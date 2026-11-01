@@ -26,20 +26,38 @@ jobs:
         run: brew install xcodegen
       - name: Generate project
         run: xcodegen generate
-      - name: Build
+      - name: Build simulator
+        run: |
+          xcodebuild -project MyApp.xcodeproj -scheme MyApp \
+            -configuration Debug -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build-sim \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build
+      - name: Package simulator app
+        run: |
+          cd build-sim/Build/Products/Debug-iphonesimulator
+          zip -qry "$GITHUB_WORKSPACE/MyApp-simulator.zip" MyApp.app
+      - name: Build device
         run: |
           xcodebuild -project MyApp.xcodeproj -scheme MyApp \
             -configuration Release -sdk iphoneos \
             -destination 'generic/platform=iOS' \
-            -derivedDataPath build \
+            -derivedDataPath build-device \
             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build
       - name: Package unsigned ipa
         run: |
-          APP=build/Build/Products/Release-iphoneos/MyApp.app
+          APP=build-device/Build/Products/Release-iphoneos/MyApp.app
           rm -rf Payload && mkdir Payload
           cp -R "$APP" Payload/
           zip -qry "$GITHUB_WORKSPACE/MyApp-unsigned.ipa" Payload
-      - name: Upload artifact
+      - name: Upload simulator app
+        uses: actions/upload-artifact@v7
+        with:
+          name: ios-simulator-app
+          path: MyApp-simulator.zip
+          if-no-files-found: error
+          retention-days: 14
+      - name: Upload unsigned ipa
         uses: actions/upload-artifact@v7
         with:
           name: ios-unsigned-ipa

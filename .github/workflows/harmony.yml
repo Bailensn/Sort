@@ -41,10 +41,12 @@ jobs:
           hvigorw clean --no-daemon
           hvigorw assembleHap --mode module -p product=default -p buildMode=debug --no-daemon 2>&1 | tee build.log
       - name: Upload HAP
-        if: success()
+        if: always()
         uses: actions/upload-artifact@v7
         with:
           name: harmony-hap
-          path: Harmony/main/build/default/outputs/**/*.hap
+          path: |
+            Harmony/main/build/default/outputs/**/*.hap
+            Harmony/main/build/default/outputs/**/*.app
           if-no-files-found: warn
           retention-days: 14
