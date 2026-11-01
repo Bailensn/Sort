@@ -1,0 +1,17 @@
+# XcodeGen 生成的工程是产物，不进 Git
+ios-app/*.xcodeproj/
+ios-app/*.xcworkspace/
+
+# 构建产物
+ios-app/build/
+DerivedData/
+*.ipa
+*.xcarchive
+
+# 本地签名材料，绝不能提交
+*.p12
+*.mobileprovision
+*.p8
+
+# macOS
+.DS_Store

@@ -14,6 +14,24 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # 纯 C++ 核心：不依赖任何平台 SDK，跑得最快，挂在这里先挡一道。
+  native-core:
+    name: Native core
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - name: Configure
+        run: cmake -S Native -B Native/build -DSORT_BUILD_TESTS=ON -DSORT_BUILD_TOOLS=ON
+      - name: Build
+        run: cmake --build Native/build --parallel 2
+      - name: Smoke test
+        run: ctest --test-dir Native/build --output-on-failure
+      - name: C ABI headers stay pure C
+        run: |
+          printf '#include "engine_capi.h"\n#include "engine_ocr_capi.h"\nint main(void){return 0;}\n' > /tmp/abi_check.c
+          gcc -std=c11 -Wall -Wextra -INative/capi -c /tmp/abi_check.c -o /tmp/abi_check.o
+
   assemble-release:
     name: Assemble release
     runs-on: ubuntu-24.04

@@ -1,27 +1,10 @@
-cmake_minimum_required(VERSION 3.22.1)
+cmake_minimum_required(VERSION 3.22.0)
+project(main)
 
-# target 名决定产物名：main -> libmain.so，必须和 Kotlin 侧 System.loadLibrary("main") 一致。
-project(main LANGUAGES CXX)
+# 核心全在仓库根的 Native/，这里只编 JNI 胶水；add_subdirectory 把 engine_core / ocr_core 带进来。
+set(SHARED_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/../../../../../Native)
+add_subdirectory(${SHARED_ROOT} native_build)
 
-add_library(${CMAKE_PROJECT_NAME} SHARED native-lib.cpp)
-
-target_compile_features(${CMAKE_PROJECT_NAME} PRIVATE cxx_std_23)
-
-set_target_properties(${CMAKE_PROJECT_NAME} PROPERTIES
-    CXX_EXTENSIONS OFF
-    POSITION_INDEPENDENT_CODE ON)
-
-target_compile_options(${CMAKE_PROJECT_NAME} PRIVATE
-    -Wall
-    -Wextra
-    -Wpedantic
-    $<$<CONFIG:Debug>:-O0>
-    $<$<CONFIG:Debug>:-g>)
-
-# liblog 提供 __android_log_print，libandroid 留给后续可能的平台 API。
-find_library(android-lib android)
-find_library(log-lib log)
-
-target_link_libraries(${CMAKE_PROJECT_NAME}
-    ${android-lib}
-    ${log-lib})
+# 产物 libmain.so，三端同名
+add_library(main SHARED jni_engine.cpp)
+target_link_libraries(main ocr_core log)
