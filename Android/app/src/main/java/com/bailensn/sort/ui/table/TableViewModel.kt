@@ -17,9 +17,8 @@ import com.bailensn.sort.util.ImageLoader
 import com.bailensn.sort.ocr.ModelInstaller
 import com.bailensn.sort.xlsx.ExportedFile
 import com.bailensn.sort.xlsx.XlsxExporter
-import com.paddle.ocr.PaddleOCR
-import com.paddle.ocr.PaddleOCRConfig
-import com.paddle.ocr.util.OpenCVUtils
+import com.bailensn.sort.ocr.NativeOcr
+import com.bailensn.sort.ocr.OpenCvLoader
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -98,8 +97,8 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
     /** 当前结果对应的历史条目文件名；手改格子时回写它。 */
     private var currentEntryId: Long? = null
 
-    private var engine: PaddleOCR? = null
-    private var engineDeferred = CompletableDeferred<PaddleOCR>()
+    private var engine: NativeOcr? = null
+    private var engineDeferred = CompletableDeferred<NativeOcr>()
 
     init {
         loadEngine()
@@ -120,7 +119,7 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             val app = getApplication<Application>()
             try {
-                if (!OpenCVUtils.init(app)) {
+                if (!OpenCvLoader.init()) {
                     error(app.getString(R.string.error_opencv))
                 }
                 val modelDir = ModelInstaller.ensure(app) { index, total ->
@@ -133,21 +132,7 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
                     }
                 }
                 _state.update { it.copy(engine = EngineState.Loading()) }
-                val created = withContext(Dispatchers.IO) {
-                    PaddleOCR.createWithModels(
-                        context = app,
-                        modelDir = modelDir,
-                        config = PaddleOCRConfig(
-                            recScoreThresh = 0f,
-                            // 整图那条路每张图有几百行文字，批 1 等于几百次推理；
-                            // 批 16 之后耗时从 30 s 掉到个位数，结果不打折。
-                            recBatchSize = 16,
-                            // 校对用的整图检测：1600 宽足够定位格子，比全分辨率(1920)省一截，
-                            // 框坐标会被引擎换算回原图，对校对结果没有实质影响。
-                            detMaxSideLimit = 1600,
-                        ),
-                    )
-                }
+                val created = withContext(Dispatchers.IO) { NativeOcr.create(modelDir) }
                 engine = created
                 engineDeferred.complete(created)
                 _state.update { it.copy(engine = EngineState.Ready(created.coldLoadTimeMs)) }

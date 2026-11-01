@@ -1,13 +1,11 @@
 package com.bailensn.sort
 
 import android.graphics.Bitmap
+import android.graphics.PointF
 
-/** 一个识别框，坐标是原图像素；四点里取左上和右下当包围盒用。 */
+/** 一个识别框：四个角按左上、右上、右下、左下，坐标是原图像素。 */
 data class OcrLine(
-    val left: Float,
-    val top: Float,
-    val right: Float,
-    val bottom: Float,
+    val points: List<PointF>,
     val text: String,
     val confidence: Float,
 )
@@ -47,11 +45,14 @@ class OcrBridge(
         val boxes = triple[1] as FloatArray
         val confidences = triple[2] as FloatArray
         return texts.indices.map { i ->
+            val base = i * 8
             OcrLine(
-                left = boxes[i * 8],
-                top = boxes[i * 8 + 1],
-                right = boxes[i * 8 + 4],
-                bottom = boxes[i * 8 + 5],
+                points = listOf(
+                    PointF(boxes[base], boxes[base + 1]),
+                    PointF(boxes[base + 2], boxes[base + 3]),
+                    PointF(boxes[base + 4], boxes[base + 5]),
+                    PointF(boxes[base + 6], boxes[base + 7]),
+                ),
                 text = texts[i],
                 confidence = confidences[i],
             )

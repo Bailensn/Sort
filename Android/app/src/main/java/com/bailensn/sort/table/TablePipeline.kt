@@ -5,13 +5,13 @@ import android.graphics.Bitmap
 import android.graphics.Rect
 import android.graphics.RectF
 import android.os.SystemClock
-import com.paddle.ocr.PaddleOCR
-import com.paddle.ocr.model.CellReading
-import com.paddle.ocr.postprocess.CellText
 import kotlinx.coroutines.async
-import com.paddle.ocr.model.OCRBox
 import kotlin.math.max
 import kotlin.math.min
+import com.bailensn.sort.CellReading
+import com.bailensn.sort.ocr.CellText
+import com.bailensn.sort.ocr.NativeOcr
+import com.bailensn.sort.ocr.OcrBox
 
 object TablePipeline {
 
@@ -49,7 +49,7 @@ object TablePipeline {
     }
 
     suspend fun analyze(
-        ocr: PaddleOCR,
+        ocr: NativeOcr,
         source: Bitmap,
         onStage: (Stage) -> Unit = {},
         onProgress: (Float) -> Unit = {},
@@ -161,7 +161,7 @@ object TablePipeline {
     )
 
     private suspend fun recognizeByCells(
-        ocr: PaddleOCR,
+        ocr: NativeOcr,
         bitmap: Bitmap,
         enhanced: Bitmap?,
         cellGrid: CellGrid,
@@ -439,7 +439,7 @@ object TablePipeline {
         )
     }
 
-    private suspend fun recognizeByDetection(ocr: PaddleOCR, bitmap: Bitmap): TableGrid {
+    private suspend fun recognizeByDetection(ocr: NativeOcr, bitmap: Bitmap): TableGrid {
         val run = runCatching { ocr.recognize(bitmap) }.getOrElse {
             return TableGrid(emptyList(), TableGrid.Mode.TEXT_CLUSTER)
         }
@@ -539,7 +539,7 @@ object TablePipeline {
             LineDetection(bitmap.width, bitmap.height, emptyList(), emptyList())
         }
 
-    private fun toRectF(box: OCRBox): RectF {
+    private fun toRectF(box: OcrBox): RectF {
         val xs = box.points.map { it.x }
         val ys = box.points.map { it.y }
         return RectF(xs.min(), ys.min(), xs.max(), ys.max())

@@ -1,0 +1,70 @@
+package com.bailensn.sort.ocr
+
+import android.graphics.Bitmap
+import android.graphics.Rect
+import android.os.SystemClock
+import com.bailensn.sort.CellReading
+import com.bailensn.sort.OcrBridge
+import java.io.File
+
+/**
+ * 面向业务流程的 OCR 门面：参数和返回类型都按 TablePipeline 的需要来，
+ * 底下是 [OcrBridge] → libocr.so。
+ */
+class NativeOcr private constructor(
+    private val bridge: OcrBridge,
+    val coldLoadTimeMs: Long,
+) {
+
+    fun recognize(bitmap: Bitmap): OcrRun =
+        OcrRun(bridge.recognize(bitmap).map { OcrLine(OcrBox(it.points), it.text, it.confidence) })
+
+    fun recognizeCells(
+        bitmap: Bitmap,
+        rects: List<Rect>,
+        scale: Float = 1f,
+        onProgress: ((Float) -> Unit)? = null,
+    ): List<CellReading> {
+        if (rects.isEmpty()) return emptyList()
+        val cells = IntArray(rects.size * 4)
+        rects.forEachIndexed { index, rect ->
+            cells[index * 4] = rect.left
+            cells[index * 4 + 1] = rect.top
+            cells[index * 4 + 2] = rect.right
+            cells[index * 4 + 3] = rect.bottom
+        }
+        val readings = bridge.recognizeCells(bitmap, cells, scale)
+        // C++ 侧没有逐块进度回调，跑完一次性推到底。
+        onProgress?.invoke(1f)
+        return readings
+    }
+
+    /** 复核模型还没接进 C++ 核心；返回空表等价于「没有复核模型」。 */
+    fun recognizeCellsReferee(
+        bitmap: Bitmap,
+        rects: List<Rect>,
+        scale: Float = 1f,
+        onProgress: ((Float) -> Unit)? = null,
+    ): List<CellReading> = emptyList()
+
+    fun release() {
+        bridge.close()
+    }
+
+    companion object {
+        fun create(modelDir: File): NativeOcr {
+            val started = SystemClock.elapsedRealtime()
+            val bridge = OcrBridge(
+                detModelPath = File(modelDir, "det/inference.onnx").absolutePath,
+                recModelPath = File(modelDir, "rec/inference.onnx").absolutePath,
+                charsetPath = File(modelDir, "rec/inference.yml").absolutePath,
+            )
+            // 句柄为 0 说明模型或推理后端没起来，宁可报错也别让界面拿到空表格。
+            if (!bridge.isReady) {
+                bridge.close()
+                throw IllegalStateException("OCR 后端初始化失败（模型或 ONNX Runtime 不可用）")
+            }
+            return NativeOcr(bridge, SystemClock.elapsedRealtime() - started)
+        }
+    }
+}

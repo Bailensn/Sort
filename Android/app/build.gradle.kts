@@ -25,7 +25,7 @@ android {
 
     defaultConfig {
         applicationId = "com.bailensn.sort"
-        // ppocr-sdk（ONNX Runtime）要求 26。
+        // OpenCV / ONNX Runtime 都要求 26。
         minSdk = 26
         targetSdk = 37
         versionCode = 1
@@ -205,7 +205,7 @@ androidComponents {
 }
 
 dependencies {
-    implementation(project(":ppocr-sdk"))
+    implementation(libs.opencv)
 
     implementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(platform(libs.androidx.compose.bom))

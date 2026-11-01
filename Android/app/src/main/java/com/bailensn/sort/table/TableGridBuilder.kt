@@ -1,13 +1,13 @@
 package com.bailensn.sort.table
 
-import com.paddle.ocr.model.OCRBox
+import com.bailensn.sort.ocr.OcrBox
 
 object TableGridBuilder {
 
     /** 开头最多保留几行空白（可能是被截断的首行）。 */
     private const val MAX_LEADING_BLANK_ROWS = 2
 
-    fun regionOf(box: OCRBox, text: String): TextRegion {
+    fun regionOf(box: OcrBox, text: String): TextRegion {
         val xs = box.points.map { it.x }
         val ys = box.points.map { it.y }
         return TextRegion(

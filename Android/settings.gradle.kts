@@ -16,4 +16,3 @@ dependencyResolutionManagement {
 
 rootProject.name = "Sort"
 include(":app")
-include(":ppocr-sdk")

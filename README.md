@@ -8,12 +8,13 @@
 
 | 平台 | 界面 | OCR 引擎 | 状态 |
 |---|---|---|---|
-| Android | Miuix / Compose，双页签 + 编辑 + 历史 | Kotlin `ppocr-sdk`（ONNX Runtime） | 可用 |
+| Android | Miuix / Compose，双页签 + 编辑 + 历史 | `libocr.so`（C++ 核心）+ `OcrBridge` | 界面可用，OCR 待接 ORT |
 | iOS | SwiftUI 占位页 | `OcrBridge.swift` → C++ 核心（待接 ORT） | 骨架 |
 | HarmonyOS | ArkTS 占位页 | `napi_init.cpp` → C++ 核心（待接 ORT） | 骨架 |
 | Native | — | 整条 OCR 链路已移植成 C++ | 编译通过、假后端跑通，真模型待对拍 |
 
-> Android 页面目前调的仍是 Kotlin 的 `ppocr-sdk`；C++ 的 `OcrBridge` 已经编进 `libmain.so`，但还没有页面切过去。
+> Android 已经切到 C++ 核心：`libocr.so` 装 OCR，`libmain.so` 只做 JNI 胶水。
+> 还差最后一步——在 Android 的 CMake 里打开 `SORT_WITH_ONNXRUNTIME` 并链上 ORT，否则启动会报「OCR 后端初始化失败」。
 
 ## 目录结构
 
@@ -24,7 +25,6 @@
 │   └── workflows/                     # android.yml / ios.yml / harmony.yml
 ├── Android/                           # Android 工程（Gradle 根目录）
 │   ├── app/
-│   ├── ppocr-sdk/                     # Kotlin 侧 OCR SDK
 │   ├── gradle/libs.versions.toml
 │   └── build.gradle.kts
 ├── Native/                            # 三端共用的 C++ 核心

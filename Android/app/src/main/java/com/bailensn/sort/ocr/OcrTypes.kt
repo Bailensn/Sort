@@ -1,18 +1,23 @@
-//
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// limitations under the License.
+package com.bailensn.sort.ocr
 
-package com.paddle.ocr.postprocess
+import android.graphics.PointF
 
+/** 四点框，顺序固定为左上、右上、右下、左下。 */
+data class OcrBox(val points: List<PointF>)
+
+/** 整图识别的一条结果。 */
+data class OcrLine(
+    val box: OcrBox,
+    val text: String,
+    val confidence: Float,
+)
+
+data class OcrRun(val results: List<OcrLine>)
+
+/** 与 ppocr-sdk 里那份实现保持一致：去线头、去汉字间空格。 */
 object CellText {
 
-    /** 出现在单元格两端时基本可以确定是线头或标点噪声。 */
     private const val EDGE_NOISE = "|｜丨_—–-·•.,，。:：;；'\"`~^"
-
-    /** 线头噪声可能被识别成的“字”。 */
     private const val LINE_LIKE = "|｜丨_—–-1lI"
 
     fun clean(raw: String): String {
@@ -22,7 +27,6 @@ object CellText {
         text = text.trim { it in EDGE_NOISE }
         if (text.isEmpty()) return ""
 
-        // 汉字之间被识别出的空格去掉；英文单词、数字之间的空格保留。
         val builder = StringBuilder(text.length)
         for (index in text.indices) {
             val character = text[index]
