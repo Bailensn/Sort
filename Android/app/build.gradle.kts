@@ -40,6 +40,13 @@ android {
             //   splits { abi { isEnable = true; reset(); include("arm64-v8a", "x86_64"); isUniversalApk = false } }
             abiFilters += listOf("arm64-v8a")
         }
+
+        externalNativeBuild {
+            cmake {
+                // CMake 看不到 AAR 内部，ORT 的头文件和 .so 由 prepareOrt 解到 build/ort。
+                arguments += "-DORT_ROOT=${layout.buildDirectory.get().asFile.absolutePath}/ort"
+            }
+        }
     }
 
     buildTypes {
@@ -206,6 +213,8 @@ androidComponents {
 
 dependencies {
     implementation(libs.opencv)
+    // 只为打包 libonnxruntime.so；Kotlin 侧不再直接用 ORT
+    implementation(libs.onnxruntime.android)
 
     implementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(platform(libs.androidx.compose.bom))
@@ -236,3 +245,28 @@ dependencies {
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
 }
+
+/** 把 onnxruntime-android 的 C++ 头和 libonnxruntime.so 解到 build/ort，供 CMake 链接。 */
+val prepareOrt = tasks.register("prepareOrt") {
+    val target = layout.buildDirectory.dir("ort")
+    outputs.dir(target)
+    doLast {
+        val aar = configurations.detachedConfiguration(
+            dependencies.create(
+                "com.microsoft.onnxruntime:onnxruntime-android:${libs.versions.onnxruntime.get()}",
+            ),
+        ).singleFile
+        val out = target.get().asFile
+        out.deleteRecursively()
+        project.copy {
+            from(zipTree(aar)) {
+                include("headers/**")
+                include("jni/**/libonnxruntime.so")
+            }
+            into(out)
+        }
+    }
+}
+
+// CMake 配置阶段就要读 ORT_ROOT，所以得排在 configureCMake* 之前。
+tasks.matching { it.name.startsWith("configureCMake") }.configureEach { dependsOn(prepareOrt) }

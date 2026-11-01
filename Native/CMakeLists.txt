@@ -54,8 +54,18 @@ if (SORT_WITH_OCR)
     endif ()
 
     option(SORT_WITH_ONNXRUNTIME "Link against ONNX Runtime" OFF)
+
+    # Android：Gradle 的 prepareOrt 把 AAR 里的头文件和 libonnxruntime.so 解到 ORT_ROOT。
+    if (ORT_ROOT)
+        set(SORT_WITH_ONNXRUNTIME ON)
+        target_include_directories(${OCR_TARGET} PRIVATE ${ORT_ROOT}/headers)
+        add_library(onnxruntime SHARED IMPORTED)
+        set_target_properties(onnxruntime PROPERTIES
+                IMPORTED_LOCATION ${ORT_ROOT}/jni/${ANDROID_ABI}/libonnxruntime.so)
+        target_link_libraries(${OCR_TARGET} onnxruntime)
+    endif ()
+
     if (SORT_WITH_ONNXRUNTIME)
         target_compile_definitions(${OCR_TARGET} PUBLIC SORT_WITH_ONNXRUNTIME=1)
-        # 各端自己把 onnxruntime 的 include/lib 加进来，这里只管编译开关。
     endif ()
 endif ()

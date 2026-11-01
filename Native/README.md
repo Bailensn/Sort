@@ -56,7 +56,8 @@ clang++ -std=c++17 -Icore -Icore/ocr -Iadapters/onnx \
 ## 各端怎么接
 
 **Android** —— `Android/app/src/main/cpp/CMakeLists.txt` 里 `add_subdirectory` 到本目录，
-产出 `libmain.so`；`jni_engine.cpp` 只做类型转换，Kotlin 侧是 `OcrBridge.kt`。
+OCR 编成 `libocr.so`，`libmain.so` 只留 JNI 胶水并链接它；Kotlin 侧是 `OcrBridge.kt`。
+ORT 的头文件和 `.so` 由 Gradle 的 `prepareOrt` 从 AAR 解到 `build/ort`，再用 `-DORT_ROOT` 传给 CMake。
 
 **iOS** —— `ios-app/project.yml` 的 `sources` 直接引 `../../Native/{core,capi,adapters/onnx}`，
 Swift 通过 bridging header 调 C 函数（`OcrBridge.swift`）；ORT 用 `onnxruntime.xcframework`，
