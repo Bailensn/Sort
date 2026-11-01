@@ -39,8 +39,9 @@ targets:
         SWIFT_OBJC_BRIDGING_HEADER: Sources/Bridge/MyApp-Bridging-Header.h
         # 三个契约/适配头目录，顺序不重要
         HEADER_SEARCH_PATHS: $(inherited) $(PROJECT_DIR)/../../Native/capi $(PROJECT_DIR)/../../Native/core $(PROJECT_DIR)/../../Native/adapters/onnx
-        # ORT 用 C++ 接口，必须定义这个宏才会编出实体
-        GCC_PREPROCESSOR_DEFINITIONS: $(inherited) SORT_WITH_ONNXRUNTIME=1
+        # ORT 还没接：xcframework 放进 Vendor/ 之后再打开这个宏，否则 OnnxBackend
+        # 会去找不存在的 onnxruntime_cxx_api.h。
+        # GCC_PREPROCESSOR_DEFINITIONS: $(inherited) SORT_WITH_ONNXRUNTIME=1
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
         CODE_SIGN_STYLE: Manual
