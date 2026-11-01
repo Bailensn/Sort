@@ -1,20 +1,3 @@
-*.iml
-.gradle/
-local.properties
-.idea/
-.DS_Store
-build/
-captures/
-.cxx/
-.externalNativeBuild/
-.kotlin/
-*.apk
-*.aab
-*.part
-
-# 模型由 Gradle 任务下载（约 31 MB），不进仓库
-app/src/main/assets/models/
-
 # 本地验证用的成绩单照片（含真实姓名/成绩），不入库
 /*.png
 /*.jpg
@@ -23,3 +6,13 @@ app/src/main/assets/models/
 # CI 产物
 build.log
 ci-report/
+
+# 手动编译的中间产物
+*.o
+*.o.tmp
+
+# 本地 cmake 构建目录
+/Native/build/
+
+# 鸿蒙工程先不上传
+/Harmony/

@@ -1,4 +1,4 @@
-# Sort · Miuix + PP-OCRv6 + CMake Native
+# Sort
 
 拍一张表格照片，或者从相册选一张，**离线**识别文字、还原行列，导出一份带边框的 `.xlsx`。
 
@@ -44,52 +44,63 @@
 │   ├── dependabot.yml
 │   ├── scripts/                       # 错误打印、真实姓名检查
 │   └── workflows/android.yml
-├── app/
-│   ├── build.gradle.kts               # 模型下载、CMake、依赖
-│   └── src/
-│       ├── main/
-│       │   ├── cpp/                   # libmain.so（C++23 / JNI 模板）
-│       │   ├── java/com/bailensn/sort/
-│       │   │   ├── MainActivity.kt
-│       │   │   ├── NativeBridge.kt
-│       │   │   ├── data/
-│       │   │   │   ├── SortDatabase.kt          # sort.db：entries + cells
-│       │   │   │   ├── HistoryStore.kt          # 记录的读写（图片目录 + 数据库）
-│       │   │   │   ├── LegacyHistory.kt         # 老 TSV → SQLite 的一次性搬迁
-│       │   │   │   ├── HistoryMeta.kt           # 过程数据
-│       │   │   │   └── NameMemory.kt            # 姓名记忆 + 模糊搜索
-│       │   │   ├── ocr/ModelInstaller.kt        # 内置模型解压
-│       │   │   ├── table/
-│       │   │   │   ├── ContentCropper.kt        # 裁到有内容的那块
-│       │   │   │   ├── Deskewer.kt              # 投影估角 + 旋转
-│       │   │   │   ├── PerspectiveRectifier.kt  # 四点透视校正
-│       │   │   │   ├── GrayPreprocessor.kt      # 光照均衡 + CLAHE
-│       │   │   │   ├── TableLineDetector.kt     # 带斜率的线拟合
-│       │   │   │   ├── TableEdgeLines.kt        # 补虚拟外框线
-│       │   │   │   ├── CellGrid.kt              # 线 → 单元格
-│       │   │   │   ├── PixelBorderProbe.kt      # 像素级并格判断
-│       │   │   │   ├── GarbageColumnTrimmer.kt  # 垃圾列裁剪
-│       │   │   │   ├── NumericColumnRepair.kt   # 数字列修复
-│       │   │   │   ├── TableSelfCheck.kt        # 序号/求和自检与反推
-│       │   │   │   ├── TableGridBuilder.kt      # 纯 Kotlin 表格重建
-│       │   │   │   ├── GridOverlay.kt           # 网格叠加图
-│       │   │   │   └── TablePipeline.kt         # 完整流水线 + 多遍识别
-│       │   │   ├── ui/
-│       │   │   │   ├── table/
-│       │   │   │   │   ├── TableScreen.kt       # 页面栈 + 页签外壳 + 浮层
-│       │   │   │   │   ├── RecognizePage.kt     # 识别页
-│       │   │   │   │   ├── HistoryPage.kt       # 历史页
-│       │   │   │   │   └── TableViewModel.kt
-│       │   │   │   └── theme/Theme.kt           # MiuixTheme
-│       │   │   ├── util/ImageLoader.kt
-│       │   │   └── xlsx/                        # XlsxWriter / XlsxExporter
-│       │   └── res/
-│       ├── test/                      # 纯 JVM 单测（CI 会跑）
-│       └── androidTest/
-├── ppocr-sdk/                         # 从 ppocr-android 融合的 OCR SDK
-├── gradle/libs.versions.toml
-├── build.gradle.kts
-└── settings.gradle.kts
+├── Android/                           # Android 工程（Gradle 根目录）
+│   ├── app/
+│   │   ├── build.gradle.kts               # 模型下载、CMake、依赖
+│   │   └── src/
+│   │       ├── main/
+│   │       │   ├── cpp/                   # libmain.so（C++23 / JNI 模板）
+│   │       │   ├── java/com/bailensn/sort/
+│   │       │   │   ├── MainActivity.kt
+│   │       │   │   ├── NativeBridge.kt
+│   │       │   │   ├── data/
+│   │       │   │   │   ├── SortDatabase.kt          # sort.db：entries + cells
+│   │       │   │   │   ├── HistoryStore.kt          # 记录的读写（图片目录 + 数据库）
+│   │       │   │   │   ├── LegacyHistory.kt         # 老 TSV → SQLite 的一次性搬迁
+│   │       │   │   │   ├── HistoryMeta.kt           # 过程数据
+│   │       │   │   │   └── NameMemory.kt            # 姓名记忆 + 模糊搜索
+│   │       │   │   ├── ocr/ModelInstaller.kt        # 内置模型解压
+│   │       │   │   ├── table/
+│   │       │   │   │   ├── ContentCropper.kt        # 裁到有内容的那块
+│   │       │   │   │   ├── Deskewer.kt              # 投影估角 + 旋转
+│   │       │   │   │   ├── PerspectiveRectifier.kt  # 四点透视校正
+│   │       │   │   │   ├── GrayPreprocessor.kt      # 光照均衡 + CLAHE
+│   │       │   │   │   ├── TableLineDetector.kt     # 带斜率的线拟合
+│   │       │   │   │   ├── TableEdgeLines.kt        # 补虚拟外框线
+│   │       │   │   │   ├── CellGrid.kt              # 线 → 单元格
+│   │       │   │   │   ├── PixelBorderProbe.kt      # 像素级并格判断
+│   │       │   │   │   ├── GarbageColumnTrimmer.kt  # 垃圾列裁剪
+│   │       │   │   │   ├── NumericColumnRepair.kt   # 数字列修复
+│   │       │   │   │   ├── TableSelfCheck.kt        # 序号/求和自检与反推
+│   │       │   │   │   ├── TableGridBuilder.kt      # 纯 Kotlin 表格重建
+│   │       │   │   │   ├── GridOverlay.kt           # 网格叠加图
+│   │       │   │   │   └── TablePipeline.kt         # 完整流水线 + 多遍识别
+│   │       │   │   ├── ui/
+│   │       │   │   │   ├── table/
+│   │       │   │   │   │   ├── TableScreen.kt       # 页面栈 + 页签外壳 + 浮层
+│   │       │   │   │   │   ├── RecognizePage.kt     # 识别页
+│   │       │   │   │   │   ├── HistoryPage.kt       # 历史页
+│   │       │   │   │   │   └── TableViewModel.kt
+│   │       │   │   │   └── theme/Theme.kt           # MiuixTheme
+│   │       │   │   ├── util/ImageLoader.kt
+│   │       │   │   └── xlsx/                        # XlsxWriter / XlsxExporter
+│   │       │   └── res/
+│   │       ├── test/                      # 纯 JVM 单测（CI 会跑）
+│   │       └── androidTest/
+│   ├── ppocr-sdk/                         # 从 ppocr-android 融合的 OCR SDK
+│   ├── gradle/libs.versions.toml
+│   ├── build.gradle.kts
+│   └── settings.gradle.kts
+├── Native/                            # 三端共用的 C++ 核心
+│   ├── capi/                          # C ABI 契约（三端唯一接口）
+│   ├── core/                          # 业务实现，ocr/ 是整条 OCR 链路
+│   ├── adapters/onnx/                 # ONNX Runtime 后端
+│   ├── tests/                         # 假后端冒烟测试
+│   └── tools/ocr_dump/                # 对拍用的命令行
+├── iOS/                               # iOS 工程（XcodeGen + SwiftUI）
+└── Harmony/                           # HarmonyOS 工程（hvigor 根目录）
+    ├── AppScope/                      # bundleName、应用名、版本号
+    └── main/                          # entry 模块（ArkTS 页面 + NAPI）
 ```
 
 ## 处理流水线
@@ -160,7 +171,11 @@
 
 ## 构建
 
+Gradle 根目录在 `Android/`：
+
 ```bash
+cd Android
+
 # 模型随 APK 内置，构建时下载并压缩一次
 ./gradlew :app:assembleDebug
 
@@ -185,6 +200,9 @@
 每个 job 开头各自跑一遍公共环境（JDK 21、Android SDK、Gradle、SDK 组件、模型缓存），
 没有抽成 composite action——这样哪一步挂掉，run 页面的注解会直接点名是哪一步，
 而不是笼统地报在 "Android environment" 上。NDK 与 CMake 只装进需要它们的 job。
+
+workflow 顶层设了 `defaults.run.working-directory: Android`，所以 `./gradlew`、`build.log`
+都落在 `Android/` 下；artifact 与缓存这类不经过 `run` 的路径显式写成 `Android/app/build/...`。
 
 缓存（每次跑 CI 直接复用，省几分钟）：
 
