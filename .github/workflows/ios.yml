@@ -13,7 +13,7 @@ concurrency:
 
 jobs:
   build:
-    name: Build (device binary, unsigned)
+    name: Build
     # macos-14 已停止维护，跟随最新稳定镜像
     runs-on: macos-latest
     timeout-minutes: 30
@@ -59,14 +59,6 @@ jobs:
           path: MyApp-simulator.zip
           if-no-files-found: error
           retention-days: 14
-      - name: Test
-        run: |
-          # 具体机型名字随 Xcode 变，直接取第一个可用的模拟器。
-          DEVICE=$(xcrun simctl list devices available -j \
-            | jq -r '[.devices[][] | select(.isAvailable)][0].udid')
-          xcodebuild test -project MyApp.xcodeproj -scheme MyApp \
-            -destination "platform=iOS Simulator,id=$DEVICE" \
-            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO
       - name: Upload unsigned ipa
         uses: actions/upload-artifact@v7
         with:
@@ -74,9 +66,37 @@ jobs:
           path: MyApp-unsigned.ipa
           if-no-files-found: error
           retention-days: 14
-
       - name: Publish build log
         if: always()
         env:
           GITHUB_TOKEN: ${{ github.token }}
-        run: bash "$GITHUB_WORKSPACE/.github/scripts/publish-log.sh" build.log ios.log ci-log-ios-build
+        run: bash "$GITHUB_WORKSPACE/.github/scripts/publish-log.sh" build.log ios-build.log ci-log-ios-build
+
+  test:
+    name: Test
+    runs-on: macos-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: iOS/ios-app
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - name: Generate project
+        run: xcodegen generate
+      - name: Run tests
+        run: |
+          set -o pipefail
+          # 具体机型名字随 Xcode 变，直接取第一个可用的模拟器。
+          DEVICE=$(xcrun simctl list devices available -j \
+            | jq -r '[.devices[][] | select(.isAvailable)][0].udid')
+          xcodebuild test -project MyApp.xcodeproj -scheme MyApp \
+            -destination "platform=iOS Simulator,id=$DEVICE" \
+            -derivedDataPath build-test \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO 2>&1 | tee build.log
+      - name: Publish test log
+        if: always()
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: bash "$GITHUB_WORKSPACE/.github/scripts/publish-log.sh" build.log ios-test.log ci-log-ios-test
