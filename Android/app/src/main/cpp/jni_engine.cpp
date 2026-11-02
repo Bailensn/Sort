@@ -214,6 +214,84 @@ Java_com_bailensn_sort_OcrBridge_nativeOcrRecognizeCellsRef(JNIEnv *env, jclass,
     return recognizeCellsCommon(env, handle, pixels, width, height, isBgr, cells, scale, true);
 }
 
+namespace {
+
+struct TableCollector {
+    std::vector<std::string> names;
+    std::vector<int32_t> roles;
+    std::vector<std::vector<std::string>> rows;
+};
+
+void collectHeader(int32_t, const char *name, int32_t role, void *userData) {
+    auto *out = static_cast<TableCollector *>(userData);
+    out->names.emplace_back(name != nullptr ? name : "");
+    out->roles.push_back(role);
+}
+
+void collectRow(const engine_table_row *row, void *userData) {
+    auto *out = static_cast<TableCollector *>(userData);
+    if (row == nullptr) return;
+    std::vector<std::string> cells;
+    for (int32_t i = 0; i < row->columnCount; ++i) {
+        cells.emplace_back(row->cells != nullptr ? row->cells[i] : "");
+    }
+    out->rows.push_back(std::move(cells));
+}
+
+}  // namespace
+
+extern "C" JNIEXPORT jobject JNICALL
+Java_com_bailensn_sort_OcrBridge_nativeTableAnalyze(JNIEnv *env, jclass, jlong handle,
+                                                    jbyteArray pixels, jint width, jint height,
+                                                    jint isBgr) {
+    if (pixels == nullptr) return nullptr;
+    jbyte *buffer = env->GetByteArrayElements(pixels, nullptr);
+    if (buffer == nullptr) return nullptr;
+
+    TableCollector collected;
+    int32_t corrected = 0;
+    int32_t suspicious = 0;
+    const int32_t rc = engine_table_analyze(
+        asOcrHandle(handle), reinterpret_cast<const uint8_t *>(buffer), width, height, 0, isBgr,
+        collectRow, collectHeader, &corrected, &suspicious);
+    env->ReleaseByteArrayElements(pixels, buffer, JNI_ABORT);
+    if (rc != ENGINE_OK) return nullptr;
+
+    jclass stringClass = env->FindClass("java/lang/String");
+    if (stringClass == nullptr) return nullptr;
+
+    jobjectArray rows = env->NewObjectArray(static_cast<jsize>(collected.rows.size()), env->FindClass("[Ljava/lang/String;"), nullptr);
+    for (size_t r = 0; r < collected.rows.size(); ++r) {
+        jobjectArray line = env->NewObjectArray(static_cast<jsize>(collected.rows[r].size()), stringClass, nullptr);
+        for (size_t c = 0; c < collected.rows[r].size(); ++c) {
+            jstring text = env->NewStringUTF(collected.rows[r][c].c_str());
+            env->SetObjectArrayElement(line, static_cast<jsize>(c), text);
+            env->DeleteLocalRef(text);
+        }
+        env->SetObjectArrayElement(rows, static_cast<jsize>(r), line);
+        env->DeleteLocalRef(line);
+    }
+
+    jobjectArray names = env->NewObjectArray(static_cast<jsize>(collected.names.size()), stringClass, nullptr);
+    for (size_t i = 0; i < collected.names.size(); ++i) {
+        jstring text = env->NewStringUTF(collected.names[i].c_str());
+        env->SetObjectArrayElement(names, static_cast<jsize>(i), text);
+        env->DeleteLocalRef(text);
+    }
+
+    jintArray roles = env->NewIntArray(static_cast<jsize>(collected.roles.size()));
+    if (roles != nullptr && !collected.roles.empty()) {
+        env->SetIntArrayRegion(roles, 0, static_cast<jsize>(collected.roles.size()), collected.roles.data());
+    }
+    env->DeleteLocalRef(stringClass);
+
+    jobjectArray triple = env->NewObjectArray(3, env->FindClass("java/lang/Object"), nullptr);
+    env->SetObjectArrayElement(triple, 0, rows);
+    env->SetObjectArrayElement(triple, 1, names);
+    env->SetObjectArrayElement(triple, 2, roles);
+    return triple;
+}
+
 extern "C" JNIEXPORT jint JNICALL
 Java_com_bailensn_sort_OcrBridge_nativeOcrSetReferee(JNIEnv *env, jclass, jlong handle,
                                                      jstring recPath, jstring charsetPath) {
