@@ -9,15 +9,33 @@ hf="${HF:-https://huggingface.co/PaddlePaddle}"
 
 mkdir -p "$out"
 
+# 鸿蒙的 DevEco 容器里没有 curl，按 curl → wget → node 的顺序退而求其次。
+fetch() {
+    if command -v curl > /dev/null; then
+        curl -fsSL -o "$2" "$1"
+    elif command -v wget > /dev/null; then
+        wget -q -O "$2" "$1"
+    else
+        node -e '
+          const fs = require("fs");
+          const [url, out] = process.argv.slice(1);
+          fetch(url).then(async (r) => {
+            if (!r.ok) process.exit(1);
+            fs.writeFileSync(out, Buffer.from(await r.arrayBuffer()));
+          }).catch(() => process.exit(1));
+        ' "$1" "$2"
+    fi
+}
+
 echo "[models] 下载 ONNX 模型"
-curl -fsSL -o "$out/det.onnx" "$hf/PP-OCRv6_medium_det_onnx/resolve/main/inference.onnx"
-curl -fsSL -o "$out/rec.onnx" "$hf/PP-OCRv6_medium_rec_onnx/resolve/main/inference.onnx"
-curl -fsSL -o "$out/rec.yml" "$hf/PP-OCRv6_medium_rec_onnx/resolve/main/inference.yml"
+fetch "$hf/PP-OCRv6_medium_det_onnx/resolve/main/inference.onnx" "$out/det.onnx"
+fetch "$hf/PP-OCRv6_medium_rec_onnx/resolve/main/inference.onnx" "$out/rec.onnx"
+fetch "$hf/PP-OCRv6_medium_rec_onnx/resolve/main/inference.yml" "$out/rec.yml"
 
 echo "[models] 下载 MindSpore Lite $version"
 toolkit="$out/mslite.tar.gz"
 base="https://ms-release.obs.cn-north-4.myhuaweicloud.com/${version}/MindSporeLite/lite/release/linux/x86_64"
-curl -fsSL -o "$toolkit" "$base/mindspore-lite-${version}-linux-x64.tar.gz"
+fetch "$toolkit_url" "$base/mindspore-lite-${version}-linux-x64.tar.gz"
 tar xzf "$toolkit" -C "$out"
 
 converter="$(find "$out"/mindspore-lite-* -name converter_lite | head -1)"

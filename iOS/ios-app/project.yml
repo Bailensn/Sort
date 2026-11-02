@@ -25,7 +25,7 @@ targets:
       # 共享核心：core + capi + ORT 适配层，和 Android 编的是同一批文件
       - path: ../../Native/core
       - path: ../../Native/capi
-      - path: ../../Native/adapters/onnx
+      - path: ../../Native/adapters
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.bailensn.sort
@@ -38,7 +38,7 @@ targets:
         # 路径相对于 project.yml 所在目录
         SWIFT_OBJC_BRIDGING_HEADER: Sources/Bridge/MyApp-Bridging-Header.h
         # 三个契约/适配头目录，顺序不重要
-        HEADER_SEARCH_PATHS: $(inherited) $(PROJECT_DIR)/../../Native/capi $(PROJECT_DIR)/../../Native/core $(PROJECT_DIR)/../../Native/adapters/onnx
+        HEADER_SEARCH_PATHS: $(inherited) $(PROJECT_DIR)/../../Native/capi $(PROJECT_DIR)/../../Native/core $(PROJECT_DIR)/../../Native/adapters
         # ORT 还没接：xcframework 放进 Vendor/ 之后再打开这个宏，否则 OnnxBackend
         # 会去找不存在的 onnxruntime_cxx_api.h。
         # GCC_PREPROCESSOR_DEFINITIONS: $(inherited) SORT_WITH_ONNXRUNTIME=1
