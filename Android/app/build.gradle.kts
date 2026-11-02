@@ -32,7 +32,7 @@ android {
 
     defaultConfig {
         applicationId = "com.bailensn.sort"
-        // OpenCV / ONNX Runtime 都要求 26。
+        // ONNX Runtime 要求 26。
         minSdk = 26
         targetSdk = 37
         versionCode = 1
@@ -224,7 +224,6 @@ androidComponents {
 }
 
 dependencies {
-    implementation(libs.opencv)
     // 只为打包 libonnxruntime.so；Kotlin 侧不再直接用 ORT
     implementation(libs.onnxruntime.android)
 

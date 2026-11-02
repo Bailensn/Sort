@@ -53,7 +53,6 @@
 | Miuix | **0.9.4** | `miuix-ui` / `miuix-icons` / `miuix-nav` |
 | Backdrop | **2.0.1** | 液态玻璃（Android 12 起真模糊，更低的系统退化成半透明） |
 | ONNX Runtime | **1.31.1** | OCR 推理 |
-| OpenCV | **5.0.0.1** | 纠偏、表格线、透视变换（几何 API 在 `org.opencv.geometry`） |
 | OCR 模型 | PP-OCRv6 medium + PP-OCRv5 server 复核 | det 62 MB、rec 76.5 MB、字符表 150 KB |
 | NDK / CMake | **30.0.16248370** / **3.22.1** | C++ 核心编译进 `libmain.so` |
 | ABI | arm64-v8a | 模拟器的 x86_64 默认不打 |
@@ -69,7 +68,7 @@
 7. **收尾**：垃圾列裁剪 → 列对齐 → 算术自检（序号、学号、求和、单格反推）→ 数字列修复 → 姓名记忆纠错。
 8. **导出**：手写 OOXML（`inlineStr` + 细边框 + 自动列宽），不发明合并单元格；写外部缓存后走系统分享。
 
-目前第 2–7 步跑在 Kotlin 侧；`Native/core/ocr` 是同一套算法的 C++ 版本（det/rec 预处理、DB 后处理、CTC 解码、四点裁图），参数逐项对齐。
+第 2–7 步全部在 `Native/` 的 C++ 里跑（`core/imgproc` 做灰度/光照/CLAHE/阈值/旋转，`core/table` 做找线、透视、切格、清洗、自检）。Android 侧只剩把 Bitmap 转成 BGR 缓冲、把结果包成界面的形状，不再有任何表格几何代码，也不再依赖 OpenCV。
 
 ## 模型从哪来
 

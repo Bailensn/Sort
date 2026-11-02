@@ -4,16 +4,21 @@
 
 ```
 Native/
-├── CMakeLists.txt          # 一个根，产出 engine_core / ocr_core / ocr_smoke / ocr_dump
+├── CMakeLists.txt          # 一个根，产出 ocr_core / 两个测试 / ocr_dump
 ├── capi/                   # C ABI 契约（唯一需要三端都认识的头）
 │   ├── engine_errors.h     # 共用返回码
-│   └── engine_ocr_capi.h   # OCR：create / recognize / recognize_cells
-├── core/ocr/               # OCR 全量移植（无 OpenCV、无平台头）
+│   └── engine_ocr_capi.h   # OCR + 整表分析 + 纯逻辑（认表头/自检）
+├── core/ocr/               # det/rec 预处理、DB 后处理、CTC 解码、四点裁图
+├── core/imgproc/           # 灰度、光照压平、CLAHE、阈值/Otsu、缩放、旋转、裁切
+├── core/table/             # 裁内容、纠偏、找线、透视、切格、清洗、表头、自检、叠线
 ├── adapters/
 │   ├── BackendFactory.*    # 按开关挑后端
 │   ├── onnx/               # ONNX Runtime（.onnx），SORT_WITH_ONNXRUNTIME
+│   ├── mnn/                # MNN（.mnn），鸿蒙走这条路
 │   └── paddle_lite/        # Paddle-Lite（.nb），SORT_WITH_PADDLE_LITE
 ├── tests/ocr_smoke.cpp     # 假后端跑全链路，不需要模型
+├── tests/table_logic_test.cpp # 自检/表头/修数/垃圾列/网格
+├── tests/table_image_test.cpp # 合成表格图：裁切、纠偏、找线、外框、叠线
 └── tools/ocr_dump/         # 对拍用的命令行，输入 PPM/PGM，输出 JSON
 ```
 
@@ -22,7 +27,7 @@ Native/
 `capi/*.h` 只有 C 声明 + `extern "C"`，能被 C / ObjC / C++ / Swift 桥接头直接 include：
 
 - 不透明句柄（`EngineHandle`、`OcrHandle`），C++ 类型不外露；
-- 字符串和结果都走回调或调用方缓冲区，不跨边界 malloc/free；
+- 字符串和结果都走回调；只有处理后的位图由库分配，配 `engine_table_image_free` 释放；
 - 错误一律返回码，异常在 `.cpp` 里被 `catch` 掉。
 
 -1..-4 在 `engine_errors.h`，-5/-6 是 OCR 专用的（模型打不开、后端没编进来）。

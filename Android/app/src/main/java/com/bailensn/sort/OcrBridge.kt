@@ -17,11 +17,33 @@ data class CellReading(
     val hasInk: Boolean,
 )
 
-/** 整表分析结果：行、表头列名、每列角色（和 C ABI 的 engine_column_role 一致）。 */
+/** 一条自检明细，对应 C ABI 的 engine_table_note_kind。 */
+data class TableNote(val kind: Int, val a: Int, val b: Int)
+
+/** 整表分析结果：行列数据、表头、自检明细、统计口径，一次调用全拿到。 */
 data class TableAnalysis(
     val rows: List<List<String>>,
     val headerNames: List<String>,
     val headerRoles: List<Int>,
+    val notes: List<TableNote> = emptyList(),
+    val suspiciousRows: List<Int> = emptyList(),
+    val byLines: Boolean = true,
+    val rectified: Boolean = false,
+    val headerFromImage: Boolean = false,
+    val horizontalLines: Int = 0,
+    val verticalLines: Int = 0,
+    val cellCount: Int = 0,
+    val correctedCells: Int = 0,
+    val lowConfidenceCells: Int = 0,
+    val averageConfidence: Float = 0f,
+    val confidenceMin: Float = 0f,
+    val confidenceMax: Float = 0f,
+    val deskewDegrees: Double = 0.0,
+    val elapsedMs: Long = 0L,
+    val cellMs: Long = 0L,
+    val detectMs: Long = 0L,
+    val overlay: Bitmap? = null,
+    val enhanced: Bitmap? = null,
 )
 
 /**
@@ -69,18 +91,65 @@ class OcrBridge(
         }
     }
 
-    /** cells 按 left/top/right/bottom 顺序平铺成一个 IntArray。 */
-    /** 整表分析：找线、切格、识别、清洗、表头、自检，一次调用全拿到。 */
+    /** 整表分析：裁切、纠偏、找线、切格、多遍识别投票、清洗、表头、自检，一次调用全拿到。 */
     fun analyzeTable(bitmap: Bitmap): TableAnalysis? {
         if (handle == 0L) return null
         val pixels = toBgr(bitmap)
-        val triple = nativeTableAnalyze(handle, pixels, bitmap.width, bitmap.height, 1) ?: return null
+        val parts = nativeTableAnalyze(handle, pixels, bitmap.width, bitmap.height, 1) ?: return null
+
         @Suppress("UNCHECKED_CAST")
-        val rows = triple[0] as Array<Array<String>>
+        val rows = (parts[0] as? Array<Array<String>>)?.map { it.toList() } ?: return null
         @Suppress("UNCHECKED_CAST")
-        val names = triple[1] as Array<String>
-        val roles = triple[2] as IntArray
-        return TableAnalysis(rows.map { it.toList() }, names.toList(), roles.toList())
+        val names = (parts[1] as? Array<String>)?.toList().orEmpty()
+        val roles = (parts[2] as? IntArray)?.toList().orEmpty()
+        val notes = (parts[3] as? IntArray)?.let { flat ->
+            (0 until flat.size / 3).map { index ->
+                TableNote(flat[index * 3], flat[index * 3 + 1], flat[index * 3 + 2])
+            }
+        }.orEmpty()
+        val suspicious = (parts[4] as? IntArray)?.toList().orEmpty()
+        val ints = parts[5] as? IntArray ?: IntArray(0)
+        val floats = parts[6] as? FloatArray ?: FloatArray(0)
+        val times = parts[7] as? DoubleArray ?: DoubleArray(0)
+
+        return TableAnalysis(
+            rows = rows,
+            headerNames = names,
+            headerRoles = roles,
+            notes = notes,
+            suspiciousRows = suspicious,
+            byLines = (ints.getOrNull(0) ?: 1) != 0,
+            rectified = ints.getOrNull(1) != 0,
+            horizontalLines = ints.getOrNull(2) ?: 0,
+            verticalLines = ints.getOrNull(3) ?: 0,
+            cellCount = ints.getOrNull(4) ?: 0,
+            correctedCells = ints.getOrNull(5) ?: 0,
+            lowConfidenceCells = ints.getOrNull(7) ?: 0,
+            headerFromImage = ints.getOrNull(8) != 0,
+            averageConfidence = floats.getOrNull(0) ?: 0f,
+            confidenceMin = floats.getOrNull(1) ?: 0f,
+            confidenceMax = floats.getOrNull(2) ?: 0f,
+            deskewDegrees = (floats.getOrNull(3) ?: 0f).toDouble(),
+            elapsedMs = (times.getOrNull(0) ?: 0.0).toLong(),
+            cellMs = (times.getOrNull(1) ?: 0.0).toLong(),
+            detectMs = (times.getOrNull(2) ?: 0.0).toLong(),
+            // 每张图用完就把 JNI 那侧的像素数组放掉，三张大图同时在堆里容易 OOM。
+            overlay = imageOf(parts.getOrNull(9)).also { parts[9] = null },
+            enhanced = imageOf(parts.getOrNull(10)).also { parts[10] = null },
+        )
+    }
+
+    /** JNI 把图交成 [ARGB 像素, [宽, 高]] 两段，避免 Kotlin 侧逐像素转换。 */
+    private fun imageOf(part: Any?): Bitmap? {
+        val pair = part as? Array<*> ?: return null
+        val pixels = pair.getOrNull(0) as? IntArray ?: return null
+        val size = pair.getOrNull(1) as? IntArray ?: return null
+        val width = size.getOrNull(0) ?: return null
+        val height = size.getOrNull(1) ?: return null
+        if (width <= 0 || height <= 0 || pixels.size < width * height) return null
+        return runCatching {
+            Bitmap.createBitmap(pixels, width, height, Bitmap.Config.ARGB_8888)
+        }.getOrNull()
     }
 
     /** 挂上复核模型（PP-OCRv5 server rec）；只有 rec，没有 det。 */
@@ -147,7 +216,7 @@ class OcrBridge(
         width: Int,
         height: Int,
         isBgr: Int,
-    ): Array<Any>?
+    ): Array<Any?>?
 
     private external fun nativeOcrLastError(): Int
 

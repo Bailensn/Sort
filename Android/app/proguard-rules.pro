@@ -7,10 +7,6 @@
 -keep class ai.onnxruntime.** { *; }
 -dontwarn ai.onnxruntime.**
 
-# OpenCV 的 Java 层是 native 绑定，同样保留。
--keep class org.opencv.** { *; }
--dontwarn org.opencv.**
-
 # 这些是三方库的可选依赖，运行时用不到。
 -dontwarn org.slf4j.**
 -dontwarn org.conscrypt.**

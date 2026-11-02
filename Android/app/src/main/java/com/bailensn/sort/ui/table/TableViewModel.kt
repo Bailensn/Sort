@@ -20,7 +20,6 @@ import com.bailensn.sort.ocr.ModelInstaller
 import com.bailensn.sort.xlsx.ExportedFile
 import com.bailensn.sort.xlsx.XlsxExporter
 import com.bailensn.sort.ocr.NativeOcr
-import com.bailensn.sort.ocr.OpenCvLoader
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -45,7 +44,6 @@ sealed interface EngineState {
 data class TableUiState(
     val engine: EngineState = EngineState.Loading(),
     val original: Bitmap? = null,
-    val processed: Bitmap? = null,
     val overlay: Bitmap? = null,
     val phase: Phase = Phase.IDLE,
     val stage: TablePipeline.Stage? = null,
@@ -125,9 +123,6 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             val app = getApplication<Application>()
             try {
-                if (!OpenCvLoader.init()) {
-                    error(app.getString(R.string.error_opencv))
-                }
                 val modelDir = ModelInstaller.ensure(app) { index, total ->
                     _state.update {
                         it.copy(
@@ -157,7 +152,6 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
             _state.update {
                 it.copy(
                     original = null,
-                    processed = null,
                     overlay = null,
                     grid = null,
                     phase = Phase.RECOGNIZING,
@@ -225,7 +219,6 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
                         phase = Phase.ERROR,
                         stage = null,
                         message = app.getString(R.string.error_table, hint),
-                        processed = analysis.bitmap,
                         overlay = analysis.overlay,
                         elapsedMs = analysis.elapsedMs,
                         deskewAngle = analysis.deskewAngle,
@@ -281,7 +274,6 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
                         phase = Phase.DONE,
                         stage = null,
                         grid = polished,
-                        processed = analysis.bitmap,
                         overlay = analysis.overlay,
                         elapsedMs = analysis.elapsedMs,
                         deskewAngle = analysis.deskewAngle,
@@ -467,7 +459,6 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
         _state.update {
             it.copy(
                 original = null,
-                processed = null,
                 overlay = null,
                 grid = null,
                 phase = Phase.IDLE,
@@ -547,7 +538,7 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
         val grid = current.grid ?: return
         val header = transform(current.header)
         val body = if (header.fromImage) grid.rows.drop(1) else grid.rows
-        val result = TableSelfCheck.check(body, null, header)
+        val result = TableSelfCheck.check(body, header)
         val rows = if (header.fromImage) {
             listOfNotNull(grid.rows.firstOrNull()) + result.rows
         } else {

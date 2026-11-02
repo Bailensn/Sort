@@ -18,6 +18,11 @@ class NativeOcr private constructor(
     private val refereeCharset: File?,
 ) {
 
+    /** 整表分析：全部表格逻辑都在 Native 里跑，这里只负责把失败变成异常。 */
+    fun analyzeTable(bitmap: Bitmap): com.bailensn.sort.TableAnalysis =
+        bridge.analyzeTable(bitmap)
+            ?: throw IllegalStateException("表格分析失败，错误码 ${bridge.lastError}")
+
     fun recognize(bitmap: Bitmap): OcrRun =
         OcrRun(bridge.recognize(bitmap).map { OcrLine(OcrBox(it.points), it.text, it.confidence) })
 

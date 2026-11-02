@@ -60,10 +60,11 @@ std::vector<uint8_t> toGray(const Image8& src) {
     if (src.data.size() < pixels * 3) return out;
 
     out.resize(pixels);
+    const bool bgr = src.order == ColorOrder::BGR;
     for (size_t i = 0; i < pixels; ++i) {
-        const int r = src.data[i * 3 + 0];
+        const int r = bgr ? src.data[i * 3 + 2] : src.data[i * 3 + 0];
         const int g = src.data[i * 3 + 1];
-        const int b = src.data[i * 3 + 2];
+        const int b = bgr ? src.data[i * 3 + 0] : src.data[i * 3 + 2];
         out[i] = static_cast<uint8_t>((r * 77 + g * 150 + b * 29) >> 8);
     }
     return out;

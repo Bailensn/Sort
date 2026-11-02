@@ -2,6 +2,8 @@
 
 #include "ocr/Charset.hpp"
 
+#include <cstdlib>
+#include <cstring>
 #include <exception>
 #include <memory>
 #include <string>
@@ -80,19 +82,60 @@ OcrHandle *engine_ocr_create(const char *detModelPath, const char *recModelPath,
 
 void engine_ocr_destroy(OcrHandle *h) { delete h; }
 
+namespace {
+
+/// 把一张 Image8 交出去，所有权转给调用方。
+void moveImage(ocr::Image8&& source, engine_table_image *out) {
+    if (out == nullptr) return;
+    out->width = source.width;
+    out->height = source.height;
+    const size_t bytes = source.data.size();
+    if (bytes == 0) {
+        out->data = nullptr;
+        return;
+    }
+    out->data = static_cast<uint8_t *>(std::malloc(bytes));
+    if (out->data == nullptr) {
+        out->width = 0;
+        out->height = 0;
+        return;
+    }
+    std::memcpy(out->data, source.data.data(), bytes);
+}
+
+int32_t noteKind(ocr::Note::Kind kind) {
+    switch (kind) {
+        case ocr::Note::Kind::SequenceBreak: return ENGINE_NOTE_SEQUENCE_BREAK;
+        case ocr::Note::Kind::SequenceOk: return ENGINE_NOTE_SEQUENCE_OK;
+        case ocr::Note::Kind::IdBreak: return ENGINE_NOTE_ID_BREAK;
+        case ocr::Note::Kind::SumChecked: return ENGINE_NOTE_SUM_CHECKED;
+        case ocr::Note::Kind::PartialTotals: return ENGINE_NOTE_PARTIAL_TOTALS;
+    }
+    return ENGINE_NOTE_SEQUENCE_OK;
+}
+
+}  // namespace
+
 int32_t engine_table_analyze(OcrHandle *h, const uint8_t *pixels, int32_t width, int32_t height,
                              int32_t stride, int32_t isBgr, engine_table_row_cb onRow,
-                             engine_table_header_cb onHeader, int32_t *outCorrected,
-                             int32_t *outSuspicious) {
+                             engine_table_header_cb onHeader, engine_table_note_cb onNote,
+                             engine_table_index_cb onSuspiciousRow, engine_table_stats *outStats,
+                             engine_table_image *outImage, engine_table_image *outOverlay,
+                             engine_table_image *outEnhanced) {
     if (h == nullptr) return ENGINE_ERR_NULL;
-    if (outCorrected != nullptr) *outCorrected = 0;
-    if (outSuspicious != nullptr) *outSuspicious = 0;
+    if (outStats != nullptr) *outStats = engine_table_stats{};
+    if (outImage != nullptr) *outImage = engine_table_image{};
+    if (outOverlay != nullptr) *outOverlay = engine_table_image{};
+    if (outEnhanced != nullptr) *outEnhanced = engine_table_image{};
 
     try {
         ocr::Image8 image;
-        if (!copyImage(pixels, width, height, stride, isBgr, image)) return ENGINE_ERR_BAD_INPUT;
+        if (!copyImage(pixels, width, height, stride, isBgr, image)) {
+            g_lastError = ENGINE_ERR_BAD_INPUT;
+            return ENGINE_ERR_BAD_INPUT;
+        }
 
-        const ocr::TableAnalysis analysis = ocr::analyzeTable(h->engine, image);
+        ocr::TableAnalysis analysis = ocr::analyzeTable(h->engine, image);
 
         if (onHeader != nullptr) {
             for (const auto& column : analysis.header.columns) {
@@ -113,14 +156,161 @@ int32_t engine_table_analyze(OcrHandle *h, const uint8_t *pixels, int32_t width,
                 onRow(&payload, nullptr);
             }
         }
-        if (outCorrected != nullptr) *outCorrected = analysis.report.correctedCells;
+        if (onNote != nullptr) {
+            for (const auto& note : analysis.report.notes) onNote(noteKind(note.kind), note.a, note.b, nullptr);
+        }
+        if (onSuspiciousRow != nullptr) {
+            for (int row : analysis.report.suspiciousRows) onSuspiciousRow(row, nullptr);
+        }
+        if (outStats != nullptr) {
+            const ocr::TableStats& stats = analysis.stats;
+            outStats->byLines = stats.byLines ? 1 : 0;
+            outStats->rectified = stats.rectified ? 1 : 0;
+            outStats->horizontalLines = stats.horizontalLines;
+            outStats->verticalLines = stats.verticalLines;
+            outStats->cellCount = stats.cellCount;
+            outStats->correctedCells = stats.correctedCells;
+            outStats->suspiciousRows = static_cast<int32_t>(analysis.report.suspiciousRows.size());
+            outStats->lowConfidenceCells = stats.lowConfidenceCells;
+            outStats->headerFromImage = analysis.header.fromImage ? 1 : 0;
+            outStats->averageConfidence = stats.averageConfidence;
+            outStats->confidenceMin = stats.confidenceMin;
+            outStats->confidenceMax = stats.confidenceMax;
+            outStats->deskewDegrees = static_cast<float>(stats.deskewDegrees);
+            outStats->elapsedMs = stats.elapsedMs;
+            outStats->cellMs = stats.cellMs;
+            outStats->detectMs = stats.detectMs;
+        }
+        moveImage(std::move(analysis.working), outImage);
+        moveImage(std::move(analysis.overlay), outOverlay);
+        moveImage(std::move(analysis.enhanced), outEnhanced);
+        g_lastError = ENGINE_OK;
+        return ENGINE_OK;
+    } catch (...) {
+        g_lastError = ENGINE_ERR_EXCEPTION;
+        return ENGINE_ERR_EXCEPTION;
+    }
+}
+
+namespace {
+
+void toRows(const engine_table_matrix *matrix, ocr::TableRows &rows) {
+    rows.clear();
+    if (matrix == nullptr || matrix->rowCount <= 0 || matrix->columnCounts == nullptr) return;
+    rows.reserve(static_cast<size_t>(matrix->rowCount));
+    size_t offset = 0;
+    for (int32_t r = 0; r < matrix->rowCount; ++r) {
+        const int32_t columns = matrix->columnCounts[r];
+        std::vector<std::string> row;
+        row.reserve(static_cast<size_t>(columns));
+        for (int32_t c = 0; c < columns; ++c) {
+            const char *cell = matrix->cells != nullptr ? matrix->cells[offset++] : nullptr;
+            row.emplace_back(cell != nullptr ? cell : "");
+        }
+        rows.push_back(std::move(row));
+    }
+}
+
+void emitRows(const ocr::TableRows &rows, engine_table_row_cb onRow) {
+    if (onRow == nullptr) return;
+    for (size_t r = 0; r < rows.size(); ++r) {
+        std::vector<const char *> cells;
+        cells.reserve(rows[r].size());
+        for (const auto &cell : rows[r]) cells.push_back(cell.c_str());
+        engine_table_row payload{};
+        payload.index = static_cast<int32_t>(r);
+        payload.columnCount = static_cast<int32_t>(cells.size());
+        payload.cells = cells.empty() ? nullptr : cells.data();
+        onRow(&payload, nullptr);
+    }
+}
+
+}  // namespace
+
+int32_t engine_table_detect_header(const engine_table_matrix *rows,
+                                   engine_table_header_cb onHeader, int32_t *outFromImage) {
+    if (outFromImage != nullptr) *outFromImage = 0;
+    try {
+        ocr::TableRows input;
+        toRows(rows, input);
+        if (input.empty()) return ENGINE_ERR_BAD_INPUT;
+
+        const ocr::TableHeader header = ocr::detectHeader(input);
+        if (onHeader != nullptr) {
+            for (const auto &column : header.columns) {
+                onHeader(column.index, column.name.c_str(), static_cast<int32_t>(column.role), nullptr);
+            }
+        }
+        if (outFromImage != nullptr) *outFromImage = header.fromImage ? 1 : 0;
+        return ENGINE_OK;
+    } catch (...) {
+        return ENGINE_ERR_EXCEPTION;
+    }
+}
+
+int32_t engine_table_self_check(const engine_table_matrix *rows, const float *confidences,
+                                int32_t totalColumn, const int32_t *subjectColumns,
+                                int32_t subjectCount, engine_table_row_cb onRow,
+                                engine_table_note_cb onNote, engine_table_index_cb onSuspiciousRow,
+                                int32_t *outCorrected, int32_t *outSuspicious) {
+    if (outCorrected != nullptr) *outCorrected = 0;
+    if (outSuspicious != nullptr) *outSuspicious = 0;
+    try {
+        ocr::TableRows input;
+        toRows(rows, input);
+        if (input.empty()) return ENGINE_ERR_BAD_INPUT;
+
+        ocr::TableHeader header;
+        if (totalColumn >= 0) {
+            ocr::ColumnSpec total;
+            total.index = totalColumn;
+            total.role = ocr::ColumnRole::Total;
+            header.columns.push_back(total);
+            for (int32_t i = 0; i < subjectCount; ++i) {
+                ocr::ColumnSpec subject;
+                subject.index = subjectColumns[i];
+                subject.role = ocr::ColumnRole::Subject;
+                header.columns.push_back(subject);
+            }
+        }
+
+        std::vector<std::vector<float>> confidenceRows;
+        if (confidences != nullptr && !input.empty()) {
+            confidenceRows.assign(input.size(), std::vector<float>(input.front().size(), 0.0f));
+            size_t offset = 0;
+            for (auto &row : confidenceRows) {
+                for (auto &value : row) value = confidences[offset++];
+            }
+        }
+
+        const ocr::CheckResult checked =
+            ocr::selfCheck(input, confidenceRows.empty() ? nullptr : &confidenceRows,
+                           header.columns.empty() ? nullptr : &header);
+        emitRows(checked.rows, onRow);
+        if (onNote != nullptr) {
+            for (const auto &note : checked.report.notes) {
+                onNote(noteKind(note.kind), note.a, note.b, nullptr);
+            }
+        }
+        if (onSuspiciousRow != nullptr) {
+            for (int row : checked.report.suspiciousRows) onSuspiciousRow(row, nullptr);
+        }
+        if (outCorrected != nullptr) *outCorrected = checked.report.correctedCells;
         if (outSuspicious != nullptr) {
-            *outSuspicious = static_cast<int32_t>(analysis.report.suspiciousRows.size());
+            *outSuspicious = static_cast<int32_t>(checked.report.suspiciousRows.size());
         }
         return ENGINE_OK;
     } catch (...) {
         return ENGINE_ERR_EXCEPTION;
     }
+}
+
+void engine_table_image_free(engine_table_image *image) {
+    if (image == nullptr) return;
+    std::free(image->data);
+    image->data = nullptr;
+    image->width = 0;
+    image->height = 0;
 }
 
 int32_t engine_ocr_recognize(OcrHandle *h, const uint8_t *pixels, int32_t width, int32_t height,

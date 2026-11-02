@@ -63,11 +63,78 @@ typedef enum engine_column_role {
 typedef void (*engine_table_header_cb)(int32_t index, const char *name, int32_t role,
                                        void *userData);
 
-/* 结果逐行回调；表头逐列回调；纠正格数与存疑行数写回 out。 */
+/* 自检结论的明细，和 Kotlin 的 TableSelfCheck.Note 一一对应。 */
+typedef enum engine_table_note_kind {
+    ENGINE_NOTE_SEQUENCE_BREAK = 0, /* a = 列, b = 断了几处 */
+    ENGINE_NOTE_SEQUENCE_OK = 1,    /* a = 列 */
+    ENGINE_NOTE_ID_BREAK = 2,       /* a = 列, b = 断了几处 */
+    ENGINE_NOTE_SUM_CHECKED = 3,    /* a = 科目数, b = 总分的列 */
+    ENGINE_NOTE_PARTIAL_TOTALS = 4  /* a = 行数 */
+} engine_table_note_kind;
+
+typedef void (*engine_table_note_cb)(int32_t kind, int32_t a, int32_t b, void *userData);
+
+/* 仍然对不上的行号（0 基），逐条回调。 */
+typedef void (*engine_table_index_cb)(int32_t index, void *userData);
+
+/* 处理后的工作图或叠加了表格线的预览图，RGB 三通道、行优先无填充。
+ * data 由库分配，调用方用 engine_table_image_free 释放。 */
+typedef struct engine_table_image {
+    int32_t width;
+    int32_t height;
+    uint8_t *data;
+} engine_table_image;
+
+typedef struct engine_table_stats {
+    int32_t byLines;           /* 1 = 按检测到的线切格，0 = 按文字聚类 */
+    int32_t rectified;         /* 1 = 做过透视校正 */
+    int32_t horizontalLines;
+    int32_t verticalLines;
+    int32_t cellCount;
+    int32_t correctedCells;    /* 靠回读/算术反推纠正的格子数 */
+    int32_t suspiciousRows;    /* 仍对不上的行数 */
+    int32_t lowConfidenceCells;/* 低于展示门槛的格子数 */
+    int32_t headerFromImage;   /* 1 = 第一行确实是图片里的表头 */
+    float averageConfidence;   /* 有墨迹格子的均值 */
+    float confidenceMin;
+    float confidenceMax;
+    float deskewDegrees;
+    double elapsedMs;          /* 含裁切、纠偏、找线、切格 */
+    double cellMs;             /* 逐格识别含多遍投票 */
+    double detectMs;           /* 整图回读 */
+} engine_table_stats;
+
+/* 结果逐行回调、表头逐列回调、自检明细逐条回调；
+ * outStats / outImage / outOverlay 都可以传 NULL 表示不需要。 */
 int32_t engine_table_analyze(OcrHandle *h, const uint8_t *pixels, int32_t width, int32_t height,
                              int32_t stride, int32_t isBgr, engine_table_row_cb onRow,
-                             engine_table_header_cb onHeader, int32_t *outCorrected,
-                             int32_t *outSuspicious);
+                             engine_table_header_cb onHeader, engine_table_note_cb onNote,
+                             engine_table_index_cb onSuspiciousRow, engine_table_stats *outStats,
+                             engine_table_image *outImage, engine_table_image *outOverlay,
+                             engine_table_image *outEnhanced);
+
+void engine_table_image_free(engine_table_image *image);
+
+/* ---- 纯逻辑入口：只吃字符串矩阵，不需要模型和句柄 ---- */
+
+/* 行优先展平的字符串矩阵：columnCounts[rowCount]，cells 按行依次拼接。 */
+typedef struct engine_table_matrix {
+    int32_t rowCount;
+    const int32_t *columnCounts;
+    const char *const *cells;
+} engine_table_matrix;
+
+/* 认表头：逐列回调名字与角色，fromImage 写回。 */
+int32_t engine_table_detect_header(const engine_table_matrix *rows,
+                                   engine_table_header_cb onHeader, int32_t *outFromImage);
+
+/* 算术自检：纠正后的行逐行回调，明细逐条回调。
+ * confidences 可为 NULL；totalColumn < 0 表示没有确认过表头结构。 */
+int32_t engine_table_self_check(const engine_table_matrix *rows, const float *confidences,
+                                int32_t totalColumn, const int32_t *subjectColumns,
+                                int32_t subjectCount, engine_table_row_cb onRow,
+                                engine_table_note_cb onNote, engine_table_index_cb onSuspiciousRow,
+                                int32_t *outCorrected, int32_t *outSuspicious);
 
 /* ---- 生命周期 ---- */
 OcrHandle *engine_ocr_create(const char *detModelPath, const char *recModelPath,

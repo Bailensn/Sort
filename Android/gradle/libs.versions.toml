@@ -21,7 +21,6 @@ miuix = "0.9.4"
 # 液态玻璃：minSdk 21，低于 31/33 自动退化成半透明底
 backdrop = "2.0.1"
 onnxruntime = "1.31.1"
-opencv = "5.0.0.1"
 coroutines = "1.11.0"
 
 # ---- 测试 ------------------------------------------------------------------
@@ -50,7 +49,6 @@ androidx-compose-ui-test-junit4 = { module = "androidx.compose.ui:ui-test-junit4
 androidx-compose-ui-test-manifest = { module = "androidx.compose.ui:ui-test-manifest" }
 
 onnxruntime-android = { module = "com.microsoft.onnxruntime:onnxruntime-android", version.ref = "onnxruntime" }
-opencv = { module = "org.opencv:opencv", version.ref = "opencv" }
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
 
 junit = { module = "junit:junit", version.ref = "junit" }

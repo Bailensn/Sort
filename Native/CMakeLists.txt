@@ -11,8 +11,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-# 主机上拿 Linux 版 libmindspore-lite.so 跑真实的 .ms 模型（CI 用），
-# OCR 核心：零平台依赖，只吃 Image8 和张量；ORT 后端在 adapters/ 里，按需打开。
+# OCR 核心：零平台依赖，只吃 Image8 和张量；推理后端在 adapters/ 里，按需打开。
 option(SORT_WITH_OCR "Build the OCR core" ON)
 if (SORT_WITH_OCR)
     set(OCR_SOURCES
@@ -27,10 +26,19 @@ if (SORT_WITH_OCR)
             core/imgproc/Binary.cpp
             core/imgproc/Enhance.cpp
             core/imgproc/Gray.cpp
+            core/imgproc/Scale.cpp
+            core/imgproc/Threshold.cpp
+            core/imgproc/Warp.cpp
             core/table/ColumnCleaner.cpp
+            core/table/Cropper.cpp
+            core/table/EdgeLines.cpp
             core/table/GridBuilder.cpp
             core/table/LineDetector.cpp
+            core/table/LineWidth.cpp
+            core/table/Overlay.cpp
             core/table/Perspective.cpp
+            core/table/QuadFit.cpp
+            core/table/Skew.cpp
             core/table/TableAnalyzer.cpp
             core/table/TableLogic.cpp
             capi/engine_ocr_capi.cpp
@@ -62,6 +70,11 @@ if (SORT_WITH_OCR)
         add_executable(table_logic_test tests/table_logic_test.cpp)
         target_link_libraries(table_logic_test ${OCR_TARGET})
         add_test(NAME table_logic_test COMMAND table_logic_test)
+
+        # 合成图上的几何回归：裁切、纠偏、找线、外框、叠线，不需要模型
+        add_executable(table_image_test tests/table_image_test.cpp)
+        target_link_libraries(table_image_test ${OCR_TARGET})
+        add_test(NAME table_image_test COMMAND table_image_test)
     endif ()
 
     # 对拍用的命令行：同一张图两端各跑一次，diff JSON。

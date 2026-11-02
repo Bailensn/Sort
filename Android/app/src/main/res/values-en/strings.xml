@@ -43,7 +43,6 @@
     <string name="model_extracting">Extracting bundled model %1$d/%2$d</string>
     <string name="model_extract_failed">Failed to extract bundled model: %1$s</string>
     <string name="error_model_load">Failed to load OCR model</string>
-    <string name="error_opencv">OpenCV init failed</string>
     <string name="error_image_read">Cannot read image</string>
     <string name="error_image_invalid">Not a valid image</string>
     <string name="error_image_decode">Image decode failed</string>

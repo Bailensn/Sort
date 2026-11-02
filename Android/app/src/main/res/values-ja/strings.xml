@@ -43,7 +43,6 @@
     <string name="model_extracting">内蔵モデルを展開中 %1$d/%2$d</string>
     <string name="model_extract_failed">内蔵モデルの展開に失敗：%1$s</string>
     <string name="error_model_load">認識モデルの読み込みに失敗</string>
-    <string name="error_opencv">OpenCV の初期化に失敗</string>
     <string name="error_image_read">画像を読み込めません</string>
     <string name="error_image_invalid">有効な画像ではありません</string>
     <string name="error_image_decode">画像のデコードに失敗</string>
