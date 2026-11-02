@@ -1,17 +1,8 @@
 name: iOS CI
 
 on:
-  push:
-    branches: [ "main" ]
-    paths:
-      - "iOS/**"
-      - "Native/**"
-      - ".github/workflows/ios.yml"
-  pull_request:
-    paths:
-      - "iOS/**"
-      - "Native/**"
-      - ".github/workflows/ios.yml"
+  # 只手动触发：macOS runner 排队十几分钟，推一次代码就占掉这个时间不划算。
+  # 要跑就去 Actions → iOS CI → Run workflow。
   workflow_dispatch:
 
 permissions:
