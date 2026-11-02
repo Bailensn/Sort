@@ -89,4 +89,5 @@
     <string name="header_role_subject">Subject</string>
     <string name="header_role_total">Total</string>
     <string name="header_role_other">Other</string>
+    <string name="header_tip">Tap a role cell to cycle: No. / ID / Subject / Total / Other</string>
 </resources>

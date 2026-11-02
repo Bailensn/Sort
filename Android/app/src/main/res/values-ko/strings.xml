@@ -89,4 +89,5 @@
     <string name="header_role_subject">과목</string>
     <string name="header_role_total">총점</string>
     <string name="header_role_other">기타</string>
+    <string name="header_tip">종류 칸을 탭하면 전환: 번호 / 학번 / 과목 / 총점 / 기타</string>
 </resources>

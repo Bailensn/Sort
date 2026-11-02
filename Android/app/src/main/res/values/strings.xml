@@ -90,4 +90,5 @@
     <string name="header_role_subject">科目</string>
     <string name="header_role_total">总分</string>
     <string name="header_role_other">其他</string>
+    <string name="header_tip">点一下身份格子可以切换：序号 / 学号 / 科目 / 总分 / 其他</string>
 </resources>

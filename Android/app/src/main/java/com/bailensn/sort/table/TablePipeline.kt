@@ -327,6 +327,16 @@ object TablePipeline {
         // 展示用的门槛固定 98%：TRUSTED_CONFIDENCE 现在是 1.01（表示二遍全跑），
         // 用它来数会把所有格子都算成「低置信度」。
         val lowConfidenceCells = scored.count { it.confidence < DISPLAY_TRUSTED_CONFIDENCE }
+        // 界面只显示均值，怀疑被固定住时靠这条 logcat 看分布：全在 0.82 附近就说明
+        // 是识别输出本身平，不是平均算错。
+        runCatching {
+            val values = scored.map { it.confidence }.sorted()
+            android.util.Log.d(
+                "SortOcr",
+                "cells=${values.size} avg=$averageConfidence min=${values.firstOrNull()} " +
+                    "max=${values.lastOrNull()} sample=${values.take(8)}",
+            )
+        }
 
         val cellMs = SystemClock.elapsedRealtime() - cellStarted
 

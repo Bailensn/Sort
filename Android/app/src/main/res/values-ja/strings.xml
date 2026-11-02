@@ -89,4 +89,5 @@
     <string name="header_role_subject">科目</string>
     <string name="header_role_total">合計</string>
     <string name="header_role_other">その他</string>
+    <string name="header_tip">種別セルをタップで切替：番号 / 学籍番号 / 科目 / 合計 / その他</string>
 </resources>

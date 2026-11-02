@@ -334,8 +334,8 @@ internal fun SelfCheckCard(state: TableUiState) {
 }
 
 /**
- * 表格结构卡片：每列的列名与身份。
- * 认到表头就填好给用户改，没认到就留空让用户自己填——总分校验和单科排序都读这份结构。
+ * 表格结构卡片：按表格排，不是一列一列往下堆。
+ * 第一行是列名（可改），第二行是身份（点一下循环切换）。
  */
 @Composable
 internal fun HeaderCard(
@@ -343,55 +343,77 @@ internal fun HeaderCard(
     onNameChange: (Int, String) -> Unit,
     onRoleChange: (Int, ColumnRole) -> Unit,
 ) {
+    val horizontal = rememberScrollState()
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 12.dp)
             .padding(bottom = 12.dp),
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
-        ) {
+        Column {
             Text(
                 text = stringResource(
                     if (header.hasNames) R.string.header_hint else R.string.header_hint_manual,
                 ),
+                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 10.dp),
                 style = MiuixTheme.textStyles.footnote1,
                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
             )
-            header.columns.forEach { spec ->
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = stringResource(R.string.header_column, spec.index + 1),
-                            modifier = Modifier.width(64.dp),
-                            style = MiuixTheme.textStyles.footnote1,
-                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                        )
+            Column(modifier = Modifier.horizontalScroll(horizontal)) {
+                Row {
+                    header.columns.forEach { spec ->
                         TextField(
                             value = spec.name,
                             onValueChange = { onNameChange(spec.index, it) },
-                            modifier = Modifier.weight(1f),
+                            modifier = Modifier
+                                .width(CELL_WIDTH)
+                                .padding(horizontal = 4.dp),
                             singleLine = true,
                         )
                     }
-                    Row(
-                        modifier = Modifier.horizontalScroll(rememberScrollState()),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        ColumnRole.values().forEach { role ->
-                            val label = roleLabel(role)
-                            TextButton(
-                                text = if (spec.role == role) "● $label" else label,
-                                onClick = { onRoleChange(spec.index, role) },
+                }
+                Row {
+                    header.columns.forEach { spec ->
+                        Box(
+                            modifier = Modifier
+                                .width(CELL_WIDTH)
+                                .height(CELL_HEIGHT)
+                                .padding(4.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(
+                                    if (spec.role == ColumnRole.OTHER) {
+                                        MiuixTheme.colorScheme.surfaceVariant
+                                    } else {
+                                        MiuixTheme.colorScheme.primaryContainer
+                                    },
+                                )
+                                .clickable { onRoleChange(spec.index, nextRole(spec.role)) },
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text(
+                                text = roleLabel(spec.role),
+                                style = MiuixTheme.textStyles.footnote1,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
                             )
                         }
                     }
                 }
             }
+            Text(
+                text = stringResource(R.string.header_tip),
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                style = MiuixTheme.textStyles.footnote2,
+                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+            )
         }
     }
+}
+
+/** 点一下换下一个身份，省得为五个选项塞下拉菜单。 */
+private fun nextRole(role: ColumnRole): ColumnRole {
+    val all = ColumnRole.values()
+    return all[(role.ordinal + 1) % all.size]
 }
 
 @Composable
