@@ -1,5 +1,5 @@
 //
-//  MyApp-Bridging-Header.h
+//  Sort-Bridging-Header.h
 //
 //  ⚠️ 这里只能 #include 契约头文件（纯 C 声明 + extern "C" 守卫）。
 //

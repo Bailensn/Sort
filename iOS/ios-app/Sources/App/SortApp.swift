@@ -1,7 +1,7 @@
 import SwiftUI
 
 @main
-struct MyApp: App {
+struct SortApp: App {
     var body: some Scene {
         WindowGroup {
             RootView()

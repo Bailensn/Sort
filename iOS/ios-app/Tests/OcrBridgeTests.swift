@@ -1,5 +1,5 @@
 import XCTest
-@testable import MyApp
+@testable import Sort
 
 final class OcrBridgeTests: XCTestCase {
 

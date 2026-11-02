@@ -51,6 +51,14 @@ jobs:
           dest="$GITHUB_WORKSPACE/Harmony/main/src/main/resources/rawfile/models"
           mkdir -p "$dest"
           cp /tmp/mslite/det.ms /tmp/mslite/rec.ms /tmp/mslite/rec.yml "$dest/"
+          # rawfile 里只放一个 zip，由 ArkTS 侧解到沙箱，省安装包体积
+          cd "$dest"
+          if command -v zip > /dev/null; then
+            zip -9 -q models.zip det.ms rec.ms rec.yml
+          else
+            python3 -c 'import zipfile; z=zipfile.ZipFile("models.zip","w",zipfile.ZIP_DEFLATED,compresslevel=9); [z.write(n) for n in ("det.ms","rec.ms","rec.yml")]; z.close()'
+          fi
+          rm -f det.ms rec.ms rec.yml
           ls -lh "$dest" | tee -a build.log
       - name: Locate MindSpore Lite
         run: |
@@ -80,12 +88,12 @@ jobs:
         run: |
           set -o pipefail
           hvigorw clean --no-daemon
-          hvigorw assembleHap --mode module -p product=default -p buildMode=debug --no-daemon 2>&1 | tee -a build.log
+          hvigorw assembleHap --mode module -p product=default -p buildMode=release --no-daemon 2>&1 | tee -a build.log
       - name: Build APP
         run: |
           set -o pipefail
           # HAP 只是单模块产物，整包（.app）走 project 模式；没有签名配置时出 unsigned。
-          hvigorw assembleApp --mode project -p product=default -p buildMode=debug --no-daemon 2>&1 | tee -a build.log
+          hvigorw assembleApp --mode project -p product=default -p buildMode=release --no-daemon 2>&1 | tee -a build.log
       - name: Verify package contents
         run: |
           set -o pipefail
@@ -98,7 +106,7 @@ jobs:
           # 模型是 .ms 二进制，HAP 必须有十几 MB 以上；不到就是 rawfile 没打进去（曾经的 Harmony/Harmony 路径 bug）。
           size=$(stat -c%s "$hap")
           echo "HAP 大小: $((size / 1024 / 1024)) MB" | tee -a build.log
-          [ "$size" -gt 50000000 ] || { echo "::error::HAP 只有 $((size/1024)) KB，模型没打进去"; exit 1; }
+          [ "$size" -gt 30000000 ] || { echo "::error::HAP 只有 $((size/1024)) KB，模型没打进去"; exit 1; }
 
           list=
           if command -v unzip > /dev/null; then
@@ -114,8 +122,7 @@ jobs:
 
           printf '%s\n' "$list" > entries.txt
           grep -E 'libs/.*/libmain\.so' entries.txt || { echo "::error::HAP 里没有 libmain.so"; exit 1; }
-          grep -E 'rawfile/models/det\.ms' entries.txt || { echo "::error::HAP 里没有 det.ms"; exit 1; }
-          grep -E 'rawfile/models/rec\.ms' entries.txt || { echo "::error::HAP 里没有 rec.ms"; exit 1; }
+          grep -E 'rawfile/models/models\.zip' entries.txt || { echo "::error::HAP 里没有 models.zip"; exit 1; }
           echo "包内校验通过" | tee -a build.log
       - name: Publish build log
         if: always()

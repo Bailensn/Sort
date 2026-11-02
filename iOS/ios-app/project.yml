@@ -1,10 +1,10 @@
-name: MyApp
+name: Sort
 
 options:
   bundleIdPrefix: com.bailensn
   deploymentTarget:
     iOS: "17.0"
-  # 不要手改 MyApp.xcodeproj，一律改这个 yml 后重新生成
+  # 不要手改 Sort.xcodeproj，一律改这个 yml 后重新生成
 
 settings:
   base:
@@ -16,7 +16,7 @@ settings:
     CLANG_ENABLE_MODULES: YES
 
 targets:
-  MyApp:
+  Sort:
     type: application
     platform: iOS
     sources:
@@ -36,7 +36,7 @@ targets:
         # 纯 SwiftUI App 不需要手写 Info.plist，让 Xcode 生成
         GENERATE_INFOPLIST_FILE: YES
         # 路径相对于 project.yml 所在目录
-        SWIFT_OBJC_BRIDGING_HEADER: Sources/Bridge/MyApp-Bridging-Header.h
+        SWIFT_OBJC_BRIDGING_HEADER: Sources/Bridge/Sort-Bridging-Header.h
         # 三个契约/适配头目录，顺序不重要
         HEADER_SEARCH_PATHS: $(inherited) $(PROJECT_DIR)/../../Native/capi $(PROJECT_DIR)/../../Native/core $(PROJECT_DIR)/../../Native/adapters
         # ORT 还没接：xcframework 放进 Vendor/ 之后再打开这个宏，否则 OnnxBackend
@@ -52,24 +52,24 @@ targets:
     #   - framework: Vendor/onnxruntime.xcframework
     #     embed: true
 
-  MyAppTests:
+  SortTests:
     type: bundle.unit-test
     platform: iOS
     sources:
       - path: Tests
     dependencies:
-      - target: MyApp
+      - target: Sort
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.bailensn.sort.tests
         GENERATE_INFOPLIST_FILE: YES
 
 schemes:
-  MyApp:
+  Sort:
     build:
       targets:
-        MyApp: all
-        MyAppTests: [ test ]
+        Sort: all
+        SortTests: [ test ]
     test:
       targets:
-        - MyAppTests
+        - SortTests

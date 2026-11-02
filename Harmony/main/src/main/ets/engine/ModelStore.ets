@@ -1,4 +1,5 @@
 import { fileIo } from '@kit.CoreFileKit';
+import { zlib } from '@kit.BasicServicesKit';
 import { common } from '@kit.AbilityKit';
 
 export interface ModelPaths {
@@ -19,18 +20,8 @@ export async function ensureModels(context: common.UIAbilityContext): Promise<Mo
     fileIo.mkdirSync(dir);
   }
 
-  for (const name of FILES) {
-    const target = `${dir}/${name}`;
-    const data = await context.resourceManager.getRawFileContent(`models/${name}`);
-    const file = fileIo.openSync(
-      target,
-      fileIo.OpenMode.CREATE | fileIo.OpenMode.READ_WRITE | fileIo.OpenMode.TRUNC,
-    );
-    try {
-      fileIo.writeSync(file.fd, data.buffer as ArrayBuffer);
-    } finally {
-      fileIo.closeSync(file);
-    }
+  if (!fileIo.accessSync(`${dir}/${FILES[0]}`)) {
+    await unpack(context, dir);
   }
 
   return {
@@ -38,4 +29,27 @@ export async function ensureModels(context: common.UIAbilityContext): Promise<Mo
     rec: `${dir}/rec.ms`,
     charset: `${dir}/rec.yml`,
   };
+}
+
+/** 包里只放一个 models.zip，省 90MB 安装包体积。 */
+async function unpack(context: common.UIAbilityContext, dir: string): Promise<void> {
+  const zip = `${dir}/models.zip`;
+  const data = await context.resourceManager.getRawFileContent('models/models.zip');
+  const file = fileIo.openSync(
+    zip,
+    fileIo.OpenMode.CREATE | fileIo.OpenMode.READ_WRITE | fileIo.OpenMode.TRUNC,
+  );
+  try {
+    fileIo.writeSync(file.fd, data.buffer as ArrayBuffer);
+  } finally {
+    fileIo.closeSync(file);
+  }
+
+  try {
+    await zlib.decompressFile(zip, dir);
+  } finally {
+    if (fileIo.accessSync(zip)) {
+      fileIo.unlinkSync(zip);
+    }
+  }
 }

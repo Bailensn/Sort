@@ -17,7 +17,7 @@
     <key>provisioningProfiles</key>
     <dict>
         <key>com.bailensn.sort</key>
-        <string>MyApp AppStore</string>
+        <string>Sort AppStore</string>
     </dict>
 </dict>
 </plist>

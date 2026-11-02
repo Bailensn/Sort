@@ -2,19 +2,19 @@
 
 拍一张表格照片，或者从相册选一张，**离线**识别文字、还原行列，导出一份带边框的 `.xlsx`。
 
-仓库现在是三端布局：`Android/` 是完整实现，`Native/` 放三端共用的 C++ 核心，`iOS/` 和 `Harmony/` 是已经接好原生桥、界面还没写的骨架。
+仓库现在是三端布局：`Android/` 是完整实现，`Native/` 放三端共用的 C++ 核心，`iOS/` 已有 SwiftUI 界面，`Harmony/` 还是占位页。
 
 ## 三端现状
 
 | 平台 | 界面 | OCR 引擎 | 状态 |
 |---|---|---|---|
-| Android | Miuix / Compose，双页签 + 编辑 + 历史 | `libocr.so`（C++ 核心）+ `OcrBridge` | 界面可用，OCR 待接 ORT |
-| iOS | SwiftUI 占位页 | `OcrBridge.swift` → C++ 核心（待接 ORT） | 骨架 |
-| HarmonyOS | ArkTS 占位页 | `napi_init.cpp` → C++ 核心（待接 ORT） | 骨架 |
+| Android | Miuix / Compose，双页签 + 编辑 + 历史 | `libocr.so`（C++ 核心）+ `OcrBridge` + ORT | 界面可用，OCR 待真机验证 |
+| iOS | SwiftUI，识别 / 历史双页签 | `OcrBridge.swift` → C++ 核心 | 界面可用，OCR 待接 ORT |
+| HarmonyOS | ArkTS 占位页 | `napi_init.cpp` → C++ 核心 | 骨架，MindSpore Lite 待接 |
 | Native | — | 整条 OCR 链路已移植成 C++ | 编译通过、假后端跑通，真模型待对拍 |
 
 > Android 已经切到 C++ 核心：`libocr.so` 装 OCR，`libmain.so` 只做 JNI 胶水。
-> 还差最后一步——在 Android 的 CMake 里打开 `SORT_WITH_ONNXRUNTIME` 并链上 ORT，否则启动会报「OCR 后端初始化失败」。
+> `libonnxruntime.so` 由 `onnxruntime-android` AAR 打包进 APK，链接用的那份由 `prepareOrt` 解到 `build/ort`。
 
 ## 目录结构
 
@@ -88,6 +88,7 @@
 cd Android
 ./gradlew :app:assembleDebug      # 首次会下载并压缩约 140 MB 模型
 ./gradlew :app:assembleRelease    # R8 + 资源压缩
+./gradlew :app:bundleRelease      # 商店用 aab
 ./gradlew :app:testDebugUnitTest :app:lintDebug
 ```
 
@@ -104,7 +105,7 @@ ctest --test-dir Native/build --output-on-failure
 ```bash
 cd iOS/ios-app
 xcodegen generate
-open MyApp.xcodeproj          # 或 xcodebuild ...
+xcodebuild -project Sort.xcodeproj -scheme Sort -configuration Release build
 ```
 
 ORT 用 `onnxruntime.xcframework`，放进 `ios-app/Vendor/` 后在 `project.yml` 里取消那段注释。
@@ -113,8 +114,11 @@ ORT 用 `onnxruntime.xcframework`，放进 `ios-app/Vendor/` 后在 `project.yml
 
 ```bash
 cd Harmony
-hvigorw assembleHap
+hvigorw assembleHap -p buildMode=release   # 单模块 hap
+hvigorw assembleApp -p buildMode=release   # 整包 app
 ```
+
+模型在 `rawfile/models/models.zip`（三个文件压成一个，约 40 MB），首启由 ArkTS 解到沙箱。
 
 ## CI
 
@@ -123,13 +127,13 @@ hvigorw assembleHap
 | 文件 | job | 跑什么 |
 | --- | --- | --- |
 | `android.yml` | `native-core` | `cmake` 编译 + `ctest` 冒烟测试 + 用 `gcc` 验证契约头是纯 C |
-| | `assemble-release` / `lint` / `unit-test` / `android-test` | Gradle 四个任务 |
-| `ios.yml` | `build` | `xcodegen` + 模拟器无签名构建（macos-14） |
-| `harmony.yml` | `build` | `hvigorw assembleHap`（需要自建 runner） |
+| | `assemble-release` / `lint` / `unit-test` / `android-test` | Gradle 四个任务，release 出 apk + aab |
+| `ios.yml` | `build` | `xcodegen` + 模拟器 Release + 无签名 ipa |
+| `harmony.yml` | `build` | `hvigorw assembleHap` + `assembleApp`（DevEco 容器镜像） |
 
 Android 部分：顶层 `defaults.run.working-directory: Android`，`./gradlew` 与 `build.log` 都落在 `Android/`；artifact 和缓存这类不经过 `run` 的路径显式写 `Android/app/build/...`。SDK 组件安装抽成 `.github/scripts/install-sdk-components.sh`，四个 job 共用。失败时 `print-errors.sh` 直接把 Kotlin/Java 错误和 `What went wrong` 打在同一个 step 里，带 `::error file=...,line=...` 注解。
 
-鸿蒙的 runner 必须自建：DevEco 命令行工具需要账号授权，GitHub 托管 runner 装不了。
+鸿蒙跑在 `ghcr.io/sanchuanhehe/harmony-next-pipeline-docker` 镜像里，容器自带 DevEco 命令行工具。
 
 ## 已知限制
 
@@ -143,7 +147,7 @@ Android 部分：顶层 `defaults.run.working-directory: Android`，`./gradlew` 
 - 部分科目缺考时总分按**已考科目**补算并注明；印出来的总分对不上只标存疑，不照着求和改分；
 - C++ 版的 DB 后处理只追踪外轮廓、孔洞用洪泛补，没有完全复刻 OpenCV 的 `RETR_LIST`；
 - `ocr_dump` 只认 PPM/PGM，不做 JPEG/PNG 解码；
-- iOS / Harmony 的界面还没写，目前只有原生桥和占位页。
+- 鸿蒙界面还是占位页，只有原生桥接了 OCR 核心。
 
 ## 改名 / 升级
 
