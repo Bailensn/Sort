@@ -42,6 +42,33 @@ typedef struct engine_ocr_cell {
 typedef void (*engine_ocr_cell_cb)(int32_t index, const char *text, float confidence,
                                    int32_t hasInk, void *userData);
 
+/* ---- 整表分析：找线 → 切格 → 识别 → 清洗 → 表头 → 自检 ---- */
+
+typedef struct engine_table_row {
+    int32_t index;
+    int32_t columnCount;
+    const char *const *cells; /* 回调期间有效 */
+} engine_table_row;
+
+typedef void (*engine_table_row_cb)(const engine_table_row *row, void *userData);
+
+typedef enum engine_column_role {
+    ENGINE_COLUMN_OTHER = 0,
+    ENGINE_COLUMN_SEQUENCE = 1,
+    ENGINE_COLUMN_ID = 2,
+    ENGINE_COLUMN_SUBJECT = 3,
+    ENGINE_COLUMN_TOTAL = 4
+} engine_column_role;
+
+typedef void (*engine_table_header_cb)(int32_t index, const char *name, int32_t role,
+                                       void *userData);
+
+/* 结果逐行回调；表头逐列回调；纠正格数与存疑行数写回 out。 */
+int32_t engine_table_analyze(OcrHandle *h, const uint8_t *pixels, int32_t width, int32_t height,
+                             int32_t stride, int32_t isBgr, engine_table_row_cb onRow,
+                             engine_table_header_cb onHeader, int32_t *outCorrected,
+                             int32_t *outSuspicious);
+
 /* ---- 生命周期 ---- */
 OcrHandle *engine_ocr_create(const char *detModelPath, const char *recModelPath,
                              const char *charsetPath, int32_t numThreads);

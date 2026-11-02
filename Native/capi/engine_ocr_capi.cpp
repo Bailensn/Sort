@@ -9,6 +9,7 @@
 
 #include "BackendFactory.hpp"
 #include "ocr/OcrEngine.hpp"
+#include "table/TableAnalyzer.hpp"
 
 struct OcrHandle {
     ocr::OcrEngine engine;
@@ -78,6 +79,49 @@ OcrHandle *engine_ocr_create(const char *detModelPath, const char *recModelPath,
 }
 
 void engine_ocr_destroy(OcrHandle *h) { delete h; }
+
+int32_t engine_table_analyze(OcrHandle *h, const uint8_t *pixels, int32_t width, int32_t height,
+                             int32_t stride, int32_t isBgr, engine_table_row_cb onRow,
+                             engine_table_header_cb onHeader, int32_t *outCorrected,
+                             int32_t *outSuspicious) {
+    if (h == nullptr) return ENGINE_ERR_NULL;
+    if (outCorrected != nullptr) *outCorrected = 0;
+    if (outSuspicious != nullptr) *outSuspicious = 0;
+
+    try {
+        ocr::Image8 image;
+        if (!copyImage(pixels, width, height, stride, isBgr, image)) return ENGINE_ERR_BAD_INPUT;
+
+        const ocr::TableAnalysis analysis = ocr::analyzeTable(h->engine, image);
+
+        if (onHeader != nullptr) {
+            for (const auto& column : analysis.header.columns) {
+                const int32_t role = static_cast<int32_t>(column.role);
+                onHeader(column.index, column.name.c_str(), role, nullptr);
+            }
+        }
+        if (onRow != nullptr) {
+            for (size_t r = 0; r < analysis.rows.size(); ++r) {
+                const auto& row = analysis.rows[r];
+                std::vector<const char*> cells;
+                cells.reserve(row.size());
+                for (const auto& cell : row) cells.push_back(cell.c_str());
+                engine_table_row payload{};
+                payload.index = static_cast<int32_t>(r);
+                payload.columnCount = static_cast<int32_t>(cells.size());
+                payload.cells = cells.empty() ? nullptr : cells.data();
+                onRow(&payload, nullptr);
+            }
+        }
+        if (outCorrected != nullptr) *outCorrected = analysis.report.correctedCells;
+        if (outSuspicious != nullptr) {
+            *outSuspicious = static_cast<int32_t>(analysis.report.suspiciousRows.size());
+        }
+        return ENGINE_OK;
+    } catch (...) {
+        return ENGINE_ERR_EXCEPTION;
+    }
+}
 
 int32_t engine_ocr_recognize(OcrHandle *h, const uint8_t *pixels, int32_t width, int32_t height,
                              int32_t stride, int32_t isBgr, engine_ocr_item_cb cb, void *userData,
