@@ -58,6 +58,11 @@ android {
 
     buildTypes {
         release {
+            // CI 没配正式签名时，-PciSign 套 debug key，产出的 APK 能直接装上手机测；
+            // 配了正式签名就不用它兜底
+            if (project.hasProperty("ciSign") && signingConfig == null) {
+                signingConfig = signingConfigs.getByName("debug")
+            }
             // R8 + 资源压缩：release 包体明显小一圈，JNI 符号靠 proguard-rules 保住。
             isMinifyEnabled = true
             isShrinkResources = true

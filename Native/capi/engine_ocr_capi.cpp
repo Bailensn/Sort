@@ -39,21 +39,38 @@ bool copyImage(const uint8_t* pixels, int32_t width, int32_t height, int32_t str
 
 extern "C" {
 
+namespace {
+int g_lastError = ENGINE_OK;
+}  // namespace
+
+int32_t engine_ocr_last_error(void) { return g_lastError; }
+
 OcrHandle *engine_ocr_create(const char *detModelPath, const char *recModelPath,
                              const char *charsetPath, int32_t numThreads) {
-    if (detModelPath == nullptr || recModelPath == nullptr || charsetPath == nullptr) return nullptr;
+    if (detModelPath == nullptr || recModelPath == nullptr || charsetPath == nullptr) {
+        g_lastError = ENGINE_ERR_NULL;
+        return nullptr;
+    }
 
     try {
         auto handle = std::unique_ptr<OcrHandle>(new OcrHandle());
-        if (!handle->engine.loadCharsetFromFile(charsetPath)) return nullptr;
+        if (!handle->engine.loadCharsetFromFile(charsetPath)) {
+            g_lastError = ENGINE_ERR_NO_MODEL;
+            return nullptr;
+        }
 
         auto backend = ocr::createInferenceBackend(detModelPath, recModelPath,
                                                    numThreads > 0 ? numThreads : 4);
-        if (!backend) return nullptr;
+        if (!backend) {
+            g_lastError = ENGINE_ERR_NO_BACKEND;
+            return nullptr;
+        }
 
         handle->engine.setBackend(std::move(backend));
+        g_lastError = ENGINE_OK;
         return handle.release();
     } catch (...) {
+        g_lastError = ENGINE_ERR_EXCEPTION;
         return nullptr;
     }
 }

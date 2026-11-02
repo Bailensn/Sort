@@ -63,7 +63,12 @@ jobjectArray makeTriple(JNIEnv *env, jobject first, jobject second, jobject thir
 
 extern "C" {
 
-JNIEXPORT jlong JNICALL
+JNIEXPORT jint JNICALL
+Java_com_bailensn_sort_OcrBridge_nativeOcrLastError(JNIEnv *, jclass) {
+    return static_cast<jint>(engine_ocr_last_error());
+}
+
+extern "C" JNIEXPORT jlong JNICALL
 Java_com_bailensn_sort_OcrBridge_nativeOcrCreate(JNIEnv *env, jclass, jstring detPath,
                                                  jstring recPath, jstring charsetPath) {
     if (detPath == nullptr || recPath == nullptr || charsetPath == nullptr) return 0;

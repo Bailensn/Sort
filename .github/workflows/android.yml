@@ -147,9 +147,9 @@ jobs:
       - name: Assemble release
         run: |
           set -o pipefail
-          # 一次 Gradle 调用出 APK + AAB，aab 给商店用
+          # 一次 Gradle 调用出 APK + AAB；-PciSign 让 APK 用 debug key 签，能直接装
           ./gradlew --stacktrace --warning-mode=all --build-cache \
-            :app:assembleRelease :app:bundleRelease 2>&1 | tee build.log \
+            :app:assembleRelease :app:bundleRelease -PciSign 2>&1 | tee build.log \
             || { bash "$GITHUB_WORKSPACE/.github/scripts/print-errors.sh" build.log; exit 1; }
 
       - name: Publish build log

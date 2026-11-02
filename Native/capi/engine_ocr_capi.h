@@ -45,6 +45,10 @@ typedef void (*engine_ocr_cell_cb)(int32_t index, const char *text, float confid
 /* ---- 生命周期 ---- */
 OcrHandle *engine_ocr_create(const char *detModelPath, const char *recModelPath,
                              const char *charsetPath, int32_t numThreads);
+
+/* create 返回 NULL 时用它取原因：-1 参数空、-3 异常、-5 模型/字符表打不开、
+ * -6 没编进推理后端或后端初始化失败。成功时归零。 */
+int32_t engine_ocr_last_error(void);
 void engine_ocr_destroy(OcrHandle *h);
 
 /* ---- 整图识别：pixels 是 RGB 或 BGR 的 8 位三通道缓冲 ----

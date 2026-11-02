@@ -62,7 +62,7 @@ class NativeOcr private constructor(
             // 句柄为 0 说明模型或推理后端没起来，宁可报错也别让界面拿到空表格。
             if (!bridge.isReady) {
                 bridge.close()
-                throw IllegalStateException("OCR 后端初始化失败（模型或 ONNX Runtime 不可用）")
+                throw IllegalStateException("OCR 后端初始化失败，错误码 ${bridge.lastError}")
             }
             return NativeOcr(bridge, SystemClock.elapsedRealtime() - started)
         }

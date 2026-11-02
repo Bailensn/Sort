@@ -36,6 +36,9 @@ class OcrBridge(
 
     val isReady: Boolean get() = handle != 0L
 
+    /** create 失败时的错误码，见 engine_errors.h / engine_ocr_capi.h。 */
+    val lastError: Int get() = nativeOcrLastError()
+
     fun recognize(bitmap: Bitmap): List<OcrLine> {
         if (handle == 0L) return emptyList()
         val pixels = toBgr(bitmap)
@@ -97,6 +100,8 @@ class OcrBridge(
         }
         return out
     }
+
+    private external fun nativeOcrLastError(): Int
 
     private external fun nativeOcrCreate(det: String, rec: String, charset: String): Long
     private external fun nativeOcrDestroy(handle: Long)
