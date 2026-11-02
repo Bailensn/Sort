@@ -84,20 +84,19 @@ jobs:
             rm -f det.ms rec.ms rec.yml
           )
           ls -lh "$dest"
-      - name: Locate MindSpore Lite
+      - name: Fetch MNN
         run: |
-          # find 被 head 提前掐断会带 SIGPIPE，赋值在 -e 下会直接把步骤弄挂
-          lib=$(find / -name 'libmindspore_lite_ndk.so' -path '*aarch64-linux-ohos*' 2>/dev/null | head -1) || true
+          # 官方预编译包：只有 lib，没有头（头文件已 vendored 在 Native/adapters/mnn/include）
+          dest="$GITHUB_WORKSPACE/Harmony/main/src/main/cpp/third_party/mnn"
+          bash "$GITHUB_WORKSPACE/tools/fetch_mnn.sh" "$dest"
+          lib=$(find "$dest" -name 'libMNN.so' -path '*arm64*' | head -1) || true
+          [ -n "${lib:-}" ] || lib=$(find "$dest" -name 'libMNN.so' | head -1) || true
           if [ -n "${lib:-}" ]; then
-            echo "MSLITE_LIB=$lib" >> "$GITHUB_ENV"
-            echo "[mslite] $lib" | tee -a build.log
-            if command -v nm > /dev/null; then
-              echo "[mslite] OH_AI 符号数：$(nm -D --defined-only "$lib" 2>/dev/null | grep -c OH_AI || true)" | tee -a build.log
-            fi
+            echo "MNN_LIB=$lib" >> "$GITHUB_ENV"
+            echo "[mnn] $lib" | tee -a build.log
           else
-            echo "::warning::SDK 里没有 libmindspore_lite_ndk.so，这一轮编出来不带 OCR 后端"
+            echo "::warning::MNN 包里没找到 libMNN.so"
           fi
-          true
       - name: Cache ohpm
         uses: actions/cache@v6
         with:
