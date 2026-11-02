@@ -15,6 +15,9 @@ Copyright 2026 Bailensn
 - ONNX Runtime
   MIT License — https://github.com/microsoft/onnxruntime
 
+- MindSpore Lite Kit 的 C API 头文件（Native/adapters/mindspore/ohos/，OH_AI_* 声明）
+  Apache License 2.0 — https://gitee.com/openharmony/interface_sdk_c
+
 - OpenCV（5.x，4.5.0 起为 Apache License 2.0）
   Apache License 2.0 — https://github.com/opencv/opencv
 

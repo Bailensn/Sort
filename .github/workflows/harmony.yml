@@ -62,20 +62,15 @@ jobs:
           ls -lh "$dest" | tee -a build.log
       - name: Locate MindSpore Lite
         run: |
-          sdk="${DEVECO_SDK_HOME:-/opt/harmonyos-tools/command-line-tools/sdk/default/openharmony}"
-          inc="$sdk/native/sysroot/usr/include"
-          echo "--- include 目录 ---" | tee -a build.log
-          ls "$inc" 2>/dev/null | tee -a build.log
-          echo "--- mindspore 相关头文件 ---" | tee -a build.log
-          find "$inc" -iname '*mindspore*' -o -iname '*model*.h' 2>/dev/null | head -20 | tee -a build.log
-          find / -name '*c_api*' -path '*mindspore*' 2>/dev/null | head -10 | tee -a build.log
-          echo "--- 库与导出符号 ---" | tee -a build.log
-          lib=$(find / -name 'libmindspore_lite_ndk.so' 2>/dev/null | head -1)
-          echo "lib=$lib" | tee -a build.log
+          # 鸿蒙的 MindSpore Lite 是系统 Kit，运行时由系统提供，链接时借 sysroot 里那份
+          lib=$(find / -name 'libmindspore_lite_ndk.so' -path '*aarch64-linux-ohos*' 2>/dev/null | head -1)
           if [ -n "$lib" ]; then
-            nm -D --defined-only "$lib" 2>/dev/null | grep OH_AI | head -20 | tee -a build.log || true
+            echo "MSLITE_LIB=$lib" >> "$GITHUB_ENV"
+            echo "[mslite] $lib" | tee -a build.log
+            echo "[mslite] OH_AI 符号数：$(nm -D --defined-only "$lib" 2>/dev/null | grep -c OH_AI || echo 0)" | tee -a build.log
+          else
+            echo "::warning::SDK 里没有 libmindspore_lite_ndk.so，这一轮编出来不带 OCR 后端"
           fi
-          true
       - name: Cache ohpm
         uses: actions/cache@v6
         with:

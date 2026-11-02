@@ -1,58 +1,68 @@
 #include "MindSporeBackend.hpp"
 
 #include <cstring>
+#include <vector>
 
 #ifdef SORT_WITH_MINDSORE_LITE
 
-#include <fstream>
-#include <vector>
-
-#include "context.h"
-#include "lite_session.h"
-#include "model.h"
-#include "tensor.h"
+#include "mindspore/context.h"
+#include "mindspore/model.h"
+#include "mindspore/status.h"
+#include "mindspore/tensor.h"
+#include "mindspore/types.h"
 
 namespace ocr {
 namespace {
 
-using mindspore::session::LiteSession;
-
-/// 读整个 .ms 文件，Import 需要缓冲区和长度。
-bool readAll(const std::string& path, std::vector<char>& out) {
-    std::ifstream file(path, std::ios::binary);
-    if (!file) return false;
-    file.seekg(0, std::ios::end);
-    const std::streamsize size = file.tellg();
-    if (size <= 0) return false;
-    file.seekg(0, std::ios::beg);
-    out.resize(static_cast<size_t>(size));
-    return static_cast<bool>(file.read(out.data(), size));
+OH_AI_ModelHandle loadModel(const std::string& path, const OH_AI_ContextHandle context) {
+    OH_AI_ModelHandle model = OH_AI_ModelCreate();
+    if (model == nullptr) return nullptr;
+    // .ms 保留动态维度，构建时不给 inputShape，形状在 Predict 前再定
+    if (OH_AI_ModelBuildFromFile(model, path.c_str(), OH_AI_MODELTYPE_MINDIR, context) !=
+        OH_AI_STATUS_SUCCESS) {
+        OH_AI_ModelDestroy(&model);
+        return nullptr;
+    }
+    return model;
 }
 
-bool runSession(LiteSession& session, const Tensor& input, Tensor& output) {
-    auto inputs = session.GetInputs();
-    if (inputs.empty() || inputs[0] == nullptr) return false;
+bool runModel(const OH_AI_ModelHandle model, const Tensor& input, Tensor& output) {
+    if (model == nullptr || input.dims.size() != 4) return false;
 
-    // rec 的宽度是动态的，跑之前按实际形状改一次。
-    std::vector<int> shape(input.dims.begin(), input.dims.end());
-    if (!inputs[0]->set_shape(shape)) return false;
-    if (inputs[0]->MutableData() == nullptr) return false;
+    const std::vector<int64_t> shape(input.dims.begin(), input.dims.end());
+    OH_AI_TensorHandleArray inputs = OH_AI_ModelGetInputs(model);
+    if (inputs.handle_num < 1 || inputs.handle_list == nullptr) return false;
 
-    std::memcpy(inputs[0]->MutableData(), input.data.data(), input.data.size() * sizeof(float));
+    // rec 的宽度每张图都不同，必须走 Resize 才会重新分配输入缓冲
+    OH_AI_ShapeInfo info{};
+    info.shape_num = shape.size();
+    std::memcpy(info.shape, shape.data(), shape.size() * sizeof(int64_t));
+    if (OH_AI_ModelResize(model, inputs, &info, 1) == OH_AI_STATUS_SUCCESS) {
+        inputs = OH_AI_ModelGetInputs(model);
+        if (inputs.handle_num < 1 || inputs.handle_list == nullptr) return false;
+    }
 
-    if (session.RunGraph() != mindspore::lite::RET_OK) return false;
+    const size_t bytes = input.data.size() * sizeof(float);
+    if (OH_AI_TensorGetDataSize(inputs.handle_list[0]) < bytes) return false;
+    std::memcpy(OH_AI_TensorGetMutableData(inputs.handle_list[0]), input.data.data(), bytes);
 
-    auto outputs = session.GetOutputs();
-    if (outputs.empty() || outputs[0] == nullptr) return false;
+    OH_AI_TensorHandleArray outputs;
+    std::memset(&outputs, 0, sizeof(outputs));
+    if (OH_AI_ModelPredict(model, inputs, &outputs, nullptr, nullptr) != OH_AI_STATUS_SUCCESS) {
+        return false;
+    }
+    if (outputs.handle_num < 1 || outputs.handle_list == nullptr) return false;
 
-    auto outShape = outputs[0]->shape();
-    output.dims.assign(outShape.begin(), outShape.end());
+    size_t rank = 0;
+    const int64_t* outShape = OH_AI_TensorGetShape(outputs.handle_list[0], &rank);
+    if (outShape == nullptr || rank == 0) return false;
 
+    output.dims.assign(outShape, outShape + rank);
     size_t count = 1;
-    for (int dim : outShape) count *= static_cast<size_t>(dim);
-    const float* data = outputs[0]->data<float>();
-    if (data == nullptr) return false;
+    for (int dim : output.dims) count *= static_cast<size_t>(dim);
 
+    const float* data = static_cast<const float*>(OH_AI_TensorGetData(outputs.handle_list[0]));
+    if (data == nullptr) return false;
     output.data.assign(data, data + count);
     return true;
 }
@@ -60,38 +70,16 @@ bool runSession(LiteSession& session, const Tensor& input, Tensor& output) {
 }  // namespace
 
 struct MindSporeBackend::Impl {
-    mindspore::lite::Model* detModel = nullptr;
-    mindspore::lite::Model* recModel = nullptr;
-    std::unique_ptr<LiteSession> det;
-    std::unique_ptr<LiteSession> rec;
-    std::vector<char> detBuffer;
-    std::vector<char> recBuffer;
+    OH_AI_ContextHandle context = nullptr;
+    OH_AI_ModelHandle det = nullptr;
+    OH_AI_ModelHandle rec = nullptr;
 
     ~Impl() {
-        det.reset();
-        rec.reset();
-        if (detModel != nullptr) detModel->Free();
-        if (recModel != nullptr) recModel->Free();
+        if (det != nullptr) OH_AI_ModelDestroy(&det);
+        if (rec != nullptr) OH_AI_ModelDestroy(&rec);
+        if (context != nullptr) OH_AI_ContextDestroy(&context);
     }
 };
-
-namespace {
-
-std::unique_ptr<LiteSession> buildSession(mindspore::lite::Model* model, int numThreads) {
-    if (model == nullptr) return nullptr;
-
-    mindspore::lite::Context context;
-    context.cpu_info_.thread_num_ = numThreads > 0 ? numThreads : 2;
-    context.device_list_.clear();
-    context.device_list_.push_back({mindspore::lite::DT_CPU, false});
-
-    std::unique_ptr<LiteSession> session(LiteSession::CreateSession(&context));
-    if (!session) return nullptr;
-    if (session->CompileGraph(model) != mindspore::lite::RET_OK) return nullptr;
-    return session;
-}
-
-}  // namespace
 
 MindSporeBackend::MindSporeBackend() : impl_(std::make_unique<Impl>()) {}
 
@@ -100,44 +88,25 @@ MindSporeBackend::~MindSporeBackend() = default;
 std::unique_ptr<MindSporeBackend> MindSporeBackend::create(const std::string& detModelPath,
                                                            const std::string& recModelPath,
                                                            int numThreads) {
-    try {
-        auto backend = std::unique_ptr<MindSporeBackend>(new MindSporeBackend());
-        auto& impl = *backend->impl_;
+    auto backend = std::unique_ptr<MindSporeBackend>(new MindSporeBackend());
+    auto& impl = *backend->impl_;
 
-        if (!readAll(detModelPath, impl.detBuffer) || !readAll(recModelPath, impl.recBuffer)) {
-            return nullptr;
-        }
-        impl.detModel = mindspore::lite::Model::Import(impl.detBuffer.data(),
-                                                       static_cast<int>(impl.detBuffer.size()));
-        impl.recModel = mindspore::lite::Model::Import(impl.recBuffer.data(),
-                                                       static_cast<int>(impl.recBuffer.size()));
-        if (impl.detModel == nullptr || impl.recModel == nullptr) return nullptr;
+    impl.context = OH_AI_ContextCreate();
+    if (impl.context == nullptr) return nullptr;
+    OH_AI_ContextSetThreadNum(impl.context, numThreads > 0 ? numThreads : 2);
 
-        impl.det = buildSession(impl.detModel, numThreads);
-        impl.rec = buildSession(impl.recModel, numThreads);
-        if (!impl.det || !impl.rec) return nullptr;
-        return backend;
-    } catch (...) {
-        return nullptr;
-    }
+    impl.det = loadModel(detModelPath, impl.context);
+    impl.rec = loadModel(recModelPath, impl.context);
+    if (impl.det == nullptr || impl.rec == nullptr) return nullptr;
+    return backend;
 }
 
 bool MindSporeBackend::runDet(const Tensor& input, Tensor& output) {
-    if (!impl_->det) return false;
-    try {
-        return runSession(*impl_->det, input, output);
-    } catch (...) {
-        return false;
-    }
+    return runModel(impl_->det, input, output);
 }
 
 bool MindSporeBackend::runRec(const Tensor& input, Tensor& output) {
-    if (!impl_->rec) return false;
-    try {
-        return runSession(*impl_->rec, input, output);
-    } catch (...) {
-        return false;
-    }
+    return runModel(impl_->rec, input, output);
 }
 
 }  // namespace ocr

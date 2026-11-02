@@ -47,5 +47,11 @@ echo "[models] 转换（不指定 inputShape，保留动态维度）"
 "$converter" --fmk=ONNX --modelFile="$out/det.onnx" --outputFile="$out/det"
 "$converter" --fmk=ONNX --modelFile="$out/rec.onnx" --outputFile="$out/rec"
 
-rm -rf "$out"/mindspore-lite-* "$toolkit" "$out"/*.onnx
+# 主机验证要复用 runtime/ 里的 libmindspore-lite.so 和头文件
+if [ "${MSLITE_KEEP_RUNTIME:-0}" = "1" ]; then
+    echo "[models] 保留运行时：$(ls -d "$out"/mindspore-lite-*)"
+    rm -f "$toolkit" "$out"/*.onnx
+else
+    rm -rf "$out"/mindspore-lite-* "$toolkit" "$out"/*.onnx
+fi
 ls -lh "$out"
