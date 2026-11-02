@@ -35,7 +35,7 @@ fetch "$hf/PP-OCRv6_medium_rec_onnx/resolve/main/inference.yml" "$out/rec.yml"
 echo "[models] 下载 MindSpore Lite $version"
 toolkit="$out/mslite.tar.gz"
 base="https://ms-release.obs.cn-north-4.myhuaweicloud.com/${version}/MindSporeLite/lite/release/linux/x86_64"
-fetch "$toolkit_url" "$base/mindspore-lite-${version}-linux-x64.tar.gz"
+fetch "$base/mindspore-lite-${version}-linux-x64.tar.gz" "$toolkit"
 tar xzf "$toolkit" -C "$out"
 
 converter="$(find "$out"/mindspore-lite-* -name converter_lite | head -1)"
