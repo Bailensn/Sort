@@ -97,6 +97,37 @@ jobs:
           else
             echo "::warning::MNN 包里没找到 libMNN.so"
           fi
+      - name: Convert models to .mnn
+        run: |
+          exec > >(tee -a build.log) 2>&1
+          # 先走 pip 的 MNN 包，它带 mnnconvert；失败再退到源码编译
+          if ! pip3 install --quiet "MNN>=3.0"; then
+            echo "::warning::pip 装 MNN 失败，退到源码编译（下一步）"
+            exit 0
+          fi
+          if ! command -v mnnconvert > /dev/null; then
+            echo "::warning::pip 包里没有 mnnconvert，退到源码编译"
+            exit 0
+          fi
+
+          hf=https://huggingface.co/PaddlePaddle
+          mkdir -p /tmp/onnx
+          curl -fsSL -o /tmp/onnx/det.onnx "$hf/PP-OCRv6_medium_det_onnx/resolve/main/inference.onnx"
+          curl -fsSL -o /tmp/onnx/rec.onnx "$hf/PP-OCRv6_medium_rec_onnx/resolve/main/inference.onnx"
+          curl -fsSL -o /tmp/onnx/rec.yml  "$hf/PP-OCRv6_medium_rec_onnx/resolve/main/inference.yml"
+
+          mnnconvert -f ONNX --modelFile /tmp/onnx/det.onnx --MNNModel /tmp/onnx/det.mnn --bizCode sort
+          mnnconvert -f ONNX --modelFile /tmp/onnx/rec.onnx --MNNModel /tmp/onnx/rec.mnn --bizCode sort
+
+          dest="$GITHUB_WORKSPACE/Harmony/main/src/main/resources/rawfile/models"
+          mkdir -p "$dest"
+          cp /tmp/onnx/det.mnn /tmp/onnx/rec.mnn /tmp/onnx/rec.yml "$dest/"
+          (
+            cd "$dest"
+            python3 -m zipfile -c models.zip det.mnn rec.mnn rec.yml
+            rm -f det.mnn rec.mnn rec.yml
+          )
+          ls -lh "$dest"
       - name: Cache ohpm
         uses: actions/cache@v6
         with:
