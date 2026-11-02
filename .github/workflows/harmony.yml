@@ -103,17 +103,6 @@ jobs:
             echo "::error::Harmony/ 不在工作区，检查 checkout 是否完整"
             exit 1
           fi
-      - name: Cache converted models
-        id: model-cache
-        uses: actions/cache@v6
-        with:
-          path: Harmony/main/src/main/resources/rawfile/models
-          key: ocr-ms-models-v2
-      - name: Download models
-        uses: actions/download-artifact@v7
-        with:
-          name: harmony-models
-          path: Harmony/main/src/main/resources/rawfile/models
       - name: Fetch MNN
         run: |
           # 官方预编译包：只有 lib，没有头（头文件已 vendored 在 Native/adapters/mnn/include）
