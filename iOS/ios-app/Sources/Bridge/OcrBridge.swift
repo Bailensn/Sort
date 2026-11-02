@@ -31,14 +31,10 @@ final class OcrBridge {
         if let handle { engine_ocr_destroy(handle) }
     }
 
-    /// 用 App bundle 里自带的模型建引擎；缺文件就返回 nil。
+    /// 用 bundle 里压缩过的模型建引擎：先解到缓存目录，缺文件就返回 nil。
     static func bundled() -> OcrBridge? {
-        guard
-            let det = Bundle.main.path(forResource: "det", ofType: "onnx"),
-            let rec = Bundle.main.path(forResource: "rec", ofType: "onnx"),
-            let charset = Bundle.main.path(forResource: "rec", ofType: "yml")
-        else { return nil }
-        return OcrBridge(detModelPath: det, recModelPath: rec, charsetPath: charset)
+        guard let paths = ModelLoader.ensureModels() else { return nil }
+        return OcrBridge(detModelPath: paths.det, recModelPath: paths.rec, charsetPath: paths.charset)
     }
 
     func recognize(_ image: CGImage) -> [OcrLine] {

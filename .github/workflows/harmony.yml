@@ -54,6 +54,12 @@ jobs:
           find / -name 'lite_session.h' -path '*mindspore*' 2>/dev/null | head -5 | tee -a build.log
           echo "--- 库 ---" | tee -a build.log
           find / -name 'libmindspore_lite*' 2>/dev/null | head -10 | tee -a build.log
+      - name: Cache ohpm
+        uses: actions/cache@v6
+        with:
+          path: Harmony/oh_modules
+          key: ohpm-${{ hashFiles('Harmony/oh-package.json5', 'Harmony/oh-package-lock.json5') }}
+          restore-keys: ohpm-
       - name: Install dependencies
         run: ohpm install --all
       - name: Build

@@ -186,13 +186,13 @@ abstract class BundleOcrModelsTask : DefaultTask() {
         throw GradleException("下载内置模型失败：${failure?.message}")
     }
 
-    /** LZMA2 最高压缩预设（9 | EXTREME）。ONNX 权重压不太动，但能省一点是一点。 */
+    /** LZMA2 预设 6：9 要慢一倍，换来的体积差不到一成。 */
     private fun compress(source: File, target: File) {
         val temp = File(target.parentFile, "${target.name}.part")
         source.inputStream().buffered().use { input ->
             org.tukaani.xz.XZOutputStream(
                 temp.outputStream().buffered(),
-                org.tukaani.xz.LZMA2Options(9),
+                org.tukaani.xz.LZMA2Options(6),
             ).use { output -> input.copyTo(output) }
         }
         if (!temp.renameTo(target)) {

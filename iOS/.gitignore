@@ -15,3 +15,6 @@ DerivedData/
 
 # macOS
 .DS_Store
+
+# CI 下载的模型，不进仓库
+ios-app/Resources/models/
