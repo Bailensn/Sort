@@ -31,6 +31,7 @@ if (SORT_WITH_OCR)
             core/ocr/Preprocess.cpp
             core/ocr/QuadCrop.cpp
             core/table/ColumnCleaner.cpp
+            core/table/GridBuilder.cpp
             core/table/TableLogic.cpp
             capi/engine_ocr_capi.cpp
             adapters/BackendFactory.cpp

@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "table/ColumnCleaner.hpp"
+#include "table/GridBuilder.hpp"
 #include "table/TableLogic.hpp"
 
 namespace {
@@ -297,6 +298,52 @@ void cleansNonNumericNonChineseColumn() {
     check(cleaned[0][1] == "张三", "bad: 姓名列必须保留");
 }
 
+void buildsGridFromLines() {
+    ocr::GridLines lines;
+    lines.vertical = {0, 50, 100};
+    lines.horizontal = {0, 50, 100};
+
+    std::vector<ocr::TextRegion> regions = {
+        {5, 5, 40, 30, "A"},
+        {55, 5, 95, 30, "B"},
+        {5, 55, 40, 80, "C"},
+        {55, 55, 95, 80, "D"},
+    };
+
+    const auto grid = ocr::buildFromLines(regions, lines);
+
+    check(grid.has_value(), "grid: 有线时应该切出表格");
+    check(grid->rows.size() == 2 && grid->rows[0].size() == 2, "grid: 应为 2×2");
+    check(grid->rows[0][1] == "B" && grid->rows[1][0] == "C", "grid: 格子内容应为 B、C");
+}
+
+void buildsGridFromClusters() {
+    std::vector<ocr::TextRegion> regions = {
+        {0, 0, 40, 20, "张三"},
+        {60, 0, 100, 20, "95"},
+        {0, 40, 40, 60, "李四"},
+        {60, 40, 100, 60, "88"},
+    };
+
+    const auto grid = ocr::buildFromClusters(regions);
+
+    check(grid.has_value(), "cluster: 无划线时也应该聚类出表格");
+    check(grid->rows.size() == 2, "cluster: 应为 2 行");
+    check(grid->rows[0][0] == "张三" && grid->rows[0][1] == "95", "cluster: 首行应为 张三/95");
+}
+
+void dropsTrailingEmptyColumn() {
+    const ocr::TableRows cells = {
+        {"1", "张三", ""},
+        {"2", "李四", ""},
+    };
+
+    const auto grid = ocr::normalizeCells(cells, true);
+
+    check(grid.has_value(), "normalize: 不该返回空");
+    check(grid->rows[0].size() == 2, "normalize: 尾部空列应被裁掉");
+}
+
 }  // namespace
 
 int main() {
@@ -316,6 +363,9 @@ int main() {
     trimsGarbageEdges();
     cleansNoisyColumn();
     cleansNonNumericNonChineseColumn();
+    buildsGridFromLines();
+    buildsGridFromClusters();
+    dropsTrailingEmptyColumn();
 
     if (g_failures > 0) {
         std::printf("%d 项失败\n", g_failures);
