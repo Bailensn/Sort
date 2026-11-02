@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 40
     env:
-      MSLITE_VERSION: "2.7.0"
+      MSLITE_VERSION: "2.10.0"
       HF: https://huggingface.co/PaddlePaddle
     defaults:
       run:
@@ -35,7 +35,8 @@ jobs:
       - name: Download MindSpore Lite toolkit
         run: |
           set -o pipefail
-          base="https://ms-release.obs.cn-north-4.myhuaweicloud.com/${MSLITE_VERSION}/MindSpore/lite/release/linux/x86_64"
+          # 2.7 起路径从 MindSpore/ 换成了 MindSporeLite/，旧地址会 403
+          base="https://ms-release.obs.cn-north-4.myhuaweicloud.com/${MSLITE_VERSION}/MindSporeLite/lite/release/linux/x86_64"
           url="${base}/mindspore-lite-${MSLITE_VERSION}-linux-x64.tar.gz"
           echo "下载 $url" | tee -a build.log
           curl -fsSL -o mslite.tar.gz "$url" 2>&1 | tee -a build.log
