@@ -30,6 +30,7 @@ if (SORT_WITH_OCR)
             core/ocr/Postprocess.cpp
             core/ocr/Preprocess.cpp
             core/ocr/QuadCrop.cpp
+            core/table/TableLogic.cpp
             capi/engine_ocr_capi.cpp
             adapters/BackendFactory.cpp
             adapters/onnx/OnnxBackend.cpp
@@ -54,6 +55,11 @@ if (SORT_WITH_OCR)
         add_executable(ocr_smoke tests/ocr_smoke.cpp)
         target_link_libraries(ocr_smoke ${OCR_TARGET})
         add_test(NAME ocr_smoke COMMAND ocr_smoke)
+
+        # 表格后处理的共享实现，用例和安卓的 TableSelfCheckTest 一一对应
+        add_executable(table_logic_test tests/table_logic_test.cpp)
+        target_link_libraries(table_logic_test ${OCR_TARGET})
+        add_test(NAME table_logic_test COMMAND table_logic_test)
     endif ()
 
     # 对拍用的命令行：同一张图两端各跑一次，diff JSON。
