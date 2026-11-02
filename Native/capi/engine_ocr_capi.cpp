@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-#include "OnnxBackend.hpp"
+#include "BackendFactory.hpp"
 #include "ocr/OcrEngine.hpp"
 
 struct OcrHandle {
@@ -47,8 +47,8 @@ OcrHandle *engine_ocr_create(const char *detModelPath, const char *recModelPath,
         auto handle = std::unique_ptr<OcrHandle>(new OcrHandle());
         if (!handle->engine.loadCharsetFromFile(charsetPath)) return nullptr;
 
-        auto backend = ocr::OnnxBackend::create(detModelPath, recModelPath,
-                                                numThreads > 0 ? numThreads : 4);
+        auto backend = ocr::createInferenceBackend(detModelPath, recModelPath,
+                                                   numThreads > 0 ? numThreads : 4);
         if (!backend) return nullptr;
 
         handle->engine.setBackend(std::move(backend));

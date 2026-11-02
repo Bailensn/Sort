@@ -9,7 +9,10 @@ Native/
 │   ├── engine_errors.h     # 共用返回码
 │   └── engine_ocr_capi.h   # OCR：create / recognize / recognize_cells
 ├── core/ocr/               # OCR 全量移植（无 OpenCV、无平台头）
-├── adapters/onnx/          # ONNX Runtime 后端，SORT_WITH_ONNXRUNTIME 开关
+├── adapters/
+│   ├── BackendFactory.*    # 按开关挑后端
+│   ├── onnx/               # ONNX Runtime（.onnx），SORT_WITH_ONNXRUNTIME
+│   └── paddle_lite/        # Paddle-Lite（.nb），SORT_WITH_PADDLE_LITE
 ├── tests/ocr_smoke.cpp     # 假后端跑全链路，不需要模型
 └── tools/ocr_dump/         # 对拍用的命令行，输入 PPM/PGM，输出 JSON
 ```
@@ -67,6 +70,7 @@ Swift 通过 bridging header 调 C 函数（`OcrBridge.swift`）；ORT 用 `onnx
 
 ## 已知限制
 
-- ORT 后端只在定义了 `SORT_WITH_ONNXRUNTIME` 时才编出实体，否则 `create()` 返回空；
+- 推理后端二选一：`SORT_WITH_PADDLE_LITE` 优先，其次 `SORT_WITH_ONNXRUNTIME`，都没开就返回空；
+- Paddle-Lite 用的是 `.nb` 模型（`paddle_lite_opt` 转换），ONNX 用的是 `.onnx`，两者文件名不同；
 - DB 后处理只追踪外轮廓，孔洞单独用洪泛补轮廓，不做 OpenCV 的完整 `RETR_LIST`；
 - `ocr_dump` 只认 PPM/PGM，不做 JPEG/PNG 解码。

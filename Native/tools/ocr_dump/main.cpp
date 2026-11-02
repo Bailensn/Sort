@@ -7,7 +7,7 @@
 #include <vector>
 
 #include "ocr/OcrEngine.hpp"
-#include "OnnxBackend.hpp"
+#include "BackendFactory.hpp"
 
 namespace {
 
@@ -150,7 +150,7 @@ int main(int argc, char** argv) {
         return 2;
     }
 
-    auto backend = ocr::OnnxBackend::create(detPath, recPath, 4);
+    auto backend = ocr::createInferenceBackend(detPath, recPath, 4);
     if (!backend) {
         std::fprintf(stderr, "模型加载失败（或编译时没打开 SORT_WITH_ONNXRUNTIME）\n");
         return 3;

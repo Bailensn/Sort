@@ -24,7 +24,9 @@ if (SORT_WITH_OCR)
             core/ocr/Preprocess.cpp
             core/ocr/QuadCrop.cpp
             capi/engine_ocr_capi.cpp
-            adapters/onnx/OnnxBackend.cpp)
+            adapters/BackendFactory.cpp
+            adapters/onnx/OnnxBackend.cpp
+            adapters/paddle_lite/PaddleLiteBackend.cpp)
 
     # Android 要一份独立的 libocr.so；iOS 和本地测试直接静态编进 App / 可执行文件。
     option(SORT_OCR_SHARED "Build OCR as a shared library" OFF)
@@ -36,7 +38,7 @@ if (SORT_WITH_OCR)
         set(OCR_TARGET ocr_core)
     endif ()
 
-    target_include_directories(${OCR_TARGET} PUBLIC core core/ocr adapters/onnx capi)
+    target_include_directories(${OCR_TARGET} PUBLIC core core/ocr adapters adapters/onnx capi)
 
     option(SORT_BUILD_TESTS "Build native smoke tests" ON)
     if (SORT_BUILD_TESTS)
@@ -67,5 +69,11 @@ if (SORT_WITH_OCR)
 
     if (SORT_WITH_ONNXRUNTIME)
         target_compile_definitions(${OCR_TARGET} PUBLIC SORT_WITH_ONNXRUNTIME=1)
+    endif ()
+
+    # Paddle-Lite：模型是 .nb；三端各有自己的库，用法和 ORT 那套一样。
+    option(SORT_WITH_PADDLE_LITE "Link against Paddle-Lite" OFF)
+    if (SORT_WITH_PADDLE_LITE)
+        target_compile_definitions(${OCR_TARGET} PUBLIC SORT_WITH_PADDLE_LITE=1)
     endif ()
 endif ()
