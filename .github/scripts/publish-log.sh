@@ -28,4 +28,14 @@ cd "$work" || exit 0
 git init -q
 git -c user.name=ci -c user.email=ci@localhost add "$target"
 git -c user.name=ci -c user.email=ci@localhost commit -qm "CI 日志：$target"
-git push -f "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:"$branch"
+url="https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+# 并发任务同时推时偶尔会被拒；日志是诊断用的，重试两次还不成就放过，别把任务判红
+for attempt in 1 2 3; do
+    if git push -f "$url" HEAD:"$branch" 2>&1; then
+        exit 0
+    fi
+    echo "日志推送第 $attempt 次失败，等 3 秒重试"
+    sleep 3
+done
+echo "日志没推上去，跳过"
+exit 0

@@ -95,7 +95,9 @@ if (SORT_WITH_OCR)
         endif ()
         # OH_AI 垫片把调用转给上游的 MS_*，于是同一份适配层能在 CI 上跑
         add_executable(ocr_mslite_dump tools/ocr_dump/main.cpp tests/mslite_shim/oh_ai_shim.cpp)
-        target_include_directories(ocr_mslite_dump PRIVATE ${MSLITE_ROOT}/runtime)
+        # ohos 头是 PRIVATE 挂在 ocr_core 上的，垫片自己也要看得见
+        target_include_directories(ocr_mslite_dump PRIVATE
+                ${CMAKE_CURRENT_SOURCE_DIR}/adapters/mindspore/ohos ${MSLITE_ROOT}/runtime)
         target_link_libraries(ocr_mslite_dump PRIVATE ${OCR_TARGET} ${MSLITE_ROOT}/runtime/lib/libmindspore-lite.so)
     endif ()
 
