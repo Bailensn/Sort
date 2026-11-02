@@ -24,6 +24,15 @@ jobs:
       - uses: actions/checkout@v7
       - name: Install XcodeGen
         run: brew install xcodegen
+      - name: Download models
+        run: |
+          set -o pipefail
+          mkdir -p Resources/models
+          hf=https://huggingface.co/PaddlePaddle
+          curl -fsSL -o Resources/models/det.onnx "$hf/PP-OCRv6_medium_det_onnx/resolve/main/inference.onnx"
+          curl -fsSL -o Resources/models/rec.onnx "$hf/PP-OCRv6_medium_rec_onnx/resolve/main/inference.onnx"
+          curl -fsSL -o Resources/models/rec.yml  "$hf/PP-OCRv6_medium_rec_onnx/resolve/main/inference.yml"
+          ls -lh Resources/models | tee build.log
       - name: Generate project
         run: xcodegen generate
       - name: Build simulator
@@ -84,6 +93,15 @@ jobs:
       - uses: actions/checkout@v7
       - name: Install XcodeGen
         run: brew install xcodegen
+      - name: Download models
+        run: |
+          set -o pipefail
+          mkdir -p Resources/models
+          hf=https://huggingface.co/PaddlePaddle
+          curl -fsSL -o Resources/models/det.onnx "$hf/PP-OCRv6_medium_det_onnx/resolve/main/inference.onnx"
+          curl -fsSL -o Resources/models/rec.onnx "$hf/PP-OCRv6_medium_rec_onnx/resolve/main/inference.onnx"
+          curl -fsSL -o Resources/models/rec.yml  "$hf/PP-OCRv6_medium_rec_onnx/resolve/main/inference.yml"
+          ls -lh Resources/models | tee build.log
       - name: Generate project
         run: xcodegen generate
       - name: Run tests

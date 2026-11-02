@@ -47,6 +47,13 @@ jobs:
           mkdir -p Harmony/main/src/main/resources/rawfile/models
           cp /tmp/mslite/det.ms /tmp/mslite/rec.ms /tmp/mslite/rec.yml \
              Harmony/main/src/main/resources/rawfile/models/
+      - name: Locate MindSpore Lite
+        run: |
+          echo "DEVECO_SDK_HOME=${DEVECO_SDK_HOME:-unset}" | tee -a build.log
+          echo "--- 头文件 ---" | tee -a build.log
+          find / -name 'lite_session.h' -path '*mindspore*' 2>/dev/null | head -5 | tee -a build.log
+          echo "--- 库 ---" | tee -a build.log
+          find / -name 'libmindspore_lite*' 2>/dev/null | head -10 | tee -a build.log
       - name: Install dependencies
         run: ohpm install --all
       - name: Build
