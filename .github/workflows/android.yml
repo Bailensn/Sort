@@ -1,7 +1,17 @@
 name: Android CI
 
 on:
-  # 只手动触发：Actions → Run workflow
+  push:
+    branches: [ "main" ]
+    paths:
+      - "Android/**"
+      - "Native/**"
+      - "tools/**"
+      - ".github/workflows/android.yml"
+  pull_request:
+    paths:
+      - "Android/**"
+      - "Native/**"
   workflow_dispatch:
 
 permissions:
