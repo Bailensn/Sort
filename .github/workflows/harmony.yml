@@ -31,10 +31,23 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
-      - name: Install MNNConverter
+      - name: Cache MNNConverter
+        id: converter
+        uses: actions/cache@v6
+        with:
+          path: mnn-build/MNNConvert
+          key: mnnconvert-3.6.2-v1
+      # PyPI 的 MNN 包里没有 mnnconvert，只能自己编一个
+      - name: Build MNNConverter
+        if: steps.converter.outputs.cache-hit != 'true'
         run: |
-          pip3 install --quiet --break-system-packages "MNN>=3.0"
-          command -v mnnconvert || { echo "::error::pip 包里没有 mnnconvert"; exit 1; }
+          set -o pipefail
+          git clone --depth 1 --branch 3.6.2 https://github.com/alibaba/MNN.git mnn-src
+          cmake -S mnn-src -B mnn-build -DMNN_BUILD_CONVERTER=ON \
+            -DMNN_BUILD_SHARED_LIBS=OFF -DMNN_BUILD_TEST=OFF -DMNN_BUILD_BENCHMARK=OFF \
+            -DMNN_AVX512=OFF 2>&1 | tail -5
+          cmake --build mnn-build --target MNNConvert -j"$(nproc)" 2>&1 | tail -5
+          ls -lh mnn-build/MNNConvert
       - name: Convert
         run: |
           set -o pipefail
@@ -43,8 +56,8 @@ jobs:
           curl -fsSL -o out/det.onnx "$hf/PP-OCRv6_medium_det_onnx/resolve/main/inference.onnx"
           curl -fsSL -o out/rec.onnx "$hf/PP-OCRv6_medium_rec_onnx/resolve/main/inference.onnx"
           curl -fsSL -o out/rec.yml  "$hf/PP-OCRv6_medium_rec_onnx/resolve/main/inference.yml"
-          mnnconvert -f ONNX --modelFile out/det.onnx --MNNModel out/det.mnn --bizCode sort 2>&1 | tail -5
-          mnnconvert -f ONNX --modelFile out/rec.onnx --MNNModel out/rec.mnn --bizCode sort 2>&1 | tail -5
+          ./mnn-build/MNNConvert -f ONNX --modelFile out/det.onnx --MNNModel out/det.mnn --bizCode sort 2>&1 | tail -5
+          ./mnn-build/MNNConvert -f ONNX --modelFile out/rec.onnx --MNNModel out/rec.mnn --bizCode sort 2>&1 | tail -5
           cd out && zip -q models.zip det.mnn rec.mnn rec.yml && rm -f det.mnn rec.mnn rec.yml det.onnx rec.onnx
           ls -lh models.zip
       - name: Upload models
