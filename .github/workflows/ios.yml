@@ -3,7 +3,15 @@ name: iOS CI
 on:
   push:
     branches: [ "main" ]
+    paths:
+      - "iOS/**"
+      - "Native/**"
+      - ".github/workflows/ios.yml"
   pull_request:
+    paths:
+      - "iOS/**"
+      - "Native/**"
+      - ".github/workflows/ios.yml"
   workflow_dispatch:
 
 permissions:
@@ -11,8 +19,8 @@ permissions:
 
 concurrency:
   group: ios-${{ github.ref }}
-  # main 上的推送跑完，PR 只跑最新一次
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  # macOS 机器紧张：永远只留最新一次，旧的就别占着名额了
+  cancel-in-progress: true
 
 jobs:
   build:
