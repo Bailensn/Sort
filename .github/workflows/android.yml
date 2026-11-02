@@ -47,8 +47,9 @@ jobs:
       - name: Prepare MindSpore Lite models
         if: steps.ms-cache.outputs.cache-hit != 'true'
         run: MSLITE_KEEP_RUNTIME=1 bash tools/convert_models.sh /tmp/ms
-      # 鸿蒙跑的就是这份适配层：垫片把 OH_AI_* 转给上游 MS_*，用真模型验证 .ms
-      - name: MindSpore Lite host OCR
+      # 这一段验的是**鸿蒙**的 MindSpore 适配层，跟 Android 包无关：
+      # 安卓用 ORT，只有鸿蒙用 .ms。放在这里纯粹因为这个 job 有 cmake + gcc。
+      - name: MindSpore Lite host OCR (Harmony backend)
         run: |
           set -o pipefail
           root=$(ls -d /tmp/ms/mindspore-lite-* | head -1)
