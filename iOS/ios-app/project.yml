@@ -32,7 +32,7 @@ targets:
         MARKETING_VERSION: "1.0.0"
         # ⚠️ 每次导出必须递增，否则上传撞 ITMS-90189
         CURRENT_PROJECT_VERSION: "1"
-        TARGETED_DEVICE_FAMILY: "1"
+        TARGETED_DEVICE_FAMILY: "1,2"
         # 纯 SwiftUI App 不需要手写 Info.plist，让 Xcode 生成
         GENERATE_INFOPLIST_FILE: YES
         # 路径相对于 project.yml 所在目录

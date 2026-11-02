@@ -25,6 +25,8 @@ struct HistoryDetailView: View {
 
                 TableGridView(rows: entry.rows)
             }
+            .frame(maxWidth: 720)
+            .frame(maxWidth: .infinity)
             .padding()
         }
         .navigationTitle(entry.title)

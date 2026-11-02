@@ -24,6 +24,8 @@ struct RecognizeView: View {
                     TableGridView(rows: rows)
                 }
             }
+            .frame(maxWidth: 720)
+            .frame(maxWidth: .infinity)
             .padding()
         }
         .navigationTitle("识别")

@@ -14,6 +14,7 @@ struct Index {
           .fontColor('#888888')
       }
       .width('100%')
+      .constraintSize({ maxWidth: 720 })
     }
     .height('100%')
   }
