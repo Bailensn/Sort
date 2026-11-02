@@ -60,7 +60,7 @@ jobs:
         run: |
           set -o pipefail
           hvigorw clean --no-daemon
-          hvigorw assembleHap --mode module -p product=default -p buildMode=debug --no-daemon 2>&1 | tee build.log
+          hvigorw assembleHap --mode module -p product=default -p buildMode=debug --no-daemon 2>&1 | tee -a build.log
       - name: Publish build log
         if: always()
         env:
