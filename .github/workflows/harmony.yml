@@ -78,9 +78,12 @@ jobs:
 
           hf=https://huggingface.co/PaddlePaddle
           mkdir -p /tmp/onnx
-          curl -fsSL -o /tmp/onnx/det.onnx "$hf/PP-OCRv6_medium_det_onnx/resolve/main/inference.onnx"
-          curl -fsSL -o /tmp/onnx/rec.onnx "$hf/PP-OCRv6_medium_rec_onnx/resolve/main/inference.onnx"
-          curl -fsSL -o /tmp/onnx/rec.yml  "$hf/PP-OCRv6_medium_rec_onnx/resolve/main/inference.yml"
+          get() { wget -q -O "$2" "$1" || node -e '
+            const fs=require("fs");fetch(process.argv[1]).then(async r=>{if(!r.ok)process.exit(1);fs.writeFileSync(process.argv[2],Buffer.from(await r.arrayBuffer()))}).catch(()=>process.exit(1));
+          ' "$1" "$2"; }
+          get "$hf/PP-OCRv6_medium_det_onnx/resolve/main/inference.onnx" /tmp/onnx/det.onnx
+          get "$hf/PP-OCRv6_medium_rec_onnx/resolve/main/inference.onnx" /tmp/onnx/rec.onnx
+          get "$hf/PP-OCRv6_medium_rec_onnx/resolve/main/inference.yml"  /tmp/onnx/rec.yml
 
           mnnconvert -f ONNX --modelFile /tmp/onnx/det.onnx --MNNModel /tmp/onnx/det.mnn --bizCode sort
           mnnconvert -f ONNX --modelFile /tmp/onnx/rec.onnx --MNNModel /tmp/onnx/rec.mnn --bizCode sort

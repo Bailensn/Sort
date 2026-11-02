@@ -10,8 +10,25 @@ url="https://github.com/alibaba/MNN/releases/download/${version}/mnn_${version}_
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
 
+# DevEco 容器里没有 curl，按 wget → node 退而求其次
+fetch() {
+    if command -v curl > /dev/null; then
+        curl -fsSL -o "$2" "$1"
+    elif command -v wget > /dev/null; then
+        wget -q -O "$2" "$1"
+    else
+        node -e '
+          const fs = require("fs");
+          fetch(process.argv[1]).then(async (r) => {
+            if (!r.ok) process.exit(1);
+            fs.writeFileSync(process.argv[2], Buffer.from(await r.arrayBuffer()));
+          }).catch(() => process.exit(1));
+        ' "$1" "$2"
+    fi
+}
+
 echo "[mnn] $url"
-curl -fsSL -o "$tmp/mnn.zip" "$url"
+fetch "$url" "$tmp/mnn.zip"
 
 rm -rf "$dest"
 mkdir -p "$dest"
