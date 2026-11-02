@@ -94,6 +94,10 @@ std::unique_ptr<MindSporeBackend> MindSporeBackend::create(const std::string& de
     impl.context = OH_AI_ContextCreate();
     if (impl.context == nullptr) return nullptr;
     OH_AI_ContextSetThreadNum(impl.context, numThreads > 0 ? numThreads : 2);
+    // 不显式加设备，MindSpore Lite 会以「Device info list is empty!」拒绝建模型
+    OH_AI_DeviceInfoHandle device = OH_AI_DeviceInfoCreate(OH_AI_DEVICETYPE_CPU);
+    if (device == nullptr) return nullptr;
+    OH_AI_ContextAddDeviceInfo(impl.context, device);
 
     impl.det = loadModel(detModelPath, impl.context);
     impl.rec = loadModel(recModelPath, impl.context);

@@ -427,6 +427,33 @@ ColumnRole inferRole(const TableRows& data, int column) {
     return ColumnRole::Subject;
 }
 
+bool looksLikeTotal(const TableRows& rows, int column, const std::vector<int>& subjects) {
+    if (subjects.empty()) return false;
+    int compared = 0;
+    int matched = 0;
+    for (const auto& row : rows) {
+        double total = 0;
+        if (column >= static_cast<int>(row.size()) || !parseNumber(trim(row[static_cast<size_t>(column)]), total)) {
+            continue;
+        }
+        double sum = 0;
+        bool complete = true;
+        for (int index : subjects) {
+            double part = 0;
+            if (index >= static_cast<int>(row.size()) ||
+                !parseNumber(trim(row[static_cast<size_t>(index)]), part)) {
+                complete = false;
+                break;
+            }
+            sum += part;
+        }
+        if (!complete) continue;
+        ++compared;
+        if (std::abs(sum - total) <= kSumEpsilon) ++matched;
+    }
+    return compared >= 3 && static_cast<double>(matched) / compared >= 0.75;
+}
+
 }  // namespace
 
 TableHeader detectHeader(const TableRows& rows) {
@@ -480,6 +507,19 @@ TableHeader detectHeader(const TableRows& rows) {
         }
         spec.role = role;
         header.columns.push_back(std::move(spec));
+    }
+
+    // 没有表头时也尽量把总分认出来：最后一列基本等于前面各科之和就是总分
+    if (!headerRow && width >= 3) {
+        const int last = static_cast<int>(width) - 1;
+        std::vector<int> subjects;
+        for (const auto& column : header.columns) {
+            if (column.role == ColumnRole::Subject && column.index != last) subjects.push_back(column.index);
+        }
+        if (header.columns[static_cast<size_t>(last)].role == ColumnRole::Subject &&
+            looksLikeTotal(data, last, subjects)) {
+            header.columns[static_cast<size_t>(last)].role = ColumnRole::Total;
+        }
     }
     return header;
 }

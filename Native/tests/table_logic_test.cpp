@@ -157,6 +157,10 @@ void ignoresHeaderWhenFirstRowIsData() {
     check(!header.fromImage, "no-header: 第一行是数据，不该认成表头");
     check(!header.hasNames(), "no-header: 不该有列名");
     check(header.columns[1].role == ocr::ColumnRole::Id, "no-header: 学号列仍应识别");
+    // 最后一列等于前面之和，没有表头也要认成总分
+    check(header.totalColumn().value_or(-1) == 4, "no-header: 总分列应为 4");
+    const auto subjects = header.subjectColumns();
+    check(subjects.size() == 2 && subjects[0] == 2 && subjects[1] == 3, "no-header: 科目列应为 2、3");
 }
 
 void usesExplicitTotalColumnInTheMiddle() {

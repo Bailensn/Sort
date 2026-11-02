@@ -97,6 +97,17 @@ object TableHeaderDetector {
         val columns = (0 until width).map { column ->
             val role = roleFromName(names[column]) ?: inferRole(data, column)
             ColumnSpec(column, names[column], role)
+        }.toMutableList()
+
+        // 没有表头时也尽量把总分认出来：最后一列基本等于前面各科之和就是总分
+        if (!headerRow && width >= 3) {
+            val last = width - 1
+            val subjects = columns
+                .filter { it.role == ColumnRole.SUBJECT && it.index != last }
+                .map { it.index }
+            if (columns[last].role == ColumnRole.SUBJECT && looksLikeTotal(data, last, subjects)) {
+                columns[last] = columns[last].copy(role = ColumnRole.TOTAL)
+            }
         }
         return TableHeader(columns, fromImage = headerRow)
     }
@@ -112,6 +123,21 @@ object TableHeaderDetector {
         if (hinted) return true
         if (rows.size < 2) return false
         return numericRatio(rows[1]) > firstNumeric
+    }
+
+    /** 最后一列和「前面各科之和」对不对得上：对得上才敢当总分。 */
+    private fun looksLikeTotal(rows: List<List<String>>, column: Int, subjects: List<Int>): Boolean {
+        if (subjects.isEmpty()) return false
+        var compared = 0
+        var matched = 0
+        rows.forEach { row ->
+            val total = row.getOrNull(column)?.trim()?.toDoubleOrNull() ?: return@forEach
+            val parts = subjects.mapNotNull { index -> row.getOrNull(index)?.trim()?.toDoubleOrNull() }
+            if (parts.size != subjects.size) return@forEach
+            compared++
+            if (kotlin.math.abs(parts.sum() - total) <= 0.01) matched++
+        }
+        return compared >= 3 && matched.toDouble() / compared >= 0.75
     }
 
     private fun numericRatio(row: List<String>): Double {

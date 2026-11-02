@@ -51,6 +51,14 @@ void OH_AI_ContextSetThreadNum(OH_AI_ContextHandle context, int32_t thread_num) 
     MSContextSetThreadNum(context, thread_num);
 }
 
+OH_AI_DeviceInfoHandle OH_AI_DeviceInfoCreate(OH_AI_DeviceType device_type) {
+    return MSDeviceInfoCreate(static_cast<MSDeviceType>(device_type));
+}
+
+void OH_AI_ContextAddDeviceInfo(OH_AI_ContextHandle context, OH_AI_DeviceInfoHandle device_info) {
+    MSContextAddDeviceInfo(context, device_info);
+}
+
 OH_AI_ModelHandle OH_AI_ModelCreate() { return MSModelCreate(); }
 
 void OH_AI_ModelDestroy(OH_AI_ModelHandle* model) { MSModelDestroy(model); }
