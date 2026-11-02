@@ -1,17 +1,7 @@
 name: Android CI
 
 on:
-  push:
-    branches: [ "main" ]
-    paths:
-      - "Android/**"
-      - "Native/**"
-      - "tools/**"
-      - ".github/workflows/android.yml"
-  pull_request:
-    paths:
-      - "Android/**"
-      - "Native/**"
+  # 只在手动点的时候跑：安卓一次二十分钟，改了 Native 会自动带走鸿蒙
   workflow_dispatch:
 
 permissions:
