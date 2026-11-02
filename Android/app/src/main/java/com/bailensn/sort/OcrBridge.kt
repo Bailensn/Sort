@@ -17,6 +17,13 @@ data class CellReading(
     val hasInk: Boolean,
 )
 
+/** 整表分析结果：行、表头列名、每列角色（和 C ABI 的 engine_column_role 一致）。 */
+data class TableAnalysis(
+    val rows: List<List<String>>,
+    val headerNames: List<String>,
+    val headerRoles: List<Int>,
+)
+
 /**
  * OCR 的 Kotlin 入口：只负责把 Bitmap 转成 BGR 缓冲，其余全在 C++。
  */
@@ -63,6 +70,19 @@ class OcrBridge(
     }
 
     /** cells 按 left/top/right/bottom 顺序平铺成一个 IntArray。 */
+    /** 整表分析：找线、切格、识别、清洗、表头、自检，一次调用全拿到。 */
+    fun analyzeTable(bitmap: Bitmap): TableAnalysis? {
+        if (handle == 0L) return null
+        val pixels = toBgr(bitmap)
+        val triple = nativeTableAnalyze(handle, pixels, bitmap.width, bitmap.height, 1) ?: return null
+        @Suppress("UNCHECKED_CAST")
+        val rows = triple[0] as Array<Array<String>>
+        @Suppress("UNCHECKED_CAST")
+        val names = triple[1] as Array<String>
+        val roles = triple[2] as IntArray
+        return TableAnalysis(rows.map { it.toList() }, names.toList(), roles.toList())
+    }
+
     /** 挂上复核模型（PP-OCRv5 server rec）；只有 rec，没有 det。 */
     fun setReferee(recModelPath: String, charsetPath: String): Boolean =
         nativeOcrSetReferee(handle, recModelPath, charsetPath) == 0
@@ -120,6 +140,14 @@ class OcrBridge(
         }
         return out
     }
+
+    private external fun nativeTableAnalyze(
+        handle: Long,
+        pixels: ByteArray,
+        width: Int,
+        height: Int,
+        isBgr: Int,
+    ): Array<Any>?
 
     private external fun nativeOcrLastError(): Int
 
