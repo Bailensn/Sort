@@ -86,15 +86,18 @@ final class OcrBridge {
         let height = image.height
         guard width > 0, height > 0 else { return nil }
 
-        var rgba = [UInt8](repeating: 0, count: width * height * 4)
+        // data 传 nil 让 CGContext 自己分配：传 Swift 数组的 & 只在初始化调用期间有效，
+        // draw 时那块内存可能已经被回收
         guard let context = CGContext(
-            data: &rgba, width: width, height: height, bitsPerComponent: 8,
+            data: nil, width: width, height: height, bitsPerComponent: 8,
             bytesPerRow: width * 4, space: CGColorSpaceCreateDeviceRGB(),
             bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
         ) else { return nil }
         context.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
+        guard let base = context.data else { return nil }
 
         // C 侧只吃三通道，这里顺手把 alpha 丢掉。
+        let rgba = base.bindMemory(to: UInt8.self, capacity: width * height * 4)
         var rgb = [UInt8](repeating: 0, count: width * height * 3)
         var source = 0
         var target = 0

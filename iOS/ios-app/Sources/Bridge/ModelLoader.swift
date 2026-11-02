@@ -64,7 +64,8 @@ enum ModelLoader {
             }
         }
         guard written == size else { return nil }
-        guard (try? output.write(to: target)) != nil else { return nil }
+        // 原子写：上次崩溃留下的半个文件会让下次直接命中缓存
+        guard (try? output.write(to: target, options: .atomic)) != nil else { return nil }
         return target.path
     }
 

@@ -42,21 +42,42 @@ jobs:
         with:
           path: Harmony/main/src/main/resources/rawfile/models
           key: ocr-ms-models-v2
+      - name: Cache converted .ms
+        id: mslite-raw
+        uses: actions/cache@v6
+        with:
+          path: /tmp/mslite
+          key: mslite-raw-2.10.0-v1
       - name: Prepare models
         if: steps.model-cache.outputs.cache-hit != 'true'
         run: |
           set -o pipefail
-          bash "$GITHUB_WORKSPACE/tools/convert_models.sh" /tmp/mslite 2>&1 | tee -a build.log
+          # 整步都进 build.log：失败时只看得到日志分支，看不到控制台
+          exec > >(tee -a build.log) 2>&1
+          if [ -f /tmp/mslite/det.ms ]; then
+            echo "[models] 复用缓存的 .ms"
+          else
+            bash "$GITHUB_WORKSPACE/tools/convert_models.sh" /tmp/mslite
+          fi
           # working-directory 已经是 Harmony/，这里必须写绝对路径，否则会落到 Harmony/Harmony/
           dest="$GITHUB_WORKSPACE/Harmony/main/src/main/resources/rawfile/models"
           mkdir -p "$dest"
           cp /tmp/mslite/det.ms /tmp/mslite/rec.ms /tmp/mslite/rec.yml "$dest/"
-          # rawfile 里只放一个 zip，由 ArkTS 侧解到沙箱，省安装包体积
+          # rawfile 里只放一个 zip，由 ArkTS 侧解到沙箱，省安装包体积。
+          # 容器里可能没有 zip / python3，按可用性挨个退
+          echo "[zip] zip=$(command -v zip || echo no) py=$(command -v python3 || echo no) cmake=$(command -v cmake || echo no) jar=$(command -v jar || echo no)" | tee -a build.log
           cd "$dest"
           if command -v zip > /dev/null; then
             zip -9 -q models.zip det.ms rec.ms rec.yml
+          elif command -v python3 > /dev/null; then
+            python3 -m zipfile -c models.zip det.ms rec.ms rec.yml
+          elif command -v cmake > /dev/null; then
+            cmake -E tar cf models.zip --format=zip det.ms rec.ms rec.yml
+          elif command -v jar > /dev/null; then
+            jar cfM models.zip det.ms rec.ms rec.yml
           else
-            python3 -c 'import zipfile; z=zipfile.ZipFile("models.zip","w",zipfile.ZIP_DEFLATED,compresslevel=9); [z.write(n) for n in ("det.ms","rec.ms","rec.yml")]; z.close()'
+            echo "::error::容器里没有 zip/python3/cmake/jar，打不了 models.zip"
+            exit 1
           fi
           rm -f det.ms rec.ms rec.yml
           ls -lh "$dest" | tee -a build.log

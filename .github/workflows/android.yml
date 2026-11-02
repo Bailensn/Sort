@@ -51,14 +51,15 @@ jobs:
       - name: MindSpore Lite host OCR
         run: |
           set -o pipefail
-          root=$(ls -d /tmp/ms/mindspore-lite-*)
+          root=$(ls -d /tmp/ms/mindspore-lite-* | head -1)
+          echo "[ms] root=$root" | tee -a build.log
           cmake -S Native -B Native/build-ms -DSORT_MSLITE_HOST_TEST=ON -DMSLITE_ROOT="$root" \
-            -DSORT_BUILD_TESTS=OFF -DSORT_BUILD_TOOLS=OFF
-          cmake --build Native/build-ms --parallel 2 --target ocr_mslite_dump
+            -DSORT_BUILD_TESTS=OFF -DSORT_BUILD_TOOLS=OFF 2>&1 | tee -a build.log
+          cmake --build Native/build-ms --parallel 2 --target ocr_mslite_dump 2>&1 | tee -a build.log
           LD_LIBRARY_PATH="$root/runtime/lib" ./Native/build-ms/ocr_mslite_dump \
             --det /tmp/ms/det.ms --rec /tmp/ms/rec.ms --charset /tmp/ms/rec.yml \
-            --image Native/tests/data/table.ppm > mslite.json
-          head -c 1500 mslite.json
+            --image Native/tests/data/table.ppm 2>&1 | tee -a build.log > mslite.json
+          cat mslite.json | tee -a build.log
           grep -q "900000000001" mslite.json || { echo "::error::.ms 模型没识别出学号"; exit 1; }
       - name: Publish build log
         if: always()

@@ -176,6 +176,15 @@ jobs:
             -derivedDataPath build-test \
             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO \
             ONLY_ACTIVE_ARCH=YES 2>&1 | tee build.log
+      - name: Dump crash reports
+        if: always()
+        run: |
+          # 模拟器里崩了的话，原因只在这份 .ips 里，打进日志分支
+          for f in $(ls -t "$HOME/Library/Logs/DiagnosticReports"/*.ips 2>/dev/null | head -3); do
+            echo "=== $f ===" | tee -a build.log
+            head -c 3000 "$f" | tee -a build.log
+            echo | tee -a build.log
+          done
       - name: Publish test log
         if: always()
         env:
