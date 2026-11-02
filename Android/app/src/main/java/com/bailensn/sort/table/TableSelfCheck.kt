@@ -209,10 +209,12 @@ object TableSelfCheck {
 
     /** 表头里已经标了总分和科目，直接采信。 */
     private fun explicitColumns(header: TableHeader?): Pair<Int, List<Int>>? {
-        val total = header?.totalColumn ?: return null
-        val subjects = header.subjectColumns
-        if (total !in 0 until (header.columns.maxOfOrNull { it.index } ?: -1) + 1) return null
+        val spec = header ?: return null
+        val total = spec.totalColumn ?: return null
+        val subjects = spec.subjectColumns
         if (subjects.isEmpty() || total in subjects) return null
+        val columns = spec.columns.maxOfOrNull { it.index } ?: return null
+        if (total < 0 || total > columns) return null
         return total to subjects
     }
 

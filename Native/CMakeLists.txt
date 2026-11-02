@@ -104,7 +104,10 @@ if (SORT_WITH_OCR)
         # ohos 头是 PRIVATE 挂在 ocr_core 上的，垫片自己也要看得见
         target_include_directories(ocr_mslite_dump PRIVATE
                 ${CMAKE_CURRENT_SOURCE_DIR}/adapters/mindspore/ohos ${MSLITE_ROOT}/runtime)
-        target_link_libraries(ocr_mslite_dump PRIVATE ${OCR_TARGET} ${MSLITE_ROOT}/runtime/lib/libmindspore-lite.so)
+        # libmindspore-lite.so 依赖 glog，包里只给了 converter/lib 那份
+        file(GLOB MSLITE_GLOG "${MSLITE_ROOT}/tools/converter/lib/libmindspore_glog.so*")
+        target_link_libraries(ocr_mslite_dump PRIVATE
+                ${OCR_TARGET} ${MSLITE_ROOT}/runtime/lib/libmindspore-lite.so ${MSLITE_GLOG})
     endif ()
 
     # Paddle-Lite：模型是 .nb；三端各有自己的库，用法和 ORT 那套一样。

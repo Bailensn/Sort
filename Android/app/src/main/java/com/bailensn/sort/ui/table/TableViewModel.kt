@@ -13,6 +13,7 @@ import com.bailensn.sort.table.TableGrid
 import com.bailensn.sort.table.TablePipeline
 import com.bailensn.sort.table.ColumnRole
 import com.bailensn.sort.table.TableHeader
+import com.bailensn.sort.table.TableHeaderDetector
 import com.bailensn.sort.table.TableSelfCheck
 import com.bailensn.sort.ui.table.TableUiState.Phase
 import com.bailensn.sort.util.ImageLoader
@@ -495,7 +496,7 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
             deskewAngle = meta?.deskewAngle ?: 0.0,
             rectified = meta?.rectified ?: false,
             selfCheckSummary = meta?.let { describeSelfCheck(it.report()) }.orEmpty(),
-            header = TableHeader.of(rows.maxOfOrNull { row -> row.size } ?: 0),
+            header = TableHeaderDetector.detect(loaded.rows),
             suspiciousRows = meta?.suspiciousRows.orEmpty(),
         )
     }

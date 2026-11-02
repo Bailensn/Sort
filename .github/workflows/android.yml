@@ -56,7 +56,7 @@ jobs:
           cmake -S Native -B Native/build-ms -DSORT_MSLITE_HOST_TEST=ON -DMSLITE_ROOT="$root" \
             -DSORT_BUILD_TESTS=OFF -DSORT_BUILD_TOOLS=OFF 2>&1 | tee -a build.log
           cmake --build Native/build-ms --parallel 2 --target ocr_mslite_dump 2>&1 | tee -a build.log
-          LD_LIBRARY_PATH="$root/runtime/lib" ./Native/build-ms/ocr_mslite_dump \
+          LD_LIBRARY_PATH="$root/runtime/lib:$root/tools/converter/lib" ./Native/build-ms/ocr_mslite_dump \
             --det /tmp/ms/det.ms --rec /tmp/ms/rec.ms --charset /tmp/ms/rec.yml \
             --image Native/tests/data/table.ppm 2>&1 | tee -a build.log > mslite.json
           cat mslite.json | tee -a build.log
