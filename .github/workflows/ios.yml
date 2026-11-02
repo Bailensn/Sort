@@ -40,7 +40,7 @@ jobs:
         uses: actions/cache@v6
         with:
           path: iOS/ios-app/Resources/models
-          key: ios-onnx-models-v1
+          key: ios-onnx-models-v2
       - name: Download models
         if: steps.model-cache.outputs.cache-hit != 'true'
         run: |
@@ -126,7 +126,7 @@ jobs:
         uses: actions/cache@v6
         with:
           path: iOS/ios-app/Resources/models
-          key: ios-onnx-models-v1
+          key: ios-onnx-models-v2
       - name: Download models
         if: steps.model-cache.outputs.cache-hit != 'true'
         run: |

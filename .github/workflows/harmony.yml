@@ -41,22 +41,33 @@ jobs:
         uses: actions/cache@v6
         with:
           path: Harmony/main/src/main/resources/rawfile/models
-          key: ocr-ms-models-v1
+          key: ocr-ms-models-v2
       - name: Prepare models
         if: steps.model-cache.outputs.cache-hit != 'true'
         run: |
           set -o pipefail
           bash "$GITHUB_WORKSPACE/tools/convert_models.sh" /tmp/mslite 2>&1 | tee -a build.log
-          mkdir -p Harmony/main/src/main/resources/rawfile/models
-          cp /tmp/mslite/det.ms /tmp/mslite/rec.ms /tmp/mslite/rec.yml \
-             Harmony/main/src/main/resources/rawfile/models/
+          # working-directory 已经是 Harmony/，这里必须写绝对路径，否则会落到 Harmony/Harmony/
+          dest="$GITHUB_WORKSPACE/Harmony/main/src/main/resources/rawfile/models"
+          mkdir -p "$dest"
+          cp /tmp/mslite/det.ms /tmp/mslite/rec.ms /tmp/mslite/rec.yml "$dest/"
+          ls -lh "$dest" | tee -a build.log
       - name: Locate MindSpore Lite
         run: |
-          echo "DEVECO_SDK_HOME=${DEVECO_SDK_HOME:-unset}" | tee -a build.log
-          echo "--- 头文件 ---" | tee -a build.log
-          find / -name 'lite_session.h' -path '*mindspore*' 2>/dev/null | head -5 | tee -a build.log
-          echo "--- 库 ---" | tee -a build.log
-          find / -name 'libmindspore_lite*' 2>/dev/null | head -10 | tee -a build.log
+          sdk="${DEVECO_SDK_HOME:-/opt/harmonyos-tools/command-line-tools/sdk/default/openharmony}"
+          inc="$sdk/native/sysroot/usr/include"
+          echo "--- include 目录 ---" | tee -a build.log
+          ls "$inc" 2>/dev/null | tee -a build.log
+          echo "--- mindspore 相关头文件 ---" | tee -a build.log
+          find "$inc" -iname '*mindspore*' -o -iname '*model*.h' 2>/dev/null | head -20 | tee -a build.log
+          find / -name '*c_api*' -path '*mindspore*' 2>/dev/null | head -10 | tee -a build.log
+          echo "--- 库与导出符号 ---" | tee -a build.log
+          lib=$(find / -name 'libmindspore_lite_ndk.so' 2>/dev/null | head -1)
+          echo "lib=$lib" | tee -a build.log
+          if [ -n "$lib" ]; then
+            nm -D --defined-only "$lib" 2>/dev/null | grep OH_AI | head -20 | tee -a build.log || true
+          fi
+          true
       - name: Cache ohpm
         uses: actions/cache@v6
         with:
@@ -70,6 +81,42 @@ jobs:
           set -o pipefail
           hvigorw clean --no-daemon
           hvigorw assembleHap --mode module -p product=default -p buildMode=debug --no-daemon 2>&1 | tee -a build.log
+      - name: Build APP
+        run: |
+          set -o pipefail
+          # HAP 只是单模块产物，整包（.app）走 project 模式；没有签名配置时出 unsigned。
+          hvigorw assembleApp --mode project -p product=default -p buildMode=debug --no-daemon 2>&1 | tee -a build.log
+      - name: Verify package contents
+        run: |
+          set -o pipefail
+          echo "--- 产物 ---" | tee -a build.log
+          find "$GITHUB_WORKSPACE/Harmony" -path '*outputs*' \( -name '*.hap' -o -name '*.app' \) -printf '%s %p\n' 2>/dev/null | tee -a build.log
+
+          hap=$(find "$GITHUB_WORKSPACE/Harmony" -path '*outputs*' -name '*.hap' | head -1)
+          [ -n "$hap" ] || { echo "::error::没有产出 .hap"; exit 1; }
+
+          # 模型是 .ms 二进制，HAP 必须有十几 MB 以上；不到就是 rawfile 没打进去（曾经的 Harmony/Harmony 路径 bug）。
+          size=$(stat -c%s "$hap")
+          echo "HAP 大小: $((size / 1024 / 1024)) MB" | tee -a build.log
+          [ "$size" -gt 50000000 ] || { echo "::error::HAP 只有 $((size/1024)) KB，模型没打进去"; exit 1; }
+
+          list=
+          if command -v unzip > /dev/null; then
+            list=$(unzip -l "$hap")
+          elif command -v python3 > /dev/null; then
+            list=$(python3 -c 'import sys,zipfile; [print(i.filename) for i in zipfile.ZipFile(sys.argv[1]).infolist()]' "$hap")
+          fi
+
+          if [ -z "$list" ]; then
+            echo "::warning::容器里没有 unzip/python3，跳过包内清单校验"
+            exit 0
+          fi
+
+          printf '%s\n' "$list" > entries.txt
+          grep -E 'libs/.*/libmain\.so' entries.txt || { echo "::error::HAP 里没有 libmain.so"; exit 1; }
+          grep -E 'rawfile/models/det\.ms' entries.txt || { echo "::error::HAP 里没有 det.ms"; exit 1; }
+          grep -E 'rawfile/models/rec\.ms' entries.txt || { echo "::error::HAP 里没有 rec.ms"; exit 1; }
+          echo "包内校验通过" | tee -a build.log
       - name: Publish build log
         if: always()
         env:
@@ -82,6 +129,6 @@ jobs:
           name: harmony-hap
           path: |
             Harmony/main/build/default/outputs/**/*.hap
-            Harmony/main/build/default/outputs/**/*.app
+            Harmony/build/outputs/**/*.app
           if-no-files-found: warn
           retention-days: 14

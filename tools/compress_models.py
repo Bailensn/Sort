@@ -1,20 +1,19 @@
-"""把 iOS 打包用的模型压成 zlib，并删掉原始文件。
+"""把 iOS 打包用的模型压成 gzip，并删掉原始文件。
 
-格式：4 字节小端原始长度 + zlib 流，和 Swift 侧 ModelLoader 对应。
+标准 gzip（mtime 置 0），MT 管理器、7-Zip、gunzip 都能直接打开。
 """
 
+import gzip
 import pathlib
-import struct
 import sys
-import zlib
 
 
 def main(paths):
     for name in paths:
         raw = pathlib.Path(name)
         data = raw.read_bytes()
-        packed = pathlib.Path(f"{name}.zlib")
-        packed.write_bytes(struct.pack("<I", len(data)) + zlib.compress(data, 6))
+        packed = pathlib.Path(f"{name}.gz")
+        packed.write_bytes(gzip.compress(data, 6, mtime=0))
         raw.unlink()
         print(f"{name} -> {packed.name} ({len(data)} -> {packed.stat().st_size})")
 

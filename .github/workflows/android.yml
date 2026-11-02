@@ -125,7 +125,9 @@ jobs:
       - name: Assemble release
         run: |
           set -o pipefail
-          ./gradlew --stacktrace --warning-mode=all --build-cache :app:assembleRelease 2>&1 | tee build.log \
+          # 一次 Gradle 调用出 APK + AAB，aab 给商店用
+          ./gradlew --stacktrace --warning-mode=all --build-cache \
+            :app:assembleRelease :app:bundleRelease 2>&1 | tee build.log \
             || { bash "$GITHUB_WORKSPACE/.github/scripts/print-errors.sh" build.log; exit 1; }
 
       - name: Publish build log
@@ -139,6 +141,14 @@ jobs:
         with:
           name: apk-release
           path: Android/app/build/outputs/apk/release/*.apk
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Upload release AAB
+        if: success()
+        uses: actions/upload-artifact@v7
+        with:
+          name: aab-release
+          path: Android/app/build/outputs/bundle/release/*.aab
           if-no-files-found: warn
           retention-days: 14
 
