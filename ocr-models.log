@@ -1,0 +1,10 @@
+Starting a Gradle Daemon (subsequent builds will be faster)
+Calculating task graph as no cached configuration is available for tasks: :app:bundleOcrModels
+> Task :app:bundleOcrModels
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run-1793633677836.json
+
+[Incubating] Problems report is available at: file:///home/runner/work/Sort/Sort/Android/build/reports/problems/problems-report.html
+
+BUILD SUCCESSFUL in 2m 15s
+1 actionable task: 1 executed
+Configuration cache entry stored.
