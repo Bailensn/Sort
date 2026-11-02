@@ -163,6 +163,12 @@ jobs:
           printf '%s\n' "$list" > entries.txt
           grep -E 'libs/.*/libmain\.so' entries.txt || { echo "::error::HAP 里没有 libmain.so"; exit 1; }
           grep -E 'rawfile/models/models\.zip' entries.txt || { echo "::error::HAP 里没有 models.zip"; exit 1; }
+          # 包里那份 zip 必须装的是 .mnn，不能是旧的 .ms
+          hap_zip=$(unzip -p "$hap" 'resources/rawfile/models/models.zip' 2>/dev/null | head -c 2000000)
+          if printf '%s' "$hap_zip" | grep -q 'h\.ms'; then
+            echo "::error::HAP 里的 models.zip 还是 .ms"
+            exit 1
+          fi
           echo "包内校验通过" | tee -a build.log
       - name: Publish build log
         if: always()
