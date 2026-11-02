@@ -1,9 +1,7 @@
 name: Android CI
 
 on:
-  push:
-    branches: [ "main" ]
-  pull_request:
+  # 只手动触发：Actions → Run workflow
   workflow_dispatch:
 
 permissions:
