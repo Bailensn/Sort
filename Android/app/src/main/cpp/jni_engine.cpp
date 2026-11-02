@@ -139,7 +139,6 @@ Java_com_bailensn_sort_OcrBridge_nativeOcrRecognize(JNIEnv *env, jclass, jlong h
     return makeTriple(env, texts, boxArray, confidenceArray);
 }
 
-JNIEXPORT jobjectArray JNICALL
 static jobject recognizeCellsCommon(JNIEnv *env, jlong handle, jbyteArray pixels, jint width,
                                    jint height, jint isBgr, jintArray cells, jfloat scale,
                                    bool referee) {
