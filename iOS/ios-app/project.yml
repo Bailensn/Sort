@@ -37,20 +37,21 @@ targets:
         GENERATE_INFOPLIST_FILE: YES
         # 路径相对于 project.yml 所在目录
         SWIFT_OBJC_BRIDGING_HEADER: Sources/Bridge/Sort-Bridging-Header.h
-        # 三个契约/适配头目录，顺序不重要
-        HEADER_SEARCH_PATHS: $(inherited) $(PROJECT_DIR)/../../Native/capi $(PROJECT_DIR)/../../Native/core $(PROJECT_DIR)/../../Native/adapters
-        # ORT 还没接：xcframework 放进 Vendor/ 之后再打开这个宏，否则 OnnxBackend
-        # 会去找不存在的 onnxruntime_cxx_api.h。
-        # GCC_PREPROCESSOR_DEFINITIONS: $(inherited) SORT_WITH_ONNXRUNTIME=1
+        # 三个契约/适配头目录，顺序不重要；Vendor/Headers 是 ORT 的
+        HEADER_SEARCH_PATHS: $(inherited) $(PROJECT_DIR)/../../Native/capi $(PROJECT_DIR)/../../Native/core $(PROJECT_DIR)/../../Native/adapters $(PROJECT_DIR)/Vendor/Headers
+        # ORT 的 xcframework 不进仓库，CI 用 tools/fetch_ort_ios.sh 下到 Vendor/
+        GCC_PREPROCESSOR_DEFINITIONS: $(inherited) SORT_WITH_ONNXRUNTIME=1
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
         CODE_SIGN_STYLE: Manual
-        # std:: 符号未定义时靠它兜底；onnxruntime 由 xcframework 提供
-        OTHER_LDFLAGS: $(inherited) -lc++
-    # ORT：把 onnxruntime.xcframework 放到 ios-app/Vendor/ 之后，取消下面三行注释
-    # dependencies:
-    #   - framework: Vendor/onnxruntime.xcframework
-    #     embed: true
+        # std:: 符号未定义时靠它兜底；onnxruntime 是静态 xcframework，
+        # 它自己引用的系统框架得由这边显式带上
+        OTHER_LDFLAGS: $(inherited) -lc++ -framework CoreFoundation -framework Foundation -framework Network -framework Security -framework SystemConfiguration -framework UIKit -weak_framework CoreML
+    # 静态框架，不要 embed（embed 会把它塞进 app 的 Frameworks/ 反而多一份）
+    dependencies:
+      - framework: Vendor/onnxruntime.xcframework
+        embed: false
+        link: true
 
   SortTests:
     type: bundle.unit-test

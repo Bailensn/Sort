@@ -103,12 +103,14 @@ ctest --test-dir Native/build --output-on-failure
 **iOS**（需要 macOS）：
 
 ```bash
+bash tools/fetch_ort_ios.sh          # 下 ONNX Runtime xcframework 到 ios-app/Vendor/（62 MB，不入库）
 cd iOS/ios-app
 xcodegen generate
 xcodebuild -project Sort.xcodeproj -scheme Sort -configuration Release build
 ```
 
-ORT 用 `onnxruntime.xcframework`，放进 `ios-app/Vendor/` 后在 `project.yml` 里取消那段注释。
+ORT 取自官方 pod 包（`pod-archive-onnxruntime-c-<version>.zip`），里面有 `ios-arm64` 和
+`ios-arm64_x86_64-simulator` 两个 slice，模拟器和真机都能链。
 
 **HarmonyOS**（需要 DevEco 工具链）：
 
@@ -134,6 +136,14 @@ hvigorw assembleApp -p buildMode=release   # 整包 app
 Android 部分：顶层 `defaults.run.working-directory: Android`，`./gradlew` 与 `build.log` 都落在 `Android/`；artifact 和缓存这类不经过 `run` 的路径显式写 `Android/app/build/...`。SDK 组件安装抽成 `.github/scripts/install-sdk-components.sh`，四个 job 共用。失败时 `print-errors.sh` 直接把 Kotlin/Java 错误和 `What went wrong` 打在同一个 step 里，带 `::error file=...,line=...` 注解。
 
 鸿蒙跑在 `ghcr.io/sanchuanhehe/harmony-next-pipeline-docker` 镜像里，容器自带 DevEco 命令行工具。
+
+## 没有真机怎么验
+
+- **iOS**：`test` job 在 macOS 模拟器里跑 `OcrPipelineTests`，用真模型识别
+  `Tests/Fixtures/table.png`（`tools/make_fixture.py` 生成的点阵数字表格），
+  断言能读回 `900000000001`。模型解压、ORT 前向、DB 后处理、CTC 解码全部走真代码。
+- **Android**：`unit-test` 跑 JVM 测试，OCR 本身要真机或模拟器。
+- **鸿蒙**：只能在 `build` job 里编译 + 用 `nm` 检查符号；运行时得等真机。
 
 ## 已知限制
 

@@ -61,6 +61,15 @@ jobs:
             iOS/ios-app/build-device
           key: ios-derived-${{ hashFiles('iOS/ios-app/project.yml') }}
           restore-keys: ios-derived-
+      - name: Cache ONNX Runtime
+        id: ort-cache
+        uses: actions/cache@v6
+        with:
+          path: iOS/ios-app/Vendor
+          key: ort-ios-1.30.0
+      - name: Fetch ONNX Runtime
+        if: steps.ort-cache.outputs.cache-hit != 'true'
+        run: bash "$GITHUB_WORKSPACE/tools/fetch_ort_ios.sh"
       - name: Generate project
         run: xcodegen generate
       - name: Build simulator
@@ -145,6 +154,15 @@ jobs:
           path: iOS/ios-app/build-test
           key: ios-test-derived-${{ hashFiles('iOS/ios-app/project.yml') }}
           restore-keys: ios-test-derived-
+      - name: Cache ONNX Runtime
+        id: ort-cache
+        uses: actions/cache@v6
+        with:
+          path: iOS/ios-app/Vendor
+          key: ort-ios-1.30.0
+      - name: Fetch ONNX Runtime
+        if: steps.ort-cache.outputs.cache-hit != 'true'
+        run: bash "$GITHUB_WORKSPACE/tools/fetch_ort_ios.sh"
       - name: Generate project
         run: xcodegen generate
       - name: Run tests

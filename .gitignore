@@ -16,3 +16,4 @@ ci-report/
 
 # CI 现场转换出来的鸿蒙模型
 /Harmony/main/src/main/resources/rawfile/models/
+iOS/ios-app/Vendor/
