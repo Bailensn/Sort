@@ -1,6 +1,7 @@
 #include "table/TableAnalyzer.hpp"
 
 #include <algorithm>
+#include <cmath>
 #include <vector>
 
 #include "table/ColumnCleaner.hpp"
