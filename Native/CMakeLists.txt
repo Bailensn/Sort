@@ -37,6 +37,7 @@ if (SORT_WITH_OCR)
             core/table/GridBuilder.cpp
             core/table/LineDetector.cpp
             core/table/Perspective.cpp
+            core/table/TableAnalyzer.cpp
             core/table/TableLogic.cpp
             capi/engine_ocr_capi.cpp
             adapters/BackendFactory.cpp
