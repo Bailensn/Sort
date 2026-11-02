@@ -8,6 +8,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(NATIVERENDER_ROOT_PATH ${CMAKE_CURRENT_SOURCE_DIR})
 set(SHARED_ROOT ${NATIVERENDER_ROOT_PATH}/../../../../../Native)
 
+# 鸿蒙的 MindSpore Lite 是系统 Kit：头文件和库由 CI 通过环境变量给（缺省就不开）。
+if (DEFINED ENV{MSLITE_INCLUDE})
+    set(SORT_WITH_MINDSORE_LITE ON CACHE BOOL "" FORCE)
+endif ()
+
 # 只编 OCR 核心，测试和命令行工具留给本地/CI 的 host 构建。
 set(SORT_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(SORT_BUILD_TOOLS OFF CACHE BOOL "" FORCE)
@@ -17,5 +22,13 @@ add_definitions("-DLOG_DOMAIN=0x0000")
 add_definitions("-DLOG_TAG=\"engine\"")
 
 # 三端产物统一叫 libmain.so，ArkTS 的 import 和 types/libmain 都不用动
+if (DEFINED ENV{MSLITE_INCLUDE})
+    target_include_directories(ocr_core PRIVATE $ENV{MSLITE_INCLUDE})
+endif ()
+
 add_library(main SHARED napi_init.cpp)
 target_link_libraries(main PUBLIC ocr_core libace_napi.z.so libhilog_ndk.z.so)
+
+if (DEFINED ENV{MSLITE_LIB})
+    target_link_libraries(main PUBLIC $ENV{MSLITE_LIB})
+endif ()

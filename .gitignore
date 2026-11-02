@@ -13,3 +13,6 @@ ci-report/
 
 # 本地 cmake 构建目录
 /Native/build/
+
+# CI 现场转换出来的鸿蒙模型
+/Harmony/main/src/main/resources/rawfile/models/

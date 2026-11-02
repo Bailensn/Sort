@@ -1,5 +1,7 @@
 import native from 'libmain.so';
 import { CellReading, OcrLine } from 'libmain.so';
+import { common } from '@kit.AbilityKit';
+import { ensureModels, ModelPaths } from './ModelStore';
 
 /** ArkTS 侧的 OCR 封装：句柄是 number，图片缓冲直接交给 C++。 */
 export class EngineBridge {
@@ -7,6 +9,12 @@ export class EngineBridge {
 
   constructor(detModelPath: string, recModelPath: string, charsetPath: string) {
     this.handle = native.create(detModelPath, recModelPath, charsetPath);
+  }
+
+  /** 从 rawfile 解出模型再建引擎，省得调用方自己拼路径。 */
+  static async createDefault(context: common.UIAbilityContext): Promise<EngineBridge> {
+    const paths: ModelPaths = await ensureModels(context);
+    return new EngineBridge(paths.det, paths.rec, paths.charset);
   }
 
   get isReady(): boolean {

@@ -33,6 +33,20 @@ jobs:
             echo "::error::Harmony/ 不在工作区，检查 checkout 是否完整"
             exit 1
           fi
+      - name: Cache converted models
+        id: model-cache
+        uses: actions/cache@v6
+        with:
+          path: Harmony/main/src/main/resources/rawfile/models
+          key: ocr-ms-models-v1
+      - name: Prepare models
+        if: steps.model-cache.outputs.cache-hit != 'true'
+        run: |
+          set -o pipefail
+          bash "$GITHUB_WORKSPACE/tools/convert_models.sh" /tmp/mslite 2>&1 | tee -a build.log
+          mkdir -p Harmony/main/src/main/resources/rawfile/models
+          cp /tmp/mslite/det.ms /tmp/mslite/rec.ms /tmp/mslite/rec.yml \
+             Harmony/main/src/main/resources/rawfile/models/
       - name: Install dependencies
         run: ohpm install --all
       - name: Build

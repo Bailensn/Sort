@@ -25,71 +25,18 @@ jobs:
         shell: bash
     steps:
       - uses: actions/checkout@v7
-      - name: Download ONNX models
+      - name: Convert
         run: |
           set -o pipefail
-          mkdir -p models
-          curl -fsSL -o models/det.onnx "$HF/PP-OCRv6_medium_det_onnx/resolve/main/inference.onnx"
-          curl -fsSL -o models/rec.onnx "$HF/PP-OCRv6_medium_rec_onnx/resolve/main/inference.onnx"
-          ls -lh models | tee -a build.log
-      - name: Download MindSpore Lite toolkit
-        run: |
-          set -o pipefail
-          # 2.7 起路径从 MindSpore/ 换成了 MindSporeLite/，旧地址会 403
-          base="https://ms-release.obs.cn-north-4.myhuaweicloud.com/${MSLITE_VERSION}/MindSporeLite/lite/release/linux/x86_64"
-          url="${base}/mindspore-lite-${MSLITE_VERSION}-linux-x64.tar.gz"
-          echo "下载 $url" | tee -a build.log
-          curl -fsSL -o mslite.tar.gz "$url" 2>&1 | tee -a build.log
-          tar xzf mslite.tar.gz 2>&1 | tee -a build.log
-          ls -d mindspore-lite-* | tee -a build.log
-          find mindspore-lite-* -name 'converter_lite' | tee -a build.log
-      - name: Convert ONNX to .ms
-        run: |
-          set -o pipefail
-          set +e
-          CONVERTER=$(find mindspore-lite-* -name converter_lite | head -1)
-          echo "converter: $CONVERTER" | tee -a build.log
-          # converter_lite 依赖包内自带的 so，不加进 LD_LIBRARY_PATH 会报找不到
-          CONVERTER_LIB="$(cd "$(dirname "$CONVERTER")/../lib" && pwd)"
-          export LD_LIBRARY_PATH="$CONVERTER_LIB:${LD_LIBRARY_PATH:-}"
-          echo "libs: $CONVERTER_LIB" | tee -a build.log
-          ls "$CONVERTER_LIB" | head -10 | tee -a build.log
-          "$CONVERTER" --help 2>&1 | head -30 | tee -a build.log
-          # 不带 inputShape：尽量保留动态 shape，运行时按实际尺寸 set_shape
-          "$CONVERTER" --fmk=ONNX --modelFile=models/det.onnx \
-            --outputFile=models/det_dyn 2>&1 | tee -a build.log
-          echo "det_dyn rc=$?" | tee -a build.log
-          "$CONVERTER" --fmk=ONNX --modelFile=models/rec.onnx \
-            --outputFile=models/rec_dyn 2>&1 | tee -a build.log
-          echo "rec_dyn rc=$?" | tee -a build.log
-          # 固定尺寸的备用版本，动态版不行时用它
-          "$CONVERTER" --fmk=ONNX --modelFile=models/det.onnx \
-            --outputFile=models/det_fix --inputShape="x:1,3,640,640" 2>&1 | tee -a build.log
-          echo "det_fix rc=$?" | tee -a build.log
-          "$CONVERTER" --fmk=ONNX --modelFile=models/rec.onnx \
-            --outputFile=models/rec_fix --inputShape="x:1,3,48,320" 2>&1 | tee -a build.log
-          echo "rec_fix rc=$?" | tee -a build.log
-          set -e
-          ls -lh models | tee -a build.log
-      - name: Inspect converted models
-        run: |
-          set -o pipefail
-          BENCH=$(find mindspore-lite-* -name benchmark -type f | head -1)
-          echo "benchmark: $BENCH" | tee -a build.log
-          # 包里的 .so 散在好几个目录，把所有含 .so 的目录都塞进 LD_LIBRARY_PATH
-          LIBDIRS=$(find mindspore-lite-* -name '*.so*' -printf '%h\n' | sort -u | tr '\n' ':')
-          echo "lib dirs: $LIBDIRS" | tee -a build.log
-          export LD_LIBRARY_PATH="${LIBDIRS}${LD_LIBRARY_PATH:-}"
-          for m in models/det_dyn.ms models/rec_dyn.ms; do
-            echo "=== $m" | tee -a build.log
-            "$BENCH" --modelFile="$m" --device=CPU 2>&1 | head -30 | tee -a build.log || true
-          done
+          bash tools/convert_models.sh models 2>&1 | tee build.log
       - name: Upload ms
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: ocr-ms-models
-          path: models/**/*.ms
+          path: |
+            models/*.ms
+            models/*.yml
           if-no-files-found: warn
           retention-days: 14
       - name: Publish build log
