@@ -28,8 +28,12 @@ jobs:
           set -o pipefail
           python -m pip install --upgrade pip 2>&1 | tee -a build.log
           pip install paddlelite 2>&1 | tee -a build.log
-          python -c "import paddlelite; print('paddlelite', paddlelite.__file__)" 2>&1 | tee -a build.log
-          python -m paddlelite.lite --help 2>&1 | tee -a build.log || true
+          python -c "import paddlelite, os; print('paddlelite', paddlelite.__file__)" 2>&1 | tee -a build.log
+          # 这个包里没有 python -m 入口，opt 是单独的二进制
+          command -v paddle_lite_opt | tee -a build.log || true
+          pkg_bin="$(python -c 'import paddlelite,os;print(os.path.join(os.path.dirname(paddlelite.__file__),"bin"))')"
+          ls "$pkg_bin" 2>&1 | tee -a build.log || true
+          paddle_lite_opt --help 2>&1 | head -40 | tee -a build.log || true
       - name: Download Paddle inference models
         run: |
           set -o pipefail
@@ -44,12 +48,12 @@ jobs:
         run: |
           set -o pipefail
           set +e
-          python -m paddlelite.lite \
+          paddle_lite_opt \
             --model_dir=models/det \
             --valid_targets=arm \
             --optimize_out=models/det 2>&1 | tee -a build.log
           echo "det rc=$?" | tee -a build.log
-          python -m paddlelite.lite \
+          paddle_lite_opt \
             --model_dir=models/rec \
             --valid_targets=arm \
             --optimize_out=models/rec 2>&1 | tee -a build.log
