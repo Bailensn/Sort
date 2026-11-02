@@ -49,6 +49,11 @@ jobs:
           set +e
           CONVERTER=$(find mindspore-lite-* -name converter_lite | head -1)
           echo "converter: $CONVERTER" | tee -a build.log
+          # converter_lite 依赖包内自带的 so，不加进 LD_LIBRARY_PATH 会报找不到
+          CONVERTER_LIB="$(cd "$(dirname "$CONVERTER")/../lib" && pwd)"
+          export LD_LIBRARY_PATH="$CONVERTER_LIB:${LD_LIBRARY_PATH:-}"
+          echo "libs: $CONVERTER_LIB" | tee -a build.log
+          ls "$CONVERTER_LIB" | head -10 | tee -a build.log
           "$CONVERTER" --help 2>&1 | head -30 | tee -a build.log
           # det 的输入是动态的（32 的倍数），先按 640x640 试一版
           "$CONVERTER" --fmk=ONNX --modelFile=models/det.onnx \
