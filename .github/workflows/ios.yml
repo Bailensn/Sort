@@ -1,7 +1,9 @@
 name: iOS CI
 
 on:
-  # 没有苹果设备，只在手动验证时跑；不要跟着每次推送占 macOS 机时。
+  push:
+    branches: [ "main" ]
+  pull_request:
   workflow_dispatch:
 
 permissions:
@@ -9,7 +11,8 @@ permissions:
 
 concurrency:
   group: ios-${{ github.ref }}
-  cancel-in-progress: true
+  # main 上的推送跑完，PR 只跑最新一次
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   build:

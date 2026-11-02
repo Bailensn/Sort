@@ -1,7 +1,9 @@
 name: Harmony CI
 
 on:
-  # 鸿蒙还是骨架，别在每次推送时白跑；等有界面了再打开 push 触发。
+  push:
+    branches: [ "main" ]
+  pull_request:
   workflow_dispatch:
 
 permissions:
@@ -10,7 +12,8 @@ permissions:
 
 concurrency:
   group: harmony-${{ github.ref }}
-  cancel-in-progress: true
+  # main 上的推送跑完，PR 只跑最新一次
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   build:

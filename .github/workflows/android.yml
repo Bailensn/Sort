@@ -1,7 +1,9 @@
 name: Android CI
 
 on:
-  # 只手动跑：Kotlin 那套还没在 CI 上验证过，先别跟着每次推送烧时间。
+  push:
+    branches: [ "main" ]
+  pull_request:
   workflow_dispatch:
 
 permissions:
