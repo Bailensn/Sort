@@ -8,7 +8,7 @@ export interface ModelPaths {
   charset: string;
 }
 
-const FILES: string[] = ['det.ms', 'rec.ms', 'rec.yml'];
+const FILES: string[] = ['det.mnn', 'rec.mnn', 'rec.yml'];
 
 /**
  * rawfile 不是文件系统路径，C++ 的 Model::Import 读不到；
@@ -25,8 +25,8 @@ export async function ensureModels(context: common.UIAbilityContext): Promise<Mo
   }
 
   return {
-    det: `${dir}/det.ms`,
-    rec: `${dir}/rec.ms`,
+    det: `${dir}/det.mnn`,
+    rec: `${dir}/rec.mnn`,
     charset: `${dir}/rec.yml`,
   };
 }
