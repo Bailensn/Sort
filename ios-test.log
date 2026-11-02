@@ -1,0 +1,882 @@
+Command line invocation:
+    /Applications/Xcode_26.6.app/Contents/Developer/usr/bin/xcodebuild test -project Sort.xcodeproj -scheme Sort -destination "platform=iOS Simulator,id=7EFC6246-6BDB-4FD4-AE32-9345E3B28BD8" -derivedDataPath build-test CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO ONLY_ACTIVE_ARCH=YES
+
+Build settings from command line:
+    CODE_SIGNING_ALLOWED = NO
+    CODE_SIGNING_REQUIRED = NO
+    ONLY_ACTIVE_ARCH = YES
+
+--- xcodebuild: WARNING: Using the first of multiple matching destinations:
+{ platform:iOS Simulator, arch:arm64, id:7EFC6246-6BDB-4FD4-AE32-9345E3B28BD8, OS:26.4.1, name:iPhone 17 Pro }
+{ platform:iOS Simulator, arch:x86_64, id:7EFC6246-6BDB-4FD4-AE32-9345E3B28BD8, OS:26.4.1, name:iPhone 17 Pro }
+ComputePackagePrebuildTargetDependencyGraph
+
+Prepare packages
+
+CreateBuildRequest
+
+SendProjectDescription
+
+CreateBuildOperation
+
+ComputeTargetDependencyGraph
+note: Building targets in dependency order
+note: Target dependency graph (2 targets)
+    Target 'SortTests' in project 'Sort'
+        ➜ Explicit dependency on target 'Sort' in project 'Sort'
+    Target 'Sort' in project 'Sort' (no dependencies)
+
+GatherProvisioningInputs
+
+CreateBuildDescription
+
+ExecuteExternalTool /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -v -E -dM -arch arm64 -isysroot /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -x c++ -c /dev/null
+
+ExecuteExternalTool /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc --version
+
+ExecuteExternalTool /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -v -E -dM -isysroot /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -x c -c /dev/null
+
+ExecuteExternalTool /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -v -E -dM -arch arm64 -isysroot /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -x c -c /dev/null
+
+ExecuteExternalTool /Applications/Xcode_26.6.app/Contents/Developer/usr/bin/actool --print-asset-tag-combinations --output-format xml1 /Users/runner/work/Sort/Sort/iOS/ios-app/Resources/Assets.xcassets
+
+ExecuteExternalTool /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ld -version_details
+
+ExecuteExternalTool /Applications/Xcode_26.6.app/Contents/Developer/usr/bin/actool --version --output-format xml1
+
+Build description signature: 5b8006da261d0c6734f2629d7926ca6f
+Build description path: /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/XCBuildData/5b8006da261d0c6734f2629d7926ca6f.xcbuilddata
+WriteAuxiliaryFile /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort-f6ef007d5601a142269d72238cda5956-VFS-iphonesimulator/all-product-headers.yaml
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app/Sort.xcodeproj
+    write-file /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort-f6ef007d5601a142269d72238cda5956-VFS-iphonesimulator/all-product-headers.yaml
+
+ClangStatCache /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/SDKStatCaches.noindex/iphonesimulator26.5-23F81a-688ef53f1462e2c8f657fdc38a81448ff45c64a1807a658693f2a61704f17a36.sdkstatcache
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app/Sort.xcodeproj
+    /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -o /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/SDKStatCaches.noindex/iphonesimulator26.5-23F81a-688ef53f1462e2c8f657fdc38a81448ff45c64a1807a658693f2a61704f17a36.sdkstatcache
+Base directory status changed. Regenerating...
+
+WriteAuxiliaryFile /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/empty-SortTests.plist (in target 'SortTests' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    write-file /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/empty-SortTests.plist
+
+WriteAuxiliaryFile /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/SortTests.hmap (in target 'SortTests' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    write-file /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/SortTests.hmap
+
+WriteAuxiliaryFile /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/SortTests.DependencyStaticMetadataFileList (in target 'SortTests' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    write-file /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/SortTests.DependencyStaticMetadataFileList
+
+WriteAuxiliaryFile /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/SortTests.DependencyMetadataFileList (in target 'SortTests' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    write-file /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/SortTests.DependencyMetadataFileList
+
+WriteAuxiliaryFile /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/SortTests-project-headers.hmap (in target 'SortTests' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    write-file /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/SortTests-project-headers.hmap
+
+WriteAuxiliaryFile /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/SortTests-own-target-headers.hmap (in target 'SortTests' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    write-file /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/SortTests-own-target-headers.hmap
+
+WriteAuxiliaryFile /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/SortTests-generated-files.hmap (in target 'SortTests' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    write-file /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/SortTests-generated-files.hmap
+
+WriteAuxiliaryFile /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/SortTests-all-target-headers.hmap (in target 'SortTests' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    write-file /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/SortTests-all-target-headers.hmap
+
+WriteAuxiliaryFile /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/SortTests-all-non-framework-target-headers.hmap (in target 'SortTests' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    write-file /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/SortTests-all-non-framework-target-headers.hmap
+
+WriteAuxiliaryFile /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/Objects-normal/arm64/SortTests_const_extract_protocols.json (in target 'SortTests' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    write-file /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/Objects-normal/arm64/SortTests_const_extract_protocols.json
+
+WriteAuxiliaryFile /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/Objects-normal/arm64/SortTests.SwiftFileList (in target 'SortTests' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    write-file /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/Objects-normal/arm64/SortTests.SwiftFileList
+
+WriteAuxiliaryFile /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/Objects-normal/arm64/SortTests.SwiftConstValuesFileList (in target 'SortTests' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    write-file /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/Objects-normal/arm64/SortTests.SwiftConstValuesFileList
+
+WriteAuxiliaryFile /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/Objects-normal/arm64/SortTests.LinkFileList (in target 'SortTests' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    write-file /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/Objects-normal/arm64/SortTests.LinkFileList
+
+WriteAuxiliaryFile /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/Objects-normal/arm64/SortTests-OutputFileMap.json (in target 'SortTests' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    write-file /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/Objects-normal/arm64/SortTests-OutputFileMap.json
+
+MkDir /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app/PlugIns/SortTests.xctest (in target 'SortTests' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    /bin/mkdir -p /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app/PlugIns/SortTests.xctest
+
+ProcessXCFramework /Users/runner/work/Sort/Sort/iOS/ios-app/Vendor/onnxruntime.xcframework /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/onnxruntime.framework ios simulator
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app/Sort.xcodeproj
+    builtin-process-xcframework --xcframework /Users/runner/work/Sort/Sort/iOS/ios-app/Vendor/onnxruntime.xcframework --platform ios --environment simulator --target-path /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator
+
+WriteAuxiliaryFile /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/empty-Sort.plist (in target 'Sort' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    write-file /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/empty-Sort.plist
+
+WriteAuxiliaryFile /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Sort.hmap (in target 'Sort' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    write-file /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Sort.hmap
+
+WriteAuxiliaryFile /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Sort.DependencyStaticMetadataFileList (in target 'Sort' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    write-file /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Sort.DependencyStaticMetadataFileList
+
+WriteAuxiliaryFile /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Sort.DependencyMetadataFileList (in target 'Sort' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    write-file /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Sort.DependencyMetadataFileList
+
+WriteAuxiliaryFile /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Sort-project-headers.hmap (in target 'Sort' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    write-file /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Sort-project-headers.hmap
+
+WriteAuxiliaryFile /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Sort-own-target-headers.hmap (in target 'Sort' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    write-file /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Sort-own-target-headers.hmap
+
+WriteAuxiliaryFile /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Sort-generated-files.hmap (in target 'Sort' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    write-file /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Sort-generated-files.hmap
+
+WriteAuxiliaryFile /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Sort-all-target-headers.hmap (in target 'Sort' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    write-file /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Sort-all-target-headers.hmap
+
+WriteAuxiliaryFile /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Sort-all-non-framework-target-headers.hmap (in target 'Sort' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    write-file /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Sort-all-non-framework-target-headers.hmap
+
+WriteAuxiliaryFile /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Sort-DebugDylibPath-normal-arm64.txt (in target 'Sort' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    write-file /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Sort-DebugDylibPath-normal-arm64.txt
+
+WriteAuxiliaryFile /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Sort-DebugDylibInstallName-normal-arm64.txt (in target 'Sort' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    write-file /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Sort-DebugDylibInstallName-normal-arm64.txt
+
+WriteAuxiliaryFile /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/Sort_const_extract_protocols.json (in target 'Sort' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    write-file /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/Sort_const_extract_protocols.json
+
+WriteAuxiliaryFile /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/Sort.SwiftFileList (in target 'Sort' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    write-file /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/Sort.SwiftFileList
+
+WriteAuxiliaryFile /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/Sort.SwiftConstValuesFileList (in target 'Sort' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    write-file /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/Sort.SwiftConstValuesFileList
+
+WriteAuxiliaryFile /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/Sort.LinkFileList (in target 'Sort' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    write-file /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/Sort.LinkFileList
+
+WriteAuxiliaryFile /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/Sort-OutputFileMap.json (in target 'Sort' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    write-file /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/Sort-OutputFileMap.json
+
+WriteAuxiliaryFile /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/82b82416624d2658e5098eb0a28c15c5-common-args.resp (in target 'Sort' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    write-file /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/82b82416624d2658e5098eb0a28c15c5-common-args.resp
+'-std=c++17' '-stdlib=libc++' -fmodules -fno-cxx-modules -gmodules '-fmodules-cache-path=/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex' '-D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_DEBUG' -fpascal-strings -O0 -fno-common '-DDEBUG=1' '-DSORT_WITH_ONNXRUNTIME=1' -g -fvisibility-inlines-hidden -iquote /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Sort-generated-files.hmap -I/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Sort-own-target-headers.hmap -I/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Sort-all-target-headers.hmap -iquote /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Sort-project-headers.hmap -I/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/include -I/Users/runner/work/Sort/Sort/Native/capi -I/Users/runner/work/Sort/Sort/Native/core -I/Users/runner/work/Sort/Sort/Native/adapters -I/Users/runner/work/Sort/Sort/iOS/ios-app/Vendor/Headers -I/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/DerivedSources-normal/arm64 -I/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/DerivedSources/arm64 -I/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/DerivedSources -F/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator -FVendor
+
+MkDir /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app/PlugIns (in target 'Sort' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    /bin/mkdir -p /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app/PlugIns
+
+MkDir /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app/Frameworks (in target 'Sort' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    /bin/mkdir -p /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app/Frameworks
+
+MkDir /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app (in target 'Sort' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    /bin/mkdir -p /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app
+
+Ld /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app/__preview.dylib normal (in target 'Sort' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-ios17.0-simulator -dynamiclib -isysroot /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -O0 -L/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator -F/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator -FVendor -install_name @rpath/Sort.debug.dylib -Xlinker -dead_strip -rdynamic -Xlinker -no_deduplicate -Xlinker -objc_abi_version -Xlinker 2 -Xlinker -dependency_info -Xlinker /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/Sort_dependency_info.dat -o /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app/__preview.dylib
+
+MkDir /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/assetcatalog_output/unthinned (in target 'Sort' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    /bin/mkdir -p /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/assetcatalog_output/unthinned
+
+MkDir /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/assetcatalog_output/thinned (in target 'Sort' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    /bin/mkdir -p /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/assetcatalog_output/thinned
+
+GenerateAssetSymbols /Users/runner/work/Sort/Sort/iOS/ios-app/Resources/Assets.xcassets (in target 'Sort' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    /Applications/Xcode_26.6.app/Contents/Developer/usr/bin/actool /Users/runner/work/Sort/Sort/iOS/ios-app/Resources/Assets.xcassets --compile /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app --output-format human-readable-text --notices --warnings --export-dependency-info /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/assetcatalog_dependencies --output-partial-info-plist /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/assetcatalog_generated_info.plist --app-icon AppIcon --accent-color AccentColor --compress-pngs --enable-on-demand-resources YES --development-region en --target-device iphone --target-device ipad --minimum-deployment-target 17.0 --platform iphonesimulator --bundle-identifier com.bailensn.sort --generate-swift-asset-symbol-extensions NO --generate-swift-asset-symbols /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/DerivedSources/GeneratedAssetSymbols.swift --generate-objc-asset-symbols /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/DerivedSources/GeneratedAssetSymbols.h --generate-asset-symbol-index /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/DerivedSources/GeneratedAssetSymbols-Index.plist
+/* com.apple.actool.compilation-results */
+/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/DerivedSources/GeneratedAssetSymbols-Index.plist
+/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/DerivedSources/GeneratedAssetSymbols.h
+/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/DerivedSources/GeneratedAssetSymbols.swift
+
+
+CpResource /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app/rec.yml.gz /Users/runner/work/Sort/Sort/iOS/ios-app/Resources/models/rec.yml.gz (in target 'Sort' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /Users/runner/work/Sort/Sort/iOS/ios-app/Resources/models/rec.yml.gz /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app
+
+CpResource /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app/rec.onnx.gz /Users/runner/work/Sort/Sort/iOS/ios-app/Resources/models/rec.onnx.gz (in target 'Sort' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /Users/runner/work/Sort/Sort/iOS/ios-app/Resources/models/rec.onnx.gz /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app
+
+CpResource /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app/det.onnx.gz /Users/runner/work/Sort/Sort/iOS/ios-app/Resources/models/det.onnx.gz (in target 'Sort' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /Users/runner/work/Sort/Sort/iOS/ios-app/Resources/models/det.onnx.gz /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app
+
+Copy /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app/Frameworks/libXCTestSwiftSupport.dylib /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib/libXCTestSwiftSupport.dylib (in target 'Sort' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -exclude Headers -exclude PrivateHeaders -exclude Modules -exclude \*.tbd -resolve-src-symlinks /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib/libXCTestSwiftSupport.dylib /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app/Frameworks
+
+Copy /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app/Frameworks/libXCTestBundleInject.dylib /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib/libXCTestBundleInject.dylib (in target 'Sort' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -exclude Headers -exclude PrivateHeaders -exclude Modules -exclude \*.tbd -resolve-src-symlinks /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib/libXCTestBundleInject.dylib /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app/Frameworks
+
+Copy /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app/Frameworks/XCUnit.framework /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/PrivateFrameworks/XCUnit.framework (in target 'Sort' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -exclude Headers -exclude PrivateHeaders -exclude Modules -exclude \*.tbd -resolve-src-symlinks /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/PrivateFrameworks/XCUnit.framework /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app/Frameworks
+
+Copy /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app/Frameworks/XCUIAutomation.framework /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks/XCUIAutomation.framework (in target 'Sort' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -exclude Headers -exclude PrivateHeaders -exclude Modules -exclude \*.tbd -resolve-src-symlinks /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks/XCUIAutomation.framework /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app/Frameworks
+
+Copy /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app/Frameworks/XCTestSupport.framework /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/PrivateFrameworks/XCTestSupport.framework (in target 'Sort' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -exclude Headers -exclude PrivateHeaders -exclude Modules -exclude \*.tbd -resolve-src-symlinks /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/PrivateFrameworks/XCTestSupport.framework /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app/Frameworks
+
+Copy /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app/Frameworks/XCTestCore.framework /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/PrivateFrameworks/XCTestCore.framework (in target 'Sort' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -exclude Headers -exclude PrivateHeaders -exclude Modules -exclude \*.tbd -resolve-src-symlinks /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/PrivateFrameworks/XCTestCore.framework /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app/Frameworks
+
+Copy /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app/Frameworks/XCTest.framework /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks/XCTest.framework (in target 'Sort' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -exclude Headers -exclude PrivateHeaders -exclude Modules -exclude \*.tbd -resolve-src-symlinks /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks/XCTest.framework /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app/Frameworks
+
+Copy /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app/Frameworks/XCTAutomationSupport.framework /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/PrivateFrameworks/XCTAutomationSupport.framework (in target 'Sort' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -exclude Headers -exclude PrivateHeaders -exclude Modules -exclude \*.tbd -resolve-src-symlinks /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/PrivateFrameworks/XCTAutomationSupport.framework /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app/Frameworks
+
+Copy /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app/Frameworks/Testing.framework /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks/Testing.framework (in target 'Sort' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -exclude Headers -exclude PrivateHeaders -exclude Modules -exclude \*.tbd -resolve-src-symlinks /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks/Testing.framework /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app/Frameworks
+
+CompileAssetCatalogVariant thinned /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app /Users/runner/work/Sort/Sort/iOS/ios-app/Resources/Assets.xcassets (in target 'Sort' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    /Applications/Xcode_26.6.app/Contents/Developer/usr/bin/actool /Users/runner/work/Sort/Sort/iOS/ios-app/Resources/Assets.xcassets --compile /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/assetcatalog_output/thinned --output-format human-readable-text --notices --warnings --export-dependency-info /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/assetcatalog_dependencies_thinned --output-partial-info-plist /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/assetcatalog_generated_info.plist_thinned --app-icon AppIcon --accent-color AccentColor --compress-pngs --enable-on-demand-resources YES --filter-for-thinning-device-configuration iPhone18,1 --filter-for-device-os-version 26.4.1 --development-region en --target-device iphone --target-device ipad --minimum-deployment-target 17.0 --platform iphonesimulator
+/* com.apple.actool.compilation-results */
+/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/assetcatalog_generated_info.plist_thinned
+/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/assetcatalog_output/thinned/AppIcon60x60@2x.png
+/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/assetcatalog_output/thinned/AppIcon76x76@2x~ipad.png
+/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/assetcatalog_output/thinned/Assets.car
+
+
+SwiftDriver Sort normal arm64 com.apple.xcode.tools.swift.compiler (in target 'Sort' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    builtin-SwiftDriver -- /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name Sort -Onone @/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/Sort.SwiftFileList -DDEBUG -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -target arm64-apple-ios17.0-simulator -g -module-cache-path /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 6 -I /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator -F /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator -F Vendor -c -j3 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/SDKStatCaches.noindex/iphonesimulator26.5-23F81a-688ef53f1462e2c8f657fdc38a81448ff45c64a1807a658693f2a61704f17a36.sdkstatcache -output-file-map /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/Sort-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex -sdk-module-cache-path /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/Sort.swiftmodule -validate-clang-modules-once -clang-build-session-file /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex/Session.modulevalidation -Xcc -I/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/Sort_const_extract_protocols.json -Xcc -iquote -Xcc /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Sort-generated-files.hmap -Xcc -I/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Sort-own-target-headers.hmap -Xcc -I/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Sort-all-target-headers.hmap -Xcc -iquote -Xcc /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Sort-project-headers.hmap -Xcc -I/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/include -Xcc -I/Users/runner/work/Sort/Sort/Native/capi -Xcc -I/Users/runner/work/Sort/Sort/Native/core -Xcc -I/Users/runner/work/Sort/Sort/Native/adapters -Xcc -I/Users/runner/work/Sort/Sort/iOS/ios-app/Vendor/Headers -Xcc -I/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/DerivedSources-normal/arm64 -Xcc -I/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/DerivedSources/arm64 -Xcc -I/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/DerivedSources -Xcc -DDEBUG\=1 -Xcc -DSORT_WITH_ONNXRUNTIME\=1 -emit-objc-header -emit-objc-header-path /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/Sort-Swift.h -import-objc-header /Users/runner/work/Sort/Sort/iOS/ios-app/Sources/Bridge/Sort-Bridging-Header.h -working-directory /Users/runner/work/Sort/Sort/iOS/ios-app -experimental-emit-module-separately -disable-cmo
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex/_Builtin_float-1H86WCYLWK9X8X1DNBMEUAIUF.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex/_Builtin_stddef-5Z4TYF3X4L0TPEZXRT8PKPJOV.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex/SwiftShims-16QUL8NK7A4IBBMGGTSOTYR4C.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex/_Builtin_stdarg-1GJAYEZJS7S1LHDCGDIPJYZBX.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex/_AvailabilityInternal-J63V4VRDLS8FLKV9D3B6DCL0.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex/ptrauth-3S8FLICMTWNRBRJ3OZUUITP0D.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex/ptrcheck-9NUQ3EN2IGAQW3UWY0JDC8S8M.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex/DeveloperToolsSupport-DHBPKZQ9SOK8YL5ZS9CQIRENC.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex/_Builtin_stdbool-CC9U07YZ2PU58ZZYG8JF806N2.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex/_SwiftConcurrencyShims-2HHCD00JKDRLTB0LP7YHAQMV1.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex/_DarwinFoundation1-BEBYB8KK0O5O84SQIFQ7ZU0CA.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex/_DarwinFoundation2-DGEMNBH45RQ3Y0DY0WOZF01Y.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex/_Builtin_limits-V1BSIJIYK03JAYOQZC77IVOT.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex/sys_types-382A4QSI112ZPTNES5NBLMGGD.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex/_Builtin_stdint-5QZRY9WUJAK3Y0QGAH0NKQ1D9.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex/_Builtin_tgmath-B1BPH4MXPJ1YQX4LBM2H9BG0C.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex/_Builtin_stdatomic-2TTBEEYZSRA0W51J4AJBF9D60.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex/_DarwinFoundation3-592SWM4NQNE76XPSGYKYYU0N.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex/_Builtin_intrinsics-3XMNOR56P5XY7FX32K7D5HO1G.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex/_Builtin_inttypes-8HWKG6AYF767P2DDFTXKZOVSQ.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex/Darwin-7S1MPYDD1BDFH5VNDBIQW61F3.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex/simd-D6T5QJMKE9YKYEOUWT0350RGR.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex/Compression-BQHQW9JCRR3EF1E7UBN6QFQK9.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex/MachO-4B37095HDYBDSBBC56DTWO6B0.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex/ObjectiveC-9C1S4TYR9IZPH9LCCN6TMPUM0.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex/os_object-AMYHOG24PGIXDK7GGWY279DZI.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex/os_workgroup-2FUUZOMKRIT8AXGLX08PKXSXD.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex/Dispatch-40Q3SWKL8NK7C87MUO3G8GYIA.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex/Spatial-DD22U8DYJSOGCGYDRC5BD3WU4.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex/CoreFoundation-4VRKZN4IWALD1PIANNFSTT2YK.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex/XPC-ACLHE96VLKDBZJSLIOXEQJQBI.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex/CoreGraphics-3T09IKOYYW1G6P4U8W1WLGPSO.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex/CFNetwork-CT30TWQKU19H8Y9JOFVXXMB2N.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex/Security-99DROY0XNVXRZNREHTYR19KKJ.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex/os-B21JY0SSUE16R28R7YCRX9ZSM.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex/ImageIO-KC2IIFVSKILDCH2A46G0S5B0.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex/CoreText-3L6VUAOBW0WOGN9QNGEM7D5OF.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex/Foundation-6Q7O5X8IG1N2M7AMVW5EENUY.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex/FileProvider-5U28YRDIOYUS6GN5EF88AZIT5.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex/OSLog-A33I7LIA7F624GI6Z6BQ6LESF.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex/CoreData-3F2417TNNOF7EY1C1C3QV1P2D.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex/OpenGLES-52VF4QP7RNVMXUXQVN18I4ZKF.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex/CoreTransferable-4OOY47Z1FLCI208FBDMYC4VFS.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex/UserNotifications-1S4D6YKZ8IX2GED6I2U3L755V.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex/Symbols-BKQT9OSVYX0VK4W86NQ1DC89A.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex/DataDetection-65WGOJR5CQONMCAWVKMZ4USQ3.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex/UIUtilities-755L5YAES8B7XQ0POEHGL9CO9.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex/Accessibility-BCYGO0P6AS7XLUUGTWHOM4Y73.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex/UniformTypeIdentifiers-17FINXBR6GHFZWAMJR47PX824.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex/IOSurface-7A8Z1Y17UKBU5M9AKG37C0C6X.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex/Metal-9RW23FO1N35UYSPQ5A5RUJYYP.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex/CoreVideo-6KMUVP8BKL2JLR14EE8HVYUG9.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex/QuartzCore-4MBWULDRY754K94ELICBW1IXL.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex/CoreImage-WUTZX687UAMGUSMBHRCS3MUN.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex/SwiftUICore-QPD5D7JJH3ZP94XZFYBCZFDW.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex/UIKit-BW52LXRG92YB3PFX28DW6W8D2.pcm
+
+LinkAssetCatalog /Users/runner/work/Sort/Sort/iOS/ios-app/Resources/Assets.xcassets (in target 'Sort' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    builtin-linkAssetCatalog --thinned /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/assetcatalog_output/thinned --thinned-dependencies /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/assetcatalog_dependencies_thinned --thinned-info-plist-content /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/assetcatalog_generated_info.plist_thinned --unthinned /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/assetcatalog_output/unthinned --unthinned-dependencies /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/assetcatalog_dependencies_unthinned --unthinned-info-plist-content /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/assetcatalog_generated_info.plist_unthinned --output /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app --plist-output /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/assetcatalog_generated_info.plist
+note: Emplaced /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app/AppIcon76x76@2x~ipad.png (in target 'Sort' from project 'Sort')
+note: Emplaced /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app/Assets.car (in target 'Sort' from project 'Sort')
+note: Emplaced /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app/AppIcon60x60@2x.png (in target 'Sort' from project 'Sort')
+
+ProcessInfoPlistFile /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app/Info.plist /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/empty-Sort.plist (in target 'Sort' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    builtin-infoPlistUtility /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/empty-Sort.plist -producttype com.apple.product-type.application -genpkginfo /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app/PkgInfo -expandbuildsettings -format binary -platform iphonesimulator -additionalcontentfile /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/assetcatalog_generated_info.plist -o /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app/Info.plist
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex/SwiftUI-8J7NW4XLJ6DTIQU6LE8YT3W2U.pcm
+
+SwiftGeneratePch normal arm64 Compiling\ bridging\ header (in target 'Sort' from project 'Sort')
+
+SwiftDriverJobDiscovery normal arm64 Compiling bridging header (in target 'Sort' from project 'Sort')
+
+SwiftEmitModule normal arm64 Emitting\ module\ for\ Sort (in target 'Sort' from project 'Sort')
+
+EmitSwiftModule normal arm64 (in target 'Sort' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    
+
+SwiftCompile normal arm64 Compiling\ HistoryDetailView.swift,\ HistoryView.swift,\ ModelLoader.swift /Users/runner/work/Sort/Sort/iOS/ios-app/Sources/App/HistoryDetailView.swift /Users/runner/work/Sort/Sort/iOS/ios-app/Sources/App/HistoryView.swift /Users/runner/work/Sort/Sort/iOS/ios-app/Sources/Bridge/ModelLoader.swift (in target 'Sort' from project 'Sort')
+SwiftCompile normal arm64 /Users/runner/work/Sort/Sort/iOS/ios-app/Sources/App/HistoryDetailView.swift (in target 'Sort' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    
+
+SwiftCompile normal arm64 /Users/runner/work/Sort/Sort/iOS/ios-app/Sources/App/HistoryView.swift (in target 'Sort' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    
+
+SwiftCompile normal arm64 /Users/runner/work/Sort/Sort/iOS/ios-app/Sources/Bridge/ModelLoader.swift (in target 'Sort' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    
+
+SwiftCompile normal arm64 Compiling\ RootView.swift,\ SortApp.swift,\ GeneratedAssetSymbols.swift /Users/runner/work/Sort/Sort/iOS/ios-app/Sources/App/RootView.swift /Users/runner/work/Sort/Sort/iOS/ios-app/Sources/App/SortApp.swift /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/DerivedSources/GeneratedAssetSymbols.swift (in target 'Sort' from project 'Sort')
+
+SwiftCompile normal arm64 /Users/runner/work/Sort/Sort/iOS/ios-app/Sources/App/RootView.swift (in target 'Sort' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    
+
+SwiftCompile normal arm64 /Users/runner/work/Sort/Sort/iOS/ios-app/Sources/App/SortApp.swift (in target 'Sort' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    
+
+SwiftCompile normal arm64 /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/DerivedSources/GeneratedAssetSymbols.swift (in target 'Sort' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    
+
+SwiftCompile normal arm64 Compiling\ Models.swift,\ OcrBridge.swift,\ RecognizeView.swift /Users/runner/work/Sort/Sort/iOS/ios-app/Sources/App/Models.swift /Users/runner/work/Sort/Sort/iOS/ios-app/Sources/Bridge/OcrBridge.swift /Users/runner/work/Sort/Sort/iOS/ios-app/Sources/App/RecognizeView.swift (in target 'Sort' from project 'Sort')
+SwiftCompile normal arm64 /Users/runner/work/Sort/Sort/iOS/ios-app/Sources/App/Models.swift (in target 'Sort' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    
+
+SwiftCompile normal arm64 /Users/runner/work/Sort/Sort/iOS/ios-app/Sources/Bridge/OcrBridge.swift (in target 'Sort' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    
+
+SwiftCompile normal arm64 /Users/runner/work/Sort/Sort/iOS/ios-app/Sources/App/RecognizeView.swift (in target 'Sort' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    
+
+SwiftDriverJobDiscovery normal arm64 Emitting module for Sort (in target 'Sort' from project 'Sort')
+
+SwiftDriver\ Compilation\ Requirements Sort normal arm64 com.apple.xcode.tools.swift.compiler (in target 'Sort' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    builtin-Swift-Compilation-Requirements -- /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name Sort -Onone @/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/Sort.SwiftFileList -DDEBUG -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -target arm64-apple-ios17.0-simulator -g -module-cache-path /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 6 -I /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator -F /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator -F Vendor -c -j3 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/SDKStatCaches.noindex/iphonesimulator26.5-23F81a-688ef53f1462e2c8f657fdc38a81448ff45c64a1807a658693f2a61704f17a36.sdkstatcache -output-file-map /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/Sort-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex -sdk-module-cache-path /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/Sort.swiftmodule -validate-clang-modules-once -clang-build-session-file /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex/Session.modulevalidation -Xcc -I/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/Sort_const_extract_protocols.json -Xcc -iquote -Xcc /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Sort-generated-files.hmap -Xcc -I/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Sort-own-target-headers.hmap -Xcc -I/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Sort-all-target-headers.hmap -Xcc -iquote -Xcc /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Sort-project-headers.hmap -Xcc -I/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/include -Xcc -I/Users/runner/work/Sort/Sort/Native/capi -Xcc -I/Users/runner/work/Sort/Sort/Native/core -Xcc -I/Users/runner/work/Sort/Sort/Native/adapters -Xcc -I/Users/runner/work/Sort/Sort/iOS/ios-app/Vendor/Headers -Xcc -I/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/DerivedSources-normal/arm64 -Xcc -I/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/DerivedSources/arm64 -Xcc -I/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/DerivedSources -Xcc -DDEBUG\=1 -Xcc -DSORT_WITH_ONNXRUNTIME\=1 -emit-objc-header -emit-objc-header-path /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/Sort-Swift.h -import-objc-header /Users/runner/work/Sort/Sort/iOS/ios-app/Sources/Bridge/Sort-Bridging-Header.h -working-directory /Users/runner/work/Sort/Sort/iOS/ios-app -experimental-emit-module-separately -disable-cmo
+
+SwiftDriverJobDiscovery normal arm64 Compiling RootView.swift, SortApp.swift, GeneratedAssetSymbols.swift (in target 'Sort' from project 'Sort')
+
+SwiftMergeGeneratedHeaders /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/DerivedSources/Sort-Swift.h /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/Sort-Swift.h (in target 'Sort' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    builtin-swiftHeaderTool -arch arm64 /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/Sort-Swift.h -o /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/DerivedSources/Sort-Swift.h
+
+Copy /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.swiftmodule/arm64-apple-ios-simulator.swiftmodule /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/Sort.swiftmodule (in target 'Sort' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/Sort.swiftmodule /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.swiftmodule/arm64-apple-ios-simulator.swiftmodule
+
+Copy /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.swiftmodule/arm64-apple-ios-simulator.swiftdoc /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/Sort.swiftdoc (in target 'Sort' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/Sort.swiftdoc /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.swiftmodule/arm64-apple-ios-simulator.swiftdoc
+
+Copy /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.swiftmodule/arm64-apple-ios-simulator.abi.json /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/Sort.abi.json (in target 'Sort' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/Sort.abi.json /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.swiftmodule/arm64-apple-ios-simulator.abi.json
+
+Copy /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.swiftmodule/Project/arm64-apple-ios-simulator.swiftsourceinfo /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/Sort.swiftsourceinfo (in target 'Sort' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/Sort.swiftsourceinfo /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.swiftmodule/Project/arm64-apple-ios-simulator.swiftsourceinfo
+
+CompileC /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/engine_ocr_capi.o /Users/runner/work/Sort/Sort/Native/capi/engine_ocr_capi.cpp normal arm64 c++ com.apple.compilers.llvm.clang.1_0.compiler (in target 'Sort' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    
+    Using response file: /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/82b82416624d2658e5098eb0a28c15c5-common-args.resp
+    
+    /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -x c++ -ivfsstatcache /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/SDKStatCaches.noindex/iphonesimulator26.5-23F81a-688ef53f1462e2c8f657fdc38a81448ff45c64a1807a658693f2a61704f17a36.sdkstatcache -target arm64-apple-ios17.0-simulator -fmessage-length\=0 -fdiagnostics-show-note-include-stack -fmacro-backtrace-limit\=0 -fno-color-diagnostics -fmodules-prune-interval\=86400 -fmodules-prune-after\=345600 -fbuild-session-file\=/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex/Session.modulevalidation -fmodules-validate-once-per-build-session -Wnon-modular-include-in-framework-module -Werror\=non-modular-include-in-framework-module -Wno-trigraphs -Wno-missing-field-initializers -Wno-missing-prototypes -Werror\=return-type -Wdocumentation -Wunreachable-code -Wquoted-include-in-framework-header -Werror\=deprecated-objc-isa-usage -Werror\=objc-root-class -Wno-non-virtual-dtor -Wno-overloaded-virtual -Wno-exit-time-destructors -Wno-missing-braces -Wparentheses -Wswitch -Wunused-function -Wno-unused-label -Wno-unused-parameter -Wunused-variable -Wunused-value -Wempty-body -Wuninitialized -Wconditional-uninitialized -Wno-unknown-pragmas -Wno-shadow -Wno-four-char-constants -Wno-conversion -Wconstant-conversion -Wint-conversion -Wbool-conversion -Wenum-conversion -Wno-float-conversion -Wnon-literal-null-conversion -Wobjc-literal-conversion -Wshorten-64-to-32 -Wno-newline-eof -Wno-c++11-extensions -Wno-implicit-fallthrough -isysroot /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -fstrict-aliasing -Wdeprecated-declarations -Winvalid-offsetof -Wno-sign-conversion -Winfinite-recursion -Wmove -Wcomma -Wblock-capture-autoreleasing -Wstrict-prototypes -Wrange-loop-analysis -Wno-semicolon-before-method-body -Wunguarded-availability -index-store-path /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Index.noindex/DataStore @/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/82b82416624d2658e5098eb0a28c15c5-common-args.resp -MMD -MT dependencies -MF /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/engine_ocr_capi.d --serialize-diagnostics /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/engine_ocr_capi.dia -c /Users/runner/work/Sort/Sort/Native/capi/engine_ocr_capi.cpp -o /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/engine_ocr_capi.o -index-unit-output-path /Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/engine_ocr_capi.o
+
+CompileC /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/QuadCrop.o /Users/runner/work/Sort/Sort/Native/core/ocr/QuadCrop.cpp normal arm64 c++ com.apple.compilers.llvm.clang.1_0.compiler (in target 'Sort' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    
+    Using response file: /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/82b82416624d2658e5098eb0a28c15c5-common-args.resp
+    
+    /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -x c++ -ivfsstatcache /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/SDKStatCaches.noindex/iphonesimulator26.5-23F81a-688ef53f1462e2c8f657fdc38a81448ff45c64a1807a658693f2a61704f17a36.sdkstatcache -target arm64-apple-ios17.0-simulator -fmessage-length\=0 -fdiagnostics-show-note-include-stack -fmacro-backtrace-limit\=0 -fno-color-diagnostics -fmodules-prune-interval\=86400 -fmodules-prune-after\=345600 -fbuild-session-file\=/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex/Session.modulevalidation -fmodules-validate-once-per-build-session -Wnon-modular-include-in-framework-module -Werror\=non-modular-include-in-framework-module -Wno-trigraphs -Wno-missing-field-initializers -Wno-missing-prototypes -Werror\=return-type -Wdocumentation -Wunreachable-code -Wquoted-include-in-framework-header -Werror\=deprecated-objc-isa-usage -Werror\=objc-root-class -Wno-non-virtual-dtor -Wno-overloaded-virtual -Wno-exit-time-destructors -Wno-missing-braces -Wparentheses -Wswitch -Wunused-function -Wno-unused-label -Wno-unused-parameter -Wunused-variable -Wunused-value -Wempty-body -Wuninitialized -Wconditional-uninitialized -Wno-unknown-pragmas -Wno-shadow -Wno-four-char-constants -Wno-conversion -Wconstant-conversion -Wint-conversion -Wbool-conversion -Wenum-conversion -Wno-float-conversion -Wnon-literal-null-conversion -Wobjc-literal-conversion -Wshorten-64-to-32 -Wno-newline-eof -Wno-c++11-extensions -Wno-implicit-fallthrough -isysroot /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -fstrict-aliasing -Wdeprecated-declarations -Winvalid-offsetof -Wno-sign-conversion -Winfinite-recursion -Wmove -Wcomma -Wblock-capture-autoreleasing -Wstrict-prototypes -Wrange-loop-analysis -Wno-semicolon-before-method-body -Wunguarded-availability -index-store-path /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Index.noindex/DataStore @/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/82b82416624d2658e5098eb0a28c15c5-common-args.resp -MMD -MT dependencies -MF /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/QuadCrop.d --serialize-diagnostics /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/QuadCrop.dia -c /Users/runner/work/Sort/Sort/Native/core/ocr/QuadCrop.cpp -o /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/QuadCrop.o -index-unit-output-path /Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/QuadCrop.o
+
+SwiftDriverJobDiscovery normal arm64 Compiling HistoryDetailView.swift, HistoryView.swift, ModelLoader.swift (in target 'Sort' from project 'Sort')
+
+CompileC /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/Preprocess.o /Users/runner/work/Sort/Sort/Native/core/ocr/Preprocess.cpp normal arm64 c++ com.apple.compilers.llvm.clang.1_0.compiler (in target 'Sort' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    
+    Using response file: /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/82b82416624d2658e5098eb0a28c15c5-common-args.resp
+    
+    /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -x c++ -ivfsstatcache /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/SDKStatCaches.noindex/iphonesimulator26.5-23F81a-688ef53f1462e2c8f657fdc38a81448ff45c64a1807a658693f2a61704f17a36.sdkstatcache -target arm64-apple-ios17.0-simulator -fmessage-length\=0 -fdiagnostics-show-note-include-stack -fmacro-backtrace-limit\=0 -fno-color-diagnostics -fmodules-prune-interval\=86400 -fmodules-prune-after\=345600 -fbuild-session-file\=/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex/Session.modulevalidation -fmodules-validate-once-per-build-session -Wnon-modular-include-in-framework-module -Werror\=non-modular-include-in-framework-module -Wno-trigraphs -Wno-missing-field-initializers -Wno-missing-prototypes -Werror\=return-type -Wdocumentation -Wunreachable-code -Wquoted-include-in-framework-header -Werror\=deprecated-objc-isa-usage -Werror\=objc-root-class -Wno-non-virtual-dtor -Wno-overloaded-virtual -Wno-exit-time-destructors -Wno-missing-braces -Wparentheses -Wswitch -Wunused-function -Wno-unused-label -Wno-unused-parameter -Wunused-variable -Wunused-value -Wempty-body -Wuninitialized -Wconditional-uninitialized -Wno-unknown-pragmas -Wno-shadow -Wno-four-char-constants -Wno-conversion -Wconstant-conversion -Wint-conversion -Wbool-conversion -Wenum-conversion -Wno-float-conversion -Wnon-literal-null-conversion -Wobjc-literal-conversion -Wshorten-64-to-32 -Wno-newline-eof -Wno-c++11-extensions -Wno-implicit-fallthrough -isysroot /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -fstrict-aliasing -Wdeprecated-declarations -Winvalid-offsetof -Wno-sign-conversion -Winfinite-recursion -Wmove -Wcomma -Wblock-capture-autoreleasing -Wstrict-prototypes -Wrange-loop-analysis -Wno-semicolon-before-method-body -Wunguarded-availability -index-store-path /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Index.noindex/DataStore @/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/82b82416624d2658e5098eb0a28c15c5-common-args.resp -MMD -MT dependencies -MF /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/Preprocess.d --serialize-diagnostics /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/Preprocess.dia -c /Users/runner/work/Sort/Sort/Native/core/ocr/Preprocess.cpp -o /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/Preprocess.o -index-unit-output-path /Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/Preprocess.o
+
+SwiftDriverJobDiscovery normal arm64 Compiling Models.swift, OcrBridge.swift, RecognizeView.swift (in target 'Sort' from project 'Sort')
+
+CompileC /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/Postprocess.o /Users/runner/work/Sort/Sort/Native/core/ocr/Postprocess.cpp normal arm64 c++ com.apple.compilers.llvm.clang.1_0.compiler (in target 'Sort' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    
+    Using response file: /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/82b82416624d2658e5098eb0a28c15c5-common-args.resp
+    
+    /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -x c++ -ivfsstatcache /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/SDKStatCaches.noindex/iphonesimulator26.5-23F81a-688ef53f1462e2c8f657fdc38a81448ff45c64a1807a658693f2a61704f17a36.sdkstatcache -target arm64-apple-ios17.0-simulator -fmessage-length\=0 -fdiagnostics-show-note-include-stack -fmacro-backtrace-limit\=0 -fno-color-diagnostics -fmodules-prune-interval\=86400 -fmodules-prune-after\=345600 -fbuild-session-file\=/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex/Session.modulevalidation -fmodules-validate-once-per-build-session -Wnon-modular-include-in-framework-module -Werror\=non-modular-include-in-framework-module -Wno-trigraphs -Wno-missing-field-initializers -Wno-missing-prototypes -Werror\=return-type -Wdocumentation -Wunreachable-code -Wquoted-include-in-framework-header -Werror\=deprecated-objc-isa-usage -Werror\=objc-root-class -Wno-non-virtual-dtor -Wno-overloaded-virtual -Wno-exit-time-destructors -Wno-missing-braces -Wparentheses -Wswitch -Wunused-function -Wno-unused-label -Wno-unused-parameter -Wunused-variable -Wunused-value -Wempty-body -Wuninitialized -Wconditional-uninitialized -Wno-unknown-pragmas -Wno-shadow -Wno-four-char-constants -Wno-conversion -Wconstant-conversion -Wint-conversion -Wbool-conversion -Wenum-conversion -Wno-float-conversion -Wnon-literal-null-conversion -Wobjc-literal-conversion -Wshorten-64-to-32 -Wno-newline-eof -Wno-c++11-extensions -Wno-implicit-fallthrough -isysroot /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -fstrict-aliasing -Wdeprecated-declarations -Winvalid-offsetof -Wno-sign-conversion -Winfinite-recursion -Wmove -Wcomma -Wblock-capture-autoreleasing -Wstrict-prototypes -Wrange-loop-analysis -Wno-semicolon-before-method-body -Wunguarded-availability -index-store-path /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Index.noindex/DataStore @/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/82b82416624d2658e5098eb0a28c15c5-common-args.resp -MMD -MT dependencies -MF /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/Postprocess.d --serialize-diagnostics /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/Postprocess.dia -c /Users/runner/work/Sort/Sort/Native/core/ocr/Postprocess.cpp -o /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/Postprocess.o -index-unit-output-path /Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/Postprocess.o
+
+CompileC /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/PaddleLiteBackend.o /Users/runner/work/Sort/Sort/Native/adapters/paddle_lite/PaddleLiteBackend.cpp normal arm64 c++ com.apple.compilers.llvm.clang.1_0.compiler (in target 'Sort' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    
+    Using response file: /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/82b82416624d2658e5098eb0a28c15c5-common-args.resp
+    
+    /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -x c++ -ivfsstatcache /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/SDKStatCaches.noindex/iphonesimulator26.5-23F81a-688ef53f1462e2c8f657fdc38a81448ff45c64a1807a658693f2a61704f17a36.sdkstatcache -target arm64-apple-ios17.0-simulator -fmessage-length\=0 -fdiagnostics-show-note-include-stack -fmacro-backtrace-limit\=0 -fno-color-diagnostics -fmodules-prune-interval\=86400 -fmodules-prune-after\=345600 -fbuild-session-file\=/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex/Session.modulevalidation -fmodules-validate-once-per-build-session -Wnon-modular-include-in-framework-module -Werror\=non-modular-include-in-framework-module -Wno-trigraphs -Wno-missing-field-initializers -Wno-missing-prototypes -Werror\=return-type -Wdocumentation -Wunreachable-code -Wquoted-include-in-framework-header -Werror\=deprecated-objc-isa-usage -Werror\=objc-root-class -Wno-non-virtual-dtor -Wno-overloaded-virtual -Wno-exit-time-destructors -Wno-missing-braces -Wparentheses -Wswitch -Wunused-function -Wno-unused-label -Wno-unused-parameter -Wunused-variable -Wunused-value -Wempty-body -Wuninitialized -Wconditional-uninitialized -Wno-unknown-pragmas -Wno-shadow -Wno-four-char-constants -Wno-conversion -Wconstant-conversion -Wint-conversion -Wbool-conversion -Wenum-conversion -Wno-float-conversion -Wnon-literal-null-conversion -Wobjc-literal-conversion -Wshorten-64-to-32 -Wno-newline-eof -Wno-c++11-extensions -Wno-implicit-fallthrough -isysroot /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -fstrict-aliasing -Wdeprecated-declarations -Winvalid-offsetof -Wno-sign-conversion -Winfinite-recursion -Wmove -Wcomma -Wblock-capture-autoreleasing -Wstrict-prototypes -Wrange-loop-analysis -Wno-semicolon-before-method-body -Wunguarded-availability -index-store-path /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Index.noindex/DataStore @/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/82b82416624d2658e5098eb0a28c15c5-common-args.resp -MMD -MT dependencies -MF /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/PaddleLiteBackend.d --serialize-diagnostics /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/PaddleLiteBackend.dia -c /Users/runner/work/Sort/Sort/Native/adapters/paddle_lite/PaddleLiteBackend.cpp -o /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/PaddleLiteBackend.o -index-unit-output-path /Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/PaddleLiteBackend.o
+
+CompileC /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/OnnxBackend.o /Users/runner/work/Sort/Sort/Native/adapters/onnx/OnnxBackend.cpp normal arm64 c++ com.apple.compilers.llvm.clang.1_0.compiler (in target 'Sort' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    
+    Using response file: /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/82b82416624d2658e5098eb0a28c15c5-common-args.resp
+    
+    /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -x c++ -ivfsstatcache /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/SDKStatCaches.noindex/iphonesimulator26.5-23F81a-688ef53f1462e2c8f657fdc38a81448ff45c64a1807a658693f2a61704f17a36.sdkstatcache -target arm64-apple-ios17.0-simulator -fmessage-length\=0 -fdiagnostics-show-note-include-stack -fmacro-backtrace-limit\=0 -fno-color-diagnostics -fmodules-prune-interval\=86400 -fmodules-prune-after\=345600 -fbuild-session-file\=/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex/Session.modulevalidation -fmodules-validate-once-per-build-session -Wnon-modular-include-in-framework-module -Werror\=non-modular-include-in-framework-module -Wno-trigraphs -Wno-missing-field-initializers -Wno-missing-prototypes -Werror\=return-type -Wdocumentation -Wunreachable-code -Wquoted-include-in-framework-header -Werror\=deprecated-objc-isa-usage -Werror\=objc-root-class -Wno-non-virtual-dtor -Wno-overloaded-virtual -Wno-exit-time-destructors -Wno-missing-braces -Wparentheses -Wswitch -Wunused-function -Wno-unused-label -Wno-unused-parameter -Wunused-variable -Wunused-value -Wempty-body -Wuninitialized -Wconditional-uninitialized -Wno-unknown-pragmas -Wno-shadow -Wno-four-char-constants -Wno-conversion -Wconstant-conversion -Wint-conversion -Wbool-conversion -Wenum-conversion -Wno-float-conversion -Wnon-literal-null-conversion -Wobjc-literal-conversion -Wshorten-64-to-32 -Wno-newline-eof -Wno-c++11-extensions -Wno-implicit-fallthrough -isysroot /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -fstrict-aliasing -Wdeprecated-declarations -Winvalid-offsetof -Wno-sign-conversion -Winfinite-recursion -Wmove -Wcomma -Wblock-capture-autoreleasing -Wstrict-prototypes -Wrange-loop-analysis -Wno-semicolon-before-method-body -Wunguarded-availability -index-store-path /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Index.noindex/DataStore @/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/82b82416624d2658e5098eb0a28c15c5-common-args.resp -MMD -MT dependencies -MF /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/OnnxBackend.d --serialize-diagnostics /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/OnnxBackend.dia -c /Users/runner/work/Sort/Sort/Native/adapters/onnx/OnnxBackend.cpp -o /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/OnnxBackend.o -index-unit-output-path /Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/OnnxBackend.o
+In file included from /Users/runner/work/Sort/Sort/Native/adapters/onnx/OnnxBackend.cpp:8:
+In file included from /Users/runner/work/Sort/Sort/iOS/ios-app/Vendor/Headers/onnxruntime_cxx_api.h:26:
+/Users/runner/work/Sort/Sort/iOS/ios-app/Vendor/Headers/onnxruntime_c_api.h:874:6: warning: duplicated command '\brief' [-Wdocumentation]
+  874 |  *  \brief This Struct is frozen since ORT 1.13.0. Its maintained part of Legacy API for compatibility.
+      |     ~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  875 |  *  \brief For latest OpenVINO Provider Options update to the ProviderOptions map.
+      |  ~
+/Users/runner/work/Sort/Sort/iOS/ios-app/Vendor/Headers/onnxruntime_c_api.h:873:6: note: previous command '\brief' here
+  873 | /** \brief OpenVINO Provider Options
+      |     ~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  874 |  *  \brief This Struct is frozen since ORT 1.13.0. Its maintained part of Legacy API for compatibility.
+      |  ~
+/Users/runner/work/Sort/Sort/iOS/ios-app/Vendor/Headers/onnxruntime_c_api.h:875:6: warning: duplicated command '\brief' [-Wdocumentation]
+  875 |  *  \brief For latest OpenVINO Provider Options update to the ProviderOptions map.
+      |     ~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  876 |  *  \brief Latest OpenVINO Provider Options are listed in the
+      |  ~
+/Users/runner/work/Sort/Sort/iOS/ios-app/Vendor/Headers/onnxruntime_c_api.h:873:6: note: previous command '\brief' here
+  873 | /** \brief OpenVINO Provider Options
+      |     ~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  874 |  *  \brief This Struct is frozen since ORT 1.13.0. Its maintained part of Legacy API for compatibility.
+      |  ~
+/Users/runner/work/Sort/Sort/iOS/ios-app/Vendor/Headers/onnxruntime_c_api.h:876:6: warning: duplicated command '\brief' [-Wdocumentation]
+  876 |  *  \brief Latest OpenVINO Provider Options are listed in the
+      |     ~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  877 |  *  \htmlonly
+      |  ~
+/Users/runner/work/Sort/Sort/iOS/ios-app/Vendor/Headers/onnxruntime_c_api.h:873:6: note: previous command '\brief' here
+  873 | /** \brief OpenVINO Provider Options
+      |     ~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  874 |  *  \brief This Struct is frozen since ORT 1.13.0. Its maintained part of Legacy API for compatibility.
+      |  ~
+/Users/runner/work/Sort/Sort/iOS/ios-app/Vendor/Headers/onnxruntime_c_api.h:874:6: warning: duplicated command '\brief' [-Wdocumentation]
+  874 |  *  \brief This Struct is frozen since ORT 1.13.0. Its maintained part of Legacy API for compatibility.
+      |     ~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  875 |  *  \brief For latest OpenVINO Provider Options update to the ProviderOptions map.
+      |  ~
+/Users/runner/work/Sort/Sort/iOS/ios-app/Vendor/Headers/onnxruntime_c_api.h:873:6: note: previous command '\brief' here
+  873 | /** \brief OpenVINO Provider Options
+      |     ~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  874 |  *  \brief This Struct is frozen since ORT 1.13.0. Its maintained part of Legacy API for compatibility.
+      |  ~
+/Users/runner/work/Sort/Sort/iOS/ios-app/Vendor/Headers/onnxruntime_c_api.h:875:6: warning: duplicated command '\brief' [-Wdocumentation]
+  875 |  *  \brief For latest OpenVINO Provider Options update to the ProviderOptions map.
+      |     ~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  876 |  *  \brief Latest OpenVINO Provider Options are listed in the
+      |  ~
+/Users/runner/work/Sort/Sort/iOS/ios-app/Vendor/Headers/onnxruntime_c_api.h:873:6: note: previous command '\brief' here
+  873 | /** \brief OpenVINO Provider Options
+      |     ~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  874 |  *  \brief This Struct is frozen since ORT 1.13.0. Its maintained part of Legacy API for compatibility.
+      |  ~
+/Users/runner/work/Sort/Sort/iOS/ios-app/Vendor/Headers/onnxruntime_c_api.h:876:6: warning: duplicated command '\brief' [-Wdocumentation]
+  876 |  *  \brief Latest OpenVINO Provider Options are listed in the
+      |     ~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  877 |  *  \htmlonly
+      |  ~
+/Users/runner/work/Sort/Sort/iOS/ios-app/Vendor/Headers/onnxruntime_c_api.h:873:6: note: previous command '\brief' here
+  873 | /** \brief OpenVINO Provider Options
+      |     ~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  874 |  *  \brief This Struct is frozen since ORT 1.13.0. Its maintained part of Legacy API for compatibility.
+      |  ~
+/Users/runner/work/Sort/Sort/iOS/ios-app/Vendor/Headers/onnxruntime_c_api.h:1314:20: warning: empty paragraph passed to '\param' command [-Wdocumentation]
+ 1314 |    * \param[in] code
+      |      ~~~~~~~~~~~~~~^
+ 1315 |    * \param[in] msg A null-terminated string. Its contents will be copied.
+      |    ~
+/Users/runner/work/Sort/Sort/iOS/ios-app/Vendor/Headers/onnxruntime_c_api.h:1322:22: warning: empty paragraph passed to '\param' command [-Wdocumentation]
+ 1322 |    * \param[in] status
+      |      ~~~~~~~~~~~~~~~~^
+ 1323 |    * \return OrtErrorCode that \p status was created with
+      |    ~
+/Users/runner/work/Sort/Sort/iOS/ios-app/Vendor/Headers/onnxruntime_c_api.h:1329:22: warning: empty paragraph passed to '\param' command [-Wdocumentation]
+ 1329 |    * \param[in] status
+      |      ~~~~~~~~~~~~~~~~^
+ 1330 |    * \return The error message inside the `status`. Do not free the returned value.
+      |    ~
+In file included from /Users/runner/work/Sort/Sort/Native/adapters/onnx/OnnxBackend.cpp:8:
+In file included from /Users/runner/work/Sort/Sort/iOS/ios-app/Vendor/Headers/onnxruntime_cxx_api.h:26:
+In file included from /Users/runner/work/Sort/Sort/iOS/ios-app/Vendor/Headers/onnxruntime_c_api.h:8782:
+/Users/runner/work/Sort/Sort/iOS/ios-app/Vendor/Headers/onnxruntime_ep_c_api.h:716:12: warning: unrecognized parameter passing direction, valid directions are '[in]', '[out]' and '[in,out]' [-Wdocumentation]
+  716 |    * \param[inout] compute_state The opaque compute state returned by CreateState().
+      |            ^~~~~~~
+In file included from /Users/runner/work/Sort/Sort/Native/adapters/onnx/OnnxBackend.cpp:8:
+/Users/runner/work/Sort/Sort/iOS/ios-app/Vendor/Headers/onnxruntime_cxx_api.h:1786:11: warning: parameter 'env:' not found in the function declaration [-Wdocumentation]
+ 1786 |  * \param env: ORT environment object.
+      |           ^~~~
+/Users/runner/work/Sort/Sort/iOS/ios-app/Vendor/Headers/onnxruntime_cxx_api.h:1786:11: note: did you mean 'env'?
+ 1786 |  * \param env: ORT environment object.
+      |           ^~~~
+      |           env
+/Users/runner/work/Sort/Sort/iOS/ios-app/Vendor/Headers/onnxruntime_cxx_api.h:1787:11: warning: parameter 'model_compilation_options:' not found in the function declaration [-Wdocumentation]
+ 1787 |  * \param model_compilation_options: Compilation options for a model.
+      |           ^~~~~~~~~~~~~~~~~~~~~~~~~~
+/Users/runner/work/Sort/Sort/iOS/ios-app/Vendor/Headers/onnxruntime_cxx_api.h:1787:11: note: did you mean 'env'?
+ 1787 |  * \param model_compilation_options: Compilation options for a model.
+      |           ^~~~~~~~~~~~~~~~~~~~~~~~~~
+      |           env
+/Users/runner/work/Sort/Sort/iOS/ios-app/Vendor/Headers/onnxruntime_cxx_api.h:1947:27: warning: empty paragraph passed to '\param' command [-Wdocumentation]
+ 1947 |    * \param[in] run_options
+      |      ~~~~~~~~~~~~~~~~~~~~~^
+ 1948 |    * \param[in] input_names Array of null terminated strings of length input_count that is the list of input names
+      |    ~
+/Users/runner/work/Sort/Sort/iOS/ios-app/Vendor/Headers/onnxruntime_cxx_api.h:1970:27: warning: empty paragraph passed to '\param' command [-Wdocumentation]
+ 1970 |    * \param[in] run_options
+      |      ~~~~~~~~~~~~~~~~~~~~~^
+ 1971 |    * \param[in] input_names Array of null terminated UTF8 encoded strings of the input names
+      |    ~
+/Users/runner/work/Sort/Sort/iOS/ios-app/Vendor/Headers/onnxruntime_cxx_api.h:3623:3: warning: not a Doxygen trailing comment [-Wdocumentation]
+ 3623 |   //< Wraps GetModelEditorApi().CreateModel()
+      |   ^~~
+      |   ///<
+/Users/runner/work/Sort/Sort/iOS/ios-app/Vendor/Headers/onnxruntime_cxx_api.h:3793:3: warning: not a Doxygen trailing comment [-Wdocumentation]
+ 3793 |   //< Wraps SharedPrePackedWeightCache_StoreWeightData
+      |   ^~~
+      |   ///<
+16 warnings generated.
+
+CompileC /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/OcrEngine.o /Users/runner/work/Sort/Sort/Native/core/ocr/OcrEngine.cpp normal arm64 c++ com.apple.compilers.llvm.clang.1_0.compiler (in target 'Sort' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    
+    Using response file: /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/82b82416624d2658e5098eb0a28c15c5-common-args.resp
+    
+    /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -x c++ -ivfsstatcache /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/SDKStatCaches.noindex/iphonesimulator26.5-23F81a-688ef53f1462e2c8f657fdc38a81448ff45c64a1807a658693f2a61704f17a36.sdkstatcache -target arm64-apple-ios17.0-simulator -fmessage-length\=0 -fdiagnostics-show-note-include-stack -fmacro-backtrace-limit\=0 -fno-color-diagnostics -fmodules-prune-interval\=86400 -fmodules-prune-after\=345600 -fbuild-session-file\=/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex/Session.modulevalidation -fmodules-validate-once-per-build-session -Wnon-modular-include-in-framework-module -Werror\=non-modular-include-in-framework-module -Wno-trigraphs -Wno-missing-field-initializers -Wno-missing-prototypes -Werror\=return-type -Wdocumentation -Wunreachable-code -Wquoted-include-in-framework-header -Werror\=deprecated-objc-isa-usage -Werror\=objc-root-class -Wno-non-virtual-dtor -Wno-overloaded-virtual -Wno-exit-time-destructors -Wno-missing-braces -Wparentheses -Wswitch -Wunused-function -Wno-unused-label -Wno-unused-parameter -Wunused-variable -Wunused-value -Wempty-body -Wuninitialized -Wconditional-uninitialized -Wno-unknown-pragmas -Wno-shadow -Wno-four-char-constants -Wno-conversion -Wconstant-conversion -Wint-conversion -Wbool-conversion -Wenum-conversion -Wno-float-conversion -Wnon-literal-null-conversion -Wobjc-literal-conversion -Wshorten-64-to-32 -Wno-newline-eof -Wno-c++11-extensions -Wno-implicit-fallthrough -isysroot /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -fstrict-aliasing -Wdeprecated-declarations -Winvalid-offsetof -Wno-sign-conversion -Winfinite-recursion -Wmove -Wcomma -Wblock-capture-autoreleasing -Wstrict-prototypes -Wrange-loop-analysis -Wno-semicolon-before-method-body -Wunguarded-availability -index-store-path /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Index.noindex/DataStore @/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/82b82416624d2658e5098eb0a28c15c5-common-args.resp -MMD -MT dependencies -MF /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/OcrEngine.d --serialize-diagnostics /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/OcrEngine.dia -c /Users/runner/work/Sort/Sort/Native/core/ocr/OcrEngine.cpp -o /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/OcrEngine.o -index-unit-output-path /Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/OcrEngine.o
+
+CompileC /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/MindSporeBackend.o /Users/runner/work/Sort/Sort/Native/adapters/mindspore/MindSporeBackend.cpp normal arm64 c++ com.apple.compilers.llvm.clang.1_0.compiler (in target 'Sort' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    
+    Using response file: /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/82b82416624d2658e5098eb0a28c15c5-common-args.resp
+    
+    /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -x c++ -ivfsstatcache /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/SDKStatCaches.noindex/iphonesimulator26.5-23F81a-688ef53f1462e2c8f657fdc38a81448ff45c64a1807a658693f2a61704f17a36.sdkstatcache -target arm64-apple-ios17.0-simulator -fmessage-length\=0 -fdiagnostics-show-note-include-stack -fmacro-backtrace-limit\=0 -fno-color-diagnostics -fmodules-prune-interval\=86400 -fmodules-prune-after\=345600 -fbuild-session-file\=/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex/Session.modulevalidation -fmodules-validate-once-per-build-session -Wnon-modular-include-in-framework-module -Werror\=non-modular-include-in-framework-module -Wno-trigraphs -Wno-missing-field-initializers -Wno-missing-prototypes -Werror\=return-type -Wdocumentation -Wunreachable-code -Wquoted-include-in-framework-header -Werror\=deprecated-objc-isa-usage -Werror\=objc-root-class -Wno-non-virtual-dtor -Wno-overloaded-virtual -Wno-exit-time-destructors -Wno-missing-braces -Wparentheses -Wswitch -Wunused-function -Wno-unused-label -Wno-unused-parameter -Wunused-variable -Wunused-value -Wempty-body -Wuninitialized -Wconditional-uninitialized -Wno-unknown-pragmas -Wno-shadow -Wno-four-char-constants -Wno-conversion -Wconstant-conversion -Wint-conversion -Wbool-conversion -Wenum-conversion -Wno-float-conversion -Wnon-literal-null-conversion -Wobjc-literal-conversion -Wshorten-64-to-32 -Wno-newline-eof -Wno-c++11-extensions -Wno-implicit-fallthrough -isysroot /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -fstrict-aliasing -Wdeprecated-declarations -Winvalid-offsetof -Wno-sign-conversion -Winfinite-recursion -Wmove -Wcomma -Wblock-capture-autoreleasing -Wstrict-prototypes -Wrange-loop-analysis -Wno-semicolon-before-method-body -Wunguarded-availability -index-store-path /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Index.noindex/DataStore @/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/82b82416624d2658e5098eb0a28c15c5-common-args.resp -MMD -MT dependencies -MF /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/MindSporeBackend.d --serialize-diagnostics /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/MindSporeBackend.dia -c /Users/runner/work/Sort/Sort/Native/adapters/mindspore/MindSporeBackend.cpp -o /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/MindSporeBackend.o -index-unit-output-path /Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/MindSporeBackend.o
+
+CompileC /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/ImageOps.o /Users/runner/work/Sort/Sort/Native/core/ocr/ImageOps.cpp normal arm64 c++ com.apple.compilers.llvm.clang.1_0.compiler (in target 'Sort' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    
+    Using response file: /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/82b82416624d2658e5098eb0a28c15c5-common-args.resp
+    
+    /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -x c++ -ivfsstatcache /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/SDKStatCaches.noindex/iphonesimulator26.5-23F81a-688ef53f1462e2c8f657fdc38a81448ff45c64a1807a658693f2a61704f17a36.sdkstatcache -target arm64-apple-ios17.0-simulator -fmessage-length\=0 -fdiagnostics-show-note-include-stack -fmacro-backtrace-limit\=0 -fno-color-diagnostics -fmodules-prune-interval\=86400 -fmodules-prune-after\=345600 -fbuild-session-file\=/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex/Session.modulevalidation -fmodules-validate-once-per-build-session -Wnon-modular-include-in-framework-module -Werror\=non-modular-include-in-framework-module -Wno-trigraphs -Wno-missing-field-initializers -Wno-missing-prototypes -Werror\=return-type -Wdocumentation -Wunreachable-code -Wquoted-include-in-framework-header -Werror\=deprecated-objc-isa-usage -Werror\=objc-root-class -Wno-non-virtual-dtor -Wno-overloaded-virtual -Wno-exit-time-destructors -Wno-missing-braces -Wparentheses -Wswitch -Wunused-function -Wno-unused-label -Wno-unused-parameter -Wunused-variable -Wunused-value -Wempty-body -Wuninitialized -Wconditional-uninitialized -Wno-unknown-pragmas -Wno-shadow -Wno-four-char-constants -Wno-conversion -Wconstant-conversion -Wint-conversion -Wbool-conversion -Wenum-conversion -Wno-float-conversion -Wnon-literal-null-conversion -Wobjc-literal-conversion -Wshorten-64-to-32 -Wno-newline-eof -Wno-c++11-extensions -Wno-implicit-fallthrough -isysroot /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -fstrict-aliasing -Wdeprecated-declarations -Winvalid-offsetof -Wno-sign-conversion -Winfinite-recursion -Wmove -Wcomma -Wblock-capture-autoreleasing -Wstrict-prototypes -Wrange-loop-analysis -Wno-semicolon-before-method-body -Wunguarded-availability -index-store-path /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Index.noindex/DataStore @/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/82b82416624d2658e5098eb0a28c15c5-common-args.resp -MMD -MT dependencies -MF /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/ImageOps.d --serialize-diagnostics /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/ImageOps.dia -c /Users/runner/work/Sort/Sort/Native/core/ocr/ImageOps.cpp -o /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/ImageOps.o -index-unit-output-path /Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/ImageOps.o
+
+CompileC /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/Geometry.o /Users/runner/work/Sort/Sort/Native/core/ocr/Geometry.cpp normal arm64 c++ com.apple.compilers.llvm.clang.1_0.compiler (in target 'Sort' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    
+    Using response file: /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/82b82416624d2658e5098eb0a28c15c5-common-args.resp
+    
+    /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -x c++ -ivfsstatcache /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/SDKStatCaches.noindex/iphonesimulator26.5-23F81a-688ef53f1462e2c8f657fdc38a81448ff45c64a1807a658693f2a61704f17a36.sdkstatcache -target arm64-apple-ios17.0-simulator -fmessage-length\=0 -fdiagnostics-show-note-include-stack -fmacro-backtrace-limit\=0 -fno-color-diagnostics -fmodules-prune-interval\=86400 -fmodules-prune-after\=345600 -fbuild-session-file\=/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex/Session.modulevalidation -fmodules-validate-once-per-build-session -Wnon-modular-include-in-framework-module -Werror\=non-modular-include-in-framework-module -Wno-trigraphs -Wno-missing-field-initializers -Wno-missing-prototypes -Werror\=return-type -Wdocumentation -Wunreachable-code -Wquoted-include-in-framework-header -Werror\=deprecated-objc-isa-usage -Werror\=objc-root-class -Wno-non-virtual-dtor -Wno-overloaded-virtual -Wno-exit-time-destructors -Wno-missing-braces -Wparentheses -Wswitch -Wunused-function -Wno-unused-label -Wno-unused-parameter -Wunused-variable -Wunused-value -Wempty-body -Wuninitialized -Wconditional-uninitialized -Wno-unknown-pragmas -Wno-shadow -Wno-four-char-constants -Wno-conversion -Wconstant-conversion -Wint-conversion -Wbool-conversion -Wenum-conversion -Wno-float-conversion -Wnon-literal-null-conversion -Wobjc-literal-conversion -Wshorten-64-to-32 -Wno-newline-eof -Wno-c++11-extensions -Wno-implicit-fallthrough -isysroot /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -fstrict-aliasing -Wdeprecated-declarations -Winvalid-offsetof -Wno-sign-conversion -Winfinite-recursion -Wmove -Wcomma -Wblock-capture-autoreleasing -Wstrict-prototypes -Wrange-loop-analysis -Wno-semicolon-before-method-body -Wunguarded-availability -index-store-path /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Index.noindex/DataStore @/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/82b82416624d2658e5098eb0a28c15c5-common-args.resp -MMD -MT dependencies -MF /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/Geometry.d --serialize-diagnostics /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/Geometry.dia -c /Users/runner/work/Sort/Sort/Native/core/ocr/Geometry.cpp -o /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/Geometry.o -index-unit-output-path /Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/Geometry.o
+
+CompileC /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/DbPostprocess.o /Users/runner/work/Sort/Sort/Native/core/ocr/DbPostprocess.cpp normal arm64 c++ com.apple.compilers.llvm.clang.1_0.compiler (in target 'Sort' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    
+    Using response file: /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/82b82416624d2658e5098eb0a28c15c5-common-args.resp
+    
+    /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -x c++ -ivfsstatcache /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/SDKStatCaches.noindex/iphonesimulator26.5-23F81a-688ef53f1462e2c8f657fdc38a81448ff45c64a1807a658693f2a61704f17a36.sdkstatcache -target arm64-apple-ios17.0-simulator -fmessage-length\=0 -fdiagnostics-show-note-include-stack -fmacro-backtrace-limit\=0 -fno-color-diagnostics -fmodules-prune-interval\=86400 -fmodules-prune-after\=345600 -fbuild-session-file\=/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex/Session.modulevalidation -fmodules-validate-once-per-build-session -Wnon-modular-include-in-framework-module -Werror\=non-modular-include-in-framework-module -Wno-trigraphs -Wno-missing-field-initializers -Wno-missing-prototypes -Werror\=return-type -Wdocumentation -Wunreachable-code -Wquoted-include-in-framework-header -Werror\=deprecated-objc-isa-usage -Werror\=objc-root-class -Wno-non-virtual-dtor -Wno-overloaded-virtual -Wno-exit-time-destructors -Wno-missing-braces -Wparentheses -Wswitch -Wunused-function -Wno-unused-label -Wno-unused-parameter -Wunused-variable -Wunused-value -Wempty-body -Wuninitialized -Wconditional-uninitialized -Wno-unknown-pragmas -Wno-shadow -Wno-four-char-constants -Wno-conversion -Wconstant-conversion -Wint-conversion -Wbool-conversion -Wenum-conversion -Wno-float-conversion -Wnon-literal-null-conversion -Wobjc-literal-conversion -Wshorten-64-to-32 -Wno-newline-eof -Wno-c++11-extensions -Wno-implicit-fallthrough -isysroot /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -fstrict-aliasing -Wdeprecated-declarations -Winvalid-offsetof -Wno-sign-conversion -Winfinite-recursion -Wmove -Wcomma -Wblock-capture-autoreleasing -Wstrict-prototypes -Wrange-loop-analysis -Wno-semicolon-before-method-body -Wunguarded-availability -index-store-path /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Index.noindex/DataStore @/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/82b82416624d2658e5098eb0a28c15c5-common-args.resp -MMD -MT dependencies -MF /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/DbPostprocess.d --serialize-diagnostics /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/DbPostprocess.dia -c /Users/runner/work/Sort/Sort/Native/core/ocr/DbPostprocess.cpp -o /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/DbPostprocess.o -index-unit-output-path /Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/DbPostprocess.o
+
+CompileC /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/Charset.o /Users/runner/work/Sort/Sort/Native/core/ocr/Charset.cpp normal arm64 c++ com.apple.compilers.llvm.clang.1_0.compiler (in target 'Sort' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    
+    Using response file: /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/82b82416624d2658e5098eb0a28c15c5-common-args.resp
+    
+    /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -x c++ -ivfsstatcache /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/SDKStatCaches.noindex/iphonesimulator26.5-23F81a-688ef53f1462e2c8f657fdc38a81448ff45c64a1807a658693f2a61704f17a36.sdkstatcache -target arm64-apple-ios17.0-simulator -fmessage-length\=0 -fdiagnostics-show-note-include-stack -fmacro-backtrace-limit\=0 -fno-color-diagnostics -fmodules-prune-interval\=86400 -fmodules-prune-after\=345600 -fbuild-session-file\=/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex/Session.modulevalidation -fmodules-validate-once-per-build-session -Wnon-modular-include-in-framework-module -Werror\=non-modular-include-in-framework-module -Wno-trigraphs -Wno-missing-field-initializers -Wno-missing-prototypes -Werror\=return-type -Wdocumentation -Wunreachable-code -Wquoted-include-in-framework-header -Werror\=deprecated-objc-isa-usage -Werror\=objc-root-class -Wno-non-virtual-dtor -Wno-overloaded-virtual -Wno-exit-time-destructors -Wno-missing-braces -Wparentheses -Wswitch -Wunused-function -Wno-unused-label -Wno-unused-parameter -Wunused-variable -Wunused-value -Wempty-body -Wuninitialized -Wconditional-uninitialized -Wno-unknown-pragmas -Wno-shadow -Wno-four-char-constants -Wno-conversion -Wconstant-conversion -Wint-conversion -Wbool-conversion -Wenum-conversion -Wno-float-conversion -Wnon-literal-null-conversion -Wobjc-literal-conversion -Wshorten-64-to-32 -Wno-newline-eof -Wno-c++11-extensions -Wno-implicit-fallthrough -isysroot /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -fstrict-aliasing -Wdeprecated-declarations -Winvalid-offsetof -Wno-sign-conversion -Winfinite-recursion -Wmove -Wcomma -Wblock-capture-autoreleasing -Wstrict-prototypes -Wrange-loop-analysis -Wno-semicolon-before-method-body -Wunguarded-availability -index-store-path /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Index.noindex/DataStore @/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/82b82416624d2658e5098eb0a28c15c5-common-args.resp -MMD -MT dependencies -MF /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/Charset.d --serialize-diagnostics /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/Charset.dia -c /Users/runner/work/Sort/Sort/Native/core/ocr/Charset.cpp -o /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/Charset.o -index-unit-output-path /Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/Charset.o
+
+CompileC /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/BackendFactory.o /Users/runner/work/Sort/Sort/Native/adapters/BackendFactory.cpp normal arm64 c++ com.apple.compilers.llvm.clang.1_0.compiler (in target 'Sort' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    
+    Using response file: /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/82b82416624d2658e5098eb0a28c15c5-common-args.resp
+    
+    /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -x c++ -ivfsstatcache /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/SDKStatCaches.noindex/iphonesimulator26.5-23F81a-688ef53f1462e2c8f657fdc38a81448ff45c64a1807a658693f2a61704f17a36.sdkstatcache -target arm64-apple-ios17.0-simulator -fmessage-length\=0 -fdiagnostics-show-note-include-stack -fmacro-backtrace-limit\=0 -fno-color-diagnostics -fmodules-prune-interval\=86400 -fmodules-prune-after\=345600 -fbuild-session-file\=/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex/Session.modulevalidation -fmodules-validate-once-per-build-session -Wnon-modular-include-in-framework-module -Werror\=non-modular-include-in-framework-module -Wno-trigraphs -Wno-missing-field-initializers -Wno-missing-prototypes -Werror\=return-type -Wdocumentation -Wunreachable-code -Wquoted-include-in-framework-header -Werror\=deprecated-objc-isa-usage -Werror\=objc-root-class -Wno-non-virtual-dtor -Wno-overloaded-virtual -Wno-exit-time-destructors -Wno-missing-braces -Wparentheses -Wswitch -Wunused-function -Wno-unused-label -Wno-unused-parameter -Wunused-variable -Wunused-value -Wempty-body -Wuninitialized -Wconditional-uninitialized -Wno-unknown-pragmas -Wno-shadow -Wno-four-char-constants -Wno-conversion -Wconstant-conversion -Wint-conversion -Wbool-conversion -Wenum-conversion -Wno-float-conversion -Wnon-literal-null-conversion -Wobjc-literal-conversion -Wshorten-64-to-32 -Wno-newline-eof -Wno-c++11-extensions -Wno-implicit-fallthrough -isysroot /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -fstrict-aliasing -Wdeprecated-declarations -Winvalid-offsetof -Wno-sign-conversion -Winfinite-recursion -Wmove -Wcomma -Wblock-capture-autoreleasing -Wstrict-prototypes -Wrange-loop-analysis -Wno-semicolon-before-method-body -Wunguarded-availability -index-store-path /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Index.noindex/DataStore @/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/82b82416624d2658e5098eb0a28c15c5-common-args.resp -MMD -MT dependencies -MF /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/BackendFactory.d --serialize-diagnostics /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/BackendFactory.dia -c /Users/runner/work/Sort/Sort/Native/adapters/BackendFactory.cpp -o /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/BackendFactory.o -index-unit-output-path /Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/BackendFactory.o
+
+SwiftDriver\ Compilation Sort normal arm64 com.apple.xcode.tools.swift.compiler (in target 'Sort' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    builtin-Swift-Compilation -- /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name Sort -Onone @/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/Sort.SwiftFileList -DDEBUG -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -target arm64-apple-ios17.0-simulator -g -module-cache-path /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 6 -I /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator -F /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator -F Vendor -c -j3 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/SDKStatCaches.noindex/iphonesimulator26.5-23F81a-688ef53f1462e2c8f657fdc38a81448ff45c64a1807a658693f2a61704f17a36.sdkstatcache -output-file-map /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/Sort-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex -sdk-module-cache-path /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/Sort.swiftmodule -validate-clang-modules-once -clang-build-session-file /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex/Session.modulevalidation -Xcc -I/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/Sort_const_extract_protocols.json -Xcc -iquote -Xcc /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Sort-generated-files.hmap -Xcc -I/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Sort-own-target-headers.hmap -Xcc -I/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Sort-all-target-headers.hmap -Xcc -iquote -Xcc /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Sort-project-headers.hmap -Xcc -I/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/include -Xcc -I/Users/runner/work/Sort/Sort/Native/capi -Xcc -I/Users/runner/work/Sort/Sort/Native/core -Xcc -I/Users/runner/work/Sort/Sort/Native/adapters -Xcc -I/Users/runner/work/Sort/Sort/iOS/ios-app/Vendor/Headers -Xcc -I/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/DerivedSources-normal/arm64 -Xcc -I/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/DerivedSources/arm64 -Xcc -I/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/DerivedSources -Xcc -DDEBUG\=1 -Xcc -DSORT_WITH_ONNXRUNTIME\=1 -emit-objc-header -emit-objc-header-path /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/Sort-Swift.h -import-objc-header /Users/runner/work/Sort/Sort/iOS/ios-app/Sources/Bridge/Sort-Bridging-Header.h -working-directory /Users/runner/work/Sort/Sort/iOS/ios-app -experimental-emit-module-separately -disable-cmo
+
+SwiftDriver SortTests normal arm64 com.apple.xcode.tools.swift.compiler (in target 'SortTests' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    builtin-SwiftDriver -- /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name SortTests -Onone @/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/Objects-normal/arm64/SortTests.SwiftFileList -DDEBUG -plugin-path /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -target arm64-apple-ios17.0-simulator -g -module-cache-path /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 6 -I /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator -Isystem /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib -F /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator -F /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks -F /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk/Developer/Library/Frameworks -c -j3 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/SDKStatCaches.noindex/iphonesimulator26.5-23F81a-688ef53f1462e2c8f657fdc38a81448ff45c64a1807a658693f2a61704f17a36.sdkstatcache -output-file-map /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/Objects-normal/arm64/SortTests-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex -sdk-module-cache-path /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/Objects-normal/arm64/SortTests.swiftmodule -validate-clang-modules-once -clang-build-session-file /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex/Session.modulevalidation -Xcc -I/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/Objects-normal/arm64/SortTests_const_extract_protocols.json -Xcc -iquote -Xcc /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/SortTests-generated-files.hmap -Xcc -I/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/SortTests-own-target-headers.hmap -Xcc -I/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/SortTests-all-target-headers.hmap -Xcc -iquote -Xcc /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/SortTests-project-headers.hmap -Xcc -I/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/include -Xcc -I/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/DerivedSources-normal/arm64 -Xcc -I/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/DerivedSources/arm64 -Xcc -I/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/Objects-normal/arm64/SortTests-Swift.h -working-directory /Users/runner/work/Sort/Sort/iOS/ios-app -experimental-emit-module-separately -disable-cmo
+
+Ld /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app/Sort.debug.dylib normal (in target 'Sort' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang++ -Xlinker -reproducible -target arm64-apple-ios17.0-simulator -dynamiclib -isysroot /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -O0 -L/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator -L/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator -F/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator -F/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator -FVendor -filelist /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/Sort.LinkFileList -install_name @rpath/Sort.debug.dylib -Xlinker -rpath -Xlinker /usr/lib/swift -Xlinker -rpath -Xlinker @executable_path/Frameworks -Xlinker -dead_strip -Xlinker -object_path_lto -Xlinker /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/Sort_lto.o -rdynamic -Xlinker -no_deduplicate -Xlinker -objc_abi_version -Xlinker 2 -Xlinker -dependency_info -Xlinker /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/Sort_dependency_info.dat -stdlib\=libc++ -fobjc-link-runtime -L/Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator -L/usr/lib/swift -Xlinker -add_ast_path -Xlinker /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/Sort.swiftmodule @/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/Sort-linker-args.resp -lc++ -framework CoreFoundation -framework Foundation -framework Network -framework Security -framework SystemConfiguration -framework UIKit -weak_framework CoreML -Xlinker -alias -Xlinker _main -Xlinker ___debug_main_executable_dylib_entry_point -framework onnxruntime -o /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app/Sort.debug.dylib
+/Users/runner/work/Sort/Sort/iOS/ios-app/Sort.xcodeproj: Sort: ld: warning: ignoring duplicate libraries: '-lc++'
+
+SwiftEmitModule normal arm64 Emitting\ module\ for\ SortTests (in target 'SortTests' from project 'Sort')
+
+EmitSwiftModule normal arm64 (in target 'SortTests' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    
+
+SwiftCompile normal arm64 Compiling\ OcrBridgeTests.swift /Users/runner/work/Sort/Sort/iOS/ios-app/Tests/OcrBridgeTests.swift (in target 'SortTests' from project 'Sort')
+
+SwiftCompile normal arm64 /Users/runner/work/Sort/Sort/iOS/ios-app/Tests/OcrBridgeTests.swift (in target 'SortTests' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    
+
+SwiftCompile normal arm64 Compiling\ OcrPipelineTests.swift /Users/runner/work/Sort/Sort/iOS/ios-app/Tests/OcrPipelineTests.swift (in target 'SortTests' from project 'Sort')
+
+SwiftCompile normal arm64 /Users/runner/work/Sort/Sort/iOS/ios-app/Tests/OcrPipelineTests.swift (in target 'SortTests' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    
+
+SwiftDriverJobDiscovery normal arm64 Emitting module for SortTests (in target 'SortTests' from project 'Sort')
+
+SwiftDriver\ Compilation\ Requirements SortTests normal arm64 com.apple.xcode.tools.swift.compiler (in target 'SortTests' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    builtin-Swift-Compilation-Requirements -- /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name SortTests -Onone @/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/Objects-normal/arm64/SortTests.SwiftFileList -DDEBUG -plugin-path /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -target arm64-apple-ios17.0-simulator -g -module-cache-path /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 6 -I /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator -Isystem /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib -F /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator -F /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks -F /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk/Developer/Library/Frameworks -c -j3 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/SDKStatCaches.noindex/iphonesimulator26.5-23F81a-688ef53f1462e2c8f657fdc38a81448ff45c64a1807a658693f2a61704f17a36.sdkstatcache -output-file-map /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/Objects-normal/arm64/SortTests-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex -sdk-module-cache-path /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/Objects-normal/arm64/SortTests.swiftmodule -validate-clang-modules-once -clang-build-session-file /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex/Session.modulevalidation -Xcc -I/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/Objects-normal/arm64/SortTests_const_extract_protocols.json -Xcc -iquote -Xcc /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/SortTests-generated-files.hmap -Xcc -I/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/SortTests-own-target-headers.hmap -Xcc -I/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/SortTests-all-target-headers.hmap -Xcc -iquote -Xcc /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/SortTests-project-headers.hmap -Xcc -I/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/include -Xcc -I/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/DerivedSources-normal/arm64 -Xcc -I/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/DerivedSources/arm64 -Xcc -I/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/Objects-normal/arm64/SortTests-Swift.h -working-directory /Users/runner/work/Sort/Sort/iOS/ios-app -experimental-emit-module-separately -disable-cmo
+
+SwiftDriverJobDiscovery normal arm64 Compiling OcrBridgeTests.swift (in target 'SortTests' from project 'Sort')
+
+SwiftMergeGeneratedHeaders /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/DerivedSources/SortTests-Swift.h /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/Objects-normal/arm64/SortTests-Swift.h (in target 'SortTests' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    builtin-swiftHeaderTool -arch arm64 /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/Objects-normal/arm64/SortTests-Swift.h -o /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/DerivedSources/SortTests-Swift.h
+
+Copy /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/SortTests.swiftmodule/arm64-apple-ios-simulator.swiftmodule /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/Objects-normal/arm64/SortTests.swiftmodule (in target 'SortTests' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/Objects-normal/arm64/SortTests.swiftmodule /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/SortTests.swiftmodule/arm64-apple-ios-simulator.swiftmodule
+
+Copy /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/SortTests.swiftmodule/arm64-apple-ios-simulator.swiftdoc /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/Objects-normal/arm64/SortTests.swiftdoc (in target 'SortTests' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/Objects-normal/arm64/SortTests.swiftdoc /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/SortTests.swiftmodule/arm64-apple-ios-simulator.swiftdoc
+
+Copy /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/SortTests.swiftmodule/arm64-apple-ios-simulator.abi.json /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/Objects-normal/arm64/SortTests.abi.json (in target 'SortTests' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/Objects-normal/arm64/SortTests.abi.json /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/SortTests.swiftmodule/arm64-apple-ios-simulator.abi.json
+
+Copy /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/SortTests.swiftmodule/Project/arm64-apple-ios-simulator.swiftsourceinfo /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/Objects-normal/arm64/SortTests.swiftsourceinfo (in target 'SortTests' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/Objects-normal/arm64/SortTests.swiftsourceinfo /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/SortTests.swiftmodule/Project/arm64-apple-ios-simulator.swiftsourceinfo
+
+SwiftDriverJobDiscovery normal arm64 Compiling OcrPipelineTests.swift (in target 'SortTests' from project 'Sort')
+
+SwiftDriver\ Compilation SortTests normal arm64 com.apple.xcode.tools.swift.compiler (in target 'SortTests' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    builtin-Swift-Compilation -- /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name SortTests -Onone @/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/Objects-normal/arm64/SortTests.SwiftFileList -DDEBUG -plugin-path /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -target arm64-apple-ios17.0-simulator -g -module-cache-path /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 6 -I /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator -Isystem /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib -F /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator -F /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks -F /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk/Developer/Library/Frameworks -c -j3 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/SDKStatCaches.noindex/iphonesimulator26.5-23F81a-688ef53f1462e2c8f657fdc38a81448ff45c64a1807a658693f2a61704f17a36.sdkstatcache -output-file-map /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/Objects-normal/arm64/SortTests-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex -sdk-module-cache-path /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/Objects-normal/arm64/SortTests.swiftmodule -validate-clang-modules-once -clang-build-session-file /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/ModuleCache.noindex/Session.modulevalidation -Xcc -I/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/Objects-normal/arm64/SortTests_const_extract_protocols.json -Xcc -iquote -Xcc /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/SortTests-generated-files.hmap -Xcc -I/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/SortTests-own-target-headers.hmap -Xcc -I/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/SortTests-all-target-headers.hmap -Xcc -iquote -Xcc /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/SortTests-project-headers.hmap -Xcc -I/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/include -Xcc -I/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/DerivedSources-normal/arm64 -Xcc -I/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/DerivedSources/arm64 -Xcc -I/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/Objects-normal/arm64/SortTests-Swift.h -working-directory /Users/runner/work/Sort/Sort/iOS/ios-app -experimental-emit-module-separately -disable-cmo
+
+ConstructStubExecutorLinkFileList /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Sort-ExecutorLinkFileList-normal-arm64.txt (in target 'Sort' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    construct-stub-executor-link-file-list /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app/Sort.debug.dylib /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib/libPreviewsJITStubExecutor_no_swift_entry_point.a /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib/libPreviewsJITStubExecutor.a --output /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Sort-ExecutorLinkFileList-normal-arm64.txt
+note: Using stub executor library with Swift entry point. (in target 'Sort' from project 'Sort')
+
+Ld /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app/Sort normal (in target 'Sort' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang++ -Xlinker -reproducible -target arm64-apple-ios17.0-simulator -isysroot /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -O0 -L/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator -F/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator -FVendor -Xlinker -rpath -Xlinker @executable_path -Xlinker -rpath -Xlinker @executable_path/Frameworks -rdynamic -Xlinker -no_deduplicate -Xlinker -objc_abi_version -Xlinker 2 -e ___debug_blank_executor_main -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __debug_dylib -Xlinker /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Sort-DebugDylibPath-normal-arm64.txt -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __debug_instlnm -Xlinker /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Sort-DebugDylibInstallName-normal-arm64.txt -Xlinker -filelist -Xlinker /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Sort-ExecutorLinkFileList-normal-arm64.txt /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app/Sort.debug.dylib -o /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app/Sort
+
+CopySwiftLibs /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app (in target 'Sort' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    builtin-swiftStdLibTool --copy --verbose --scan-executable /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app/Sort.debug.dylib --scan-folder /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app/Frameworks --scan-folder /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app/PlugIns --scan-folder /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app/SystemExtensions --scan-folder /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app/Extensions --platform iphonesimulator --toolchain /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.109.0.6BRhvu/Metal.xctoolchain --toolchain /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain --destination /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app/Frameworks --strip-bitcode --strip-bitcode-tool /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/bitcode_strip --emit-dependency-info /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/SwiftStdLibToolInputDependencies.dep --filter-for-swift-os
+Ignoring --strip-bitcode because --sign was not passed
+
+ExtractAppIntentsMetadata (in target 'Sort' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsmetadataprocessor --toolchain-dir /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.109.0.6BRhvu/Metal.xctoolchain --module-name Sort --sdk-root /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk --xcode-version 17F113 --platform-family iOS --deployment-target 17.0 --bundle-identifier com.bailensn.sort --output /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app --target-triple arm64-apple-ios17.0-simulator --binary-file /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app/Sort --dependency-file /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/Sort_dependency_info.dat --stringsdata-file /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/ExtractedAppShortcutsMetadata.stringsdata --source-file-list /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/Sort.SwiftFileList --metadata-file-list /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Sort.DependencyMetadataFileList --static-metadata-file-list /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Sort.DependencyStaticMetadataFileList --swift-const-vals-list /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Objects-normal/arm64/Sort.SwiftConstValuesFileList --compile-time-extraction --deployment-aware-processing --validate-assistant-intents --no-app-shortcuts-localization
+2026-11-02 16:01:43.086 appintentsmetadataprocessor[2249:10341] Starting appintentsmetadataprocessor export
+2026-11-02 16:01:43.099 appintentsmetadataprocessor[2249:10341] warning: Metadata extraction skipped. No AppIntents.framework dependency found.
+
+AppIntentsSSUTraining (in target 'Sort' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsnltrainingprocessor --infoplist-path /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app/Info.plist --temp-dir-path /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/ssu --bundle-id com.bailensn.sort --product-path /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app --extracted-metadata-path /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app/Metadata.appintents --metadata-file-list /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/Sort.build/Sort.DependencyMetadataFileList --source-file /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app/Info.plist --archive-ssu-assets
+2026-11-02 16:01:43.147 appintentsnltrainingprocessor[2251:10347] Parsing options for appintentsnltrainingprocessor
+2026-11-02 16:01:43.148 appintentsnltrainingprocessor[2251:10347] Starting AppIntents SSU YAML Generation
+2026-11-02 16:01:43.154 appintentsnltrainingprocessor[2251:10347] No AppShortcuts found - Skipping.
+
+ProcessInfoPlistFile /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app/PlugIns/SortTests.xctest/Info.plist /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/empty-SortTests.plist (in target 'SortTests' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    builtin-infoPlistUtility /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/empty-SortTests.plist -producttype com.apple.product-type.bundle.unit-test -expandbuildsettings -format binary -platform iphonesimulator -o /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app/PlugIns/SortTests.xctest/Info.plist
+
+CopyPNGFile /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app/PlugIns/SortTests.xctest/table.png /Users/runner/work/Sort/Sort/iOS/ios-app/Tests/Fixtures/table.png (in target 'SortTests' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    /Applications/Xcode_26.6.app/Contents/Developer/usr/bin/copypng -compress -strip-PNG-text /Users/runner/work/Sort/Sort/iOS/ios-app/Tests/Fixtures/table.png /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app/PlugIns/SortTests.xctest/table.png
+
+Ld /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app/PlugIns/SortTests.xctest/SortTests normal (in target 'SortTests' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-ios17.0-simulator -bundle -isysroot /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -O0 -L/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator -L/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator -L/Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib -F/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator -F/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator -iframework /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks -iframework /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk/Developer/Library/Frameworks -filelist /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/Objects-normal/arm64/SortTests.LinkFileList -Xlinker -rpath -Xlinker /usr/lib/swift -Xlinker -rpath -Xlinker @loader_path/Frameworks -Xlinker -rpath -Xlinker @executable_path/Frameworks -Xlinker -dead_strip -bundle_loader /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app/Sort -Xlinker -object_path_lto -Xlinker /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/Objects-normal/arm64/SortTests_lto.o -rdynamic -Xlinker -no_deduplicate -Xlinker -objc_abi_version -Xlinker 2 -Xlinker -dependency_info -Xlinker /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/Objects-normal/arm64/SortTests_dependency_info.dat -fobjc-link-runtime -L/Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator -L/usr/lib/swift -Xlinker -add_ast_path -Xlinker /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/Objects-normal/arm64/SortTests.swiftmodule @/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/Objects-normal/arm64/SortTests-linker-args.resp -Xlinker -needed_framework -Xlinker XCTest -framework XCTest -Xlinker -needed-lXCTestSwiftSupport -lXCTestSwiftSupport /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app/Sort.debug.dylib -o /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app/PlugIns/SortTests.xctest/SortTests
+
+CopySwiftLibs /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app/PlugIns/SortTests.xctest (in target 'SortTests' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    builtin-swiftStdLibTool --copy --verbose --scan-executable /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app/PlugIns/SortTests.xctest/SortTests --scan-folder /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app/PlugIns/SortTests.xctest/Frameworks --scan-folder /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app/PlugIns/SortTests.xctest/PlugIns --scan-folder /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app/PlugIns/SortTests.xctest/SystemExtensions --scan-folder /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app/PlugIns/SortTests.xctest/Extensions --platform iphonesimulator --toolchain /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.109.0.6BRhvu/Metal.xctoolchain --toolchain /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain --destination /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app/PlugIns/SortTests.xctest/Frameworks --strip-bitcode --scan-executable /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib/libXCTestSwiftSupport.dylib --strip-bitcode-tool /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/bitcode_strip --emit-dependency-info /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/SwiftStdLibToolInputDependencies.dep --filter-for-swift-os
+Ignoring --strip-bitcode because --sign was not passed
+
+ExtractAppIntentsMetadata (in target 'SortTests' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsmetadataprocessor --toolchain-dir /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.109.0.6BRhvu/Metal.xctoolchain --module-name SortTests --sdk-root /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk --xcode-version 17F113 --platform-family iOS --deployment-target 17.0 --bundle-identifier com.bailensn.sort.tests --output /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app/PlugIns/SortTests.xctest --target-triple arm64-apple-ios17.0-simulator --binary-file /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app/PlugIns/SortTests.xctest/SortTests --dependency-file /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/Objects-normal/arm64/SortTests_dependency_info.dat --stringsdata-file /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/Objects-normal/arm64/ExtractedAppShortcutsMetadata.stringsdata --source-file-list /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/Objects-normal/arm64/SortTests.SwiftFileList --metadata-file-list /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/SortTests.DependencyMetadataFileList --static-metadata-file-list /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/SortTests.DependencyStaticMetadataFileList --swift-const-vals-list /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/Objects-normal/arm64/SortTests.SwiftConstValuesFileList --compile-time-extraction --deployment-aware-processing --validate-assistant-intents --no-app-shortcuts-localization
+2026-11-02 16:01:43.648 appintentsmetadataprocessor[2259:10383] Starting appintentsmetadataprocessor export
+2026-11-02 16:01:43.650 appintentsmetadataprocessor[2259:10383] warning: Metadata extraction skipped. No AppIntents.framework dependency found.
+
+AppIntentsSSUTraining (in target 'SortTests' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsnltrainingprocessor --infoplist-path /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app/PlugIns/SortTests.xctest/Info.plist --temp-dir-path /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/ssu --bundle-id com.bailensn.sort.tests --product-path /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app/PlugIns/SortTests.xctest --extracted-metadata-path /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app/PlugIns/SortTests.xctest/Metadata.appintents --metadata-file-list /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/Sort.build/Debug-iphonesimulator/SortTests.build/SortTests.DependencyMetadataFileList --source-file /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app/PlugIns/SortTests.xctest/Info.plist --archive-ssu-assets
+2026-11-02 16:01:43.674 appintentsnltrainingprocessor[2260:10384] Parsing options for appintentsnltrainingprocessor
+2026-11-02 16:01:43.675 appintentsnltrainingprocessor[2260:10384] Starting AppIntents SSU YAML Generation
+2026-11-02 16:01:43.675 appintentsnltrainingprocessor[2260:10384] No AppShortcuts found - Skipping.
+
+RegisterExecutionPolicyException /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app/PlugIns/SortTests.xctest (in target 'SortTests' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    builtin-RegisterExecutionPolicyException /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app/PlugIns/SortTests.xctest
+
+Touch /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app/PlugIns/SortTests.xctest (in target 'SortTests' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    /usr/bin/touch -c /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app/PlugIns/SortTests.xctest
+
+RegisterExecutionPolicyException /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app (in target 'Sort' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    builtin-RegisterExecutionPolicyException /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app
+
+Validate /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app (in target 'Sort' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    builtin-validationUtility /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app -shallow-bundle -infoplist-subpath Info.plist
+
+Touch /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app (in target 'Sort' from project 'Sort')
+    cd /Users/runner/work/Sort/Sort/iOS/ios-app
+    /usr/bin/touch -c /Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Products/Debug-iphonesimulator/Sort.app
+
+note: Removed stale file '/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Build/Intermediates.noindex/MyApp.build/Debug-iphonesimulator/MyApp-69f607e51142d46fd87ad1dd1a39b408-VFS-iphonesimulator/all-product-headers.yaml'
+
+Test Suite 'All tests' started at 2026-11-02 16:07:01.557.
+Test Suite 'SortTests.xctest' started at 2026-11-02 16:07:01.568.
+Test Suite 'OcrBridgeTests' started at 2026-11-02 16:07:01.569.
+Test Case '-[SortTests.OcrBridgeTests testCreateFailsOnMissingCharset]' started.
+Test Case '-[SortTests.OcrBridgeTests testCreateFailsOnMissingCharset]' passed (0.009 seconds).
+Test Case '-[SortTests.OcrBridgeTests testCreateFailsOnMissingModels]' started.
+Test Case '-[SortTests.OcrBridgeTests testCreateFailsOnMissingModels]' passed (0.001 seconds).
+Test Suite 'OcrBridgeTests' passed at 2026-11-02 16:07:01.581.
+	 Executed 2 tests, with 0 failures (0 unexpected) in 0.010 (0.013) seconds
+Test Suite 'OcrPipelineTests' started at 2026-11-02 16:07:01.582.
+Test Case '-[SortTests.OcrPipelineTests testRecognizesFixtureTable]' started.
+2026-11-02 16:08:04.597082+0000 Sort[7290:28073] [General] Failed to send CA Event for app launch measurements for ca_event_type: 0 event_name: com.apple.app_launch_measurement.FirstFramePresentationMetric
+2026-11-02 16:08:04.819994+0000 Sort[7290:28070] [General] Failed to send CA Event for app launch measurements for ca_event_type: 1 event_name: com.apple.app_launch_measurement.ExtendedLaunchMetrics
+
+Restarting after unexpected exit, crash, or test timeout; summary will include totals from previous launches.
+
+Test Suite 'Selected tests' started at 2026-11-02 16:08:06.040.
+Test Suite 'SortTests.xctest' started at 2026-11-02 16:08:06.041.
+Test Suite 'OcrPipelineTests' started at 2026-11-02 16:08:06.041.
+Test Suite 'OcrPipelineTests' passed at 2026-11-02 16:08:06.041.
+	 Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.000) seconds
+Test Suite 'SortTests.xctest' passed at 2026-11-02 16:08:06.042.
+	 Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.001) seconds
+Test Suite 'Selected tests' passed at 2026-11-02 16:08:06.042.
+	 Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.002) seconds
+2026-11-02 16:09:09.101 xcodebuild[1664:8659] [MT] IDETestOperationsObserverDebug: 445.115 elapsed -- Testing started completed.
+2026-11-02 16:09:09.117 xcodebuild[1664:8659] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-11-02 16:09:09.117 xcodebuild[1664:8659] [MT] IDETestOperationsObserverDebug: 445.116 sec, +445.116 sec -- end
+
+Test session results, code coverage, and logs:
+	/Users/runner/work/Sort/Sort/iOS/ios-app/build-test/Logs/Test/Test-Sort-2026.11.02_16-01-13-+0000.xcresult
+
+Failing tests:
+	OcrPipelineTests.testRecognizesFixtureTable()
+
+** TEST FAILED **
+
+Testing started
