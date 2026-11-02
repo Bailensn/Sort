@@ -12,12 +12,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 # 主机上拿 Linux 版 libmindspore-lite.so 跑真实的 .ms 模型（CI 用），
-# 逻辑和鸿蒙那份 MindSporeBackend 完全同一份源码。
-option(SORT_MSLITE_HOST_TEST "Run OCR on host against the Linux MindSpore Lite runtime" OFF)
-if (SORT_MSLITE_HOST_TEST)
-    set(SORT_WITH_MINDSORE_LITE ON CACHE BOOL "" FORCE)
-endif ()
-
 # OCR 核心：零平台依赖，只吃 Image8 和张量；ORT 后端在 adapters/ 里，按需打开。
 option(SORT_WITH_OCR "Build the OCR core" ON)
 if (SORT_WITH_OCR)
@@ -43,7 +37,6 @@ if (SORT_WITH_OCR)
             adapters/BackendFactory.cpp
             adapters/onnx/OnnxBackend.cpp
             adapters/paddle_lite/PaddleLiteBackend.cpp
-            adapters/mindspore/MindSporeBackend.cpp
             adapters/mnn/MnnBackend.cpp)
 
     # Android 要一份独立的 libocr.so；iOS 和本地测试直接静态编进 App / 可执行文件。
@@ -94,38 +87,6 @@ if (SORT_WITH_OCR)
         target_compile_definitions(${OCR_TARGET} PUBLIC SORT_WITH_ONNXRUNTIME=1)
     endif ()
 
-    # MindSpore Lite：模型是 .ms；鸿蒙官方支持，Android/iOS 也能用。
-    # MNN：模型是 .mnn；鸿蒙用官方预编译包，安卓/iOS 也能用。
-    option(SORT_WITH_MNN "Link against MNN" OFF)
-    if (SORT_WITH_MNN)
-        target_compile_definitions(${OCR_TARGET} PUBLIC SORT_WITH_MNN=1)
-        target_include_directories(${OCR_TARGET} PRIVATE
-                ${CMAKE_CURRENT_SOURCE_DIR}/adapters/mnn/include)
-    endif ()
-
-    option(SORT_WITH_MINDSORE_LITE "Link against MindSpore Lite" OFF)
-    if (SORT_WITH_MINDSORE_LITE)
-        target_compile_definitions(${OCR_TARGET} PUBLIC SORT_WITH_MINDSORE_LITE=1)
-        # adapters/mindspore/ohos 里是华为 OH_AI C API 头（和真机 sysroot 一致），
-        # 不用依赖 NDK 装没装头文件
-        target_include_directories(${OCR_TARGET} PRIVATE
-                ${CMAKE_CURRENT_SOURCE_DIR}/adapters/mindspore/ohos)
-    endif ()
-
-    if (SORT_MSLITE_HOST_TEST)
-        if (NOT MSLITE_ROOT)
-            message(FATAL_ERROR "SORT_MSLITE_HOST_TEST 要配 -DMSLITE_ROOT=<mindspore-lite-*-linux-x64>")
-        endif ()
-        # OH_AI 垫片把调用转给上游的 MS_*，于是同一份适配层能在 CI 上跑
-        add_executable(ocr_mslite_dump tools/ocr_dump/main.cpp tests/mslite_shim/oh_ai_shim.cpp)
-        # ohos 头是 PRIVATE 挂在 ocr_core 上的，垫片自己也要看得见
-        target_include_directories(ocr_mslite_dump PRIVATE
-                ${CMAKE_CURRENT_SOURCE_DIR}/adapters/mindspore/ohos ${MSLITE_ROOT}/runtime)
-        # libmindspore-lite.so 依赖 glog，包里只给了 converter/lib 那份
-        file(GLOB MSLITE_GLOG "${MSLITE_ROOT}/tools/converter/lib/libmindspore_glog.so*")
-        target_link_libraries(ocr_mslite_dump PRIVATE
-                ${OCR_TARGET} ${MSLITE_ROOT}/runtime/lib/libmindspore-lite.so ${MSLITE_GLOG})
-    endif ()
 
     # Paddle-Lite：模型是 .nb；三端各有自己的库，用法和 ORT 那套一样。
     option(SORT_WITH_PADDLE_LITE "Link against Paddle-Lite" OFF)

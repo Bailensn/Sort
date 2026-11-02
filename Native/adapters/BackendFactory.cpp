@@ -2,8 +2,6 @@
 
 #ifdef SORT_WITH_MNN
 #include "mnn/MnnBackend.hpp"
-#elif defined(SORT_WITH_MINDSORE_LITE)
-#include "mindspore/MindSporeBackend.hpp"
 #elif defined(SORT_WITH_PADDLE_LITE)
 #include "paddle_lite/PaddleLiteBackend.hpp"
 #elif defined(SORT_WITH_ONNXRUNTIME)
@@ -15,7 +13,7 @@ namespace ocr {
 std::unique_ptr<InferenceBackend> createRefereeBackend(const std::string& recModelPath,
                                                        int numThreads) {
 #if defined(SORT_WITH_ONNXRUNTIME)
-    // 只有 ORT 支持只建 rec；MindSpore / Paddle-Lite 这边没有复核模型
+    // 只有 ORT 和 MNN 支持只建 rec
     return OnnxBackend::create(std::string(), recModelPath, numThreads);
 #elif defined(SORT_WITH_MNN)
     return MnnBackend::create(std::string(), recModelPath, numThreads);
@@ -31,8 +29,6 @@ std::unique_ptr<InferenceBackend> createInferenceBackend(const std::string& detM
                                                          int numThreads) {
 #if defined(SORT_WITH_MNN)
     return MnnBackend::create(detModelPath, recModelPath, numThreads);
-#elif defined(SORT_WITH_MINDSORE_LITE)
-    return MindSporeBackend::create(detModelPath, recModelPath, numThreads);
 #elif defined(SORT_WITH_PADDLE_LITE)
     return PaddleLiteBackend::create(detModelPath, recModelPath, numThreads);
 #elif defined(SORT_WITH_ONNXRUNTIME)
