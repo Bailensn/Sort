@@ -1,8 +1,10 @@
 name: Convert Models
 
 on:
-  # 手动跑：把 Paddle 推理模型（PIR 的 json + pdiparams）转成 Paddle-Lite 的 .nb。
-  # 这一步只在 Linux x86 上做，产物给三端共用。
+  # 每次推到 main 就跑：把 Paddle 推理模型（PIR 的 json + pdiparams）转成 .nb。
+  # 这一步只在 Linux x86 上做，产物给三端共用；也留着手动入口方便重跑。
+  push:
+    branches: [ "main" ]
   workflow_dispatch:
 
 permissions:
