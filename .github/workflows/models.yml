@@ -71,6 +71,16 @@ jobs:
           echo "rec_fix rc=$?" | tee -a build.log
           set -e
           ls -lh models | tee -a build.log
+      - name: Inspect converted models
+        run: |
+          set -o pipefail
+          BENCH=$(find mindspore-lite-* -name benchmark -type f | head -1)
+          echo "benchmark: $BENCH" | tee -a build.log
+          export LD_LIBRARY_PATH="$(cd "$(dirname "$BENCH")/../lib" && pwd):${LD_LIBRARY_PATH:-}"
+          for m in models/det_dyn.ms models/rec_dyn.ms; do
+            echo "=== $m" | tee -a build.log
+            "$BENCH" --modelFile="$m" --device=CPU 2>&1 | head -30 | tee -a build.log || true
+          done
       - name: Upload ms
         if: always()
         uses: actions/upload-artifact@v7
