@@ -1,0 +1,19 @@
+[models] 下载 ONNX 模型
+[models] 下载 MindSpore Lite 2.10.0
+[models] 转换（不指定 inputShape，保留动态维度）
+CONVERT RESULT SUCCESS:0
+[WARNING] LITE(2354,7f5250c02040,converter_lite):2026-11-02-15:11:39.383.189 [mindspore-lite/src/common/ops/ops_utils.h:50] GetPrimitiveCreator] Unsupported primitive type in Create: Return
+[WARNING] LITE(2354,7f5250c02040,converter_lite):2026-11-02-15:11:39.383.210 [mindspore-lite/src/common/ops/anf_utils.cc:38] GetPrimitiveT] can not find MSOpsRegistry for op: Return
+[WARNING] LITE(2354,7f5250c02040,converter_lite):2026-11-02-15:11:39.384.625 [mindspore-lite/src/common/ops/ops_utils.h:50] GetPrimitiveCreator] Unsupported primitive type in Create: Return
+[WARNING] LITE(2354,7f5250c02040,converter_lite):2026-11-02-15:11:39.384.638 [mindspore-lite/src/common/ops/anf_utils.cc:38] GetPrimitiveT] can not find MSOpsRegistry for op: Return
+[WARNING] LITE(2354,7f5250c02040,converter_lite):2026-11-02-15:11:39.385.681 [mindspore-lite/src/common/ops/ops_utils.h:50] GetPrimitiveCreator] Unsupported primitive type in Create: Return
+[WARNING] LITE(2354,7f5250c02040,converter_lite):2026-11-02-15:11:39.385.694 [mindspore-lite/src/common/ops/anf_utils.cc:38] GetPrimitiveT] can not find MSOpsRegistry for op: Return
+[WARNING] LITE(2354,7f5250c02040,converter_lite):2026-11-02-15:11:39.386.798 [mindspore-lite/src/common/ops/ops_utils.h:50] GetPrimitiveCreator] Unsupported primitive type in Create: Return
+[WARNING] LITE(2354,7f5250c02040,converter_lite):2026-11-02-15:11:39.386.810 [mindspore-lite/src/common/ops/anf_utils.cc:38] GetPrimitiveT] can not find MSOpsRegistry for op: Return
+[WARNING] LITE(2354,7f5250c02040,converter_lite):2026-11-02-15:11:39.387.779 [mindspore-lite/src/common/ops/ops_utils.h:50] GetPrimitiveCreator] Unsupported primitive type in Create: Return
+[WARNING] LITE(2354,7f5250c02040,converter_lite):2026-11-02-15:11:39.387.791 [mindspore-lite/src/common/ops/anf_utils.cc:38] GetPrimitiveT] can not find MSOpsRegistry for op: Return
+CONVERT RESULT SUCCESS:0
+total 133M
+-r-------- 1 runner runner  60M Nov  2 15:11 det.ms
+-r-------- 1 runner runner  73M Nov  2 15:11 rec.ms
+-rw-r--r-- 1 runner runner 148K Nov  2 15:11 rec.yml
