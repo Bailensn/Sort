@@ -43,7 +43,8 @@ if (SORT_WITH_OCR)
             adapters/BackendFactory.cpp
             adapters/onnx/OnnxBackend.cpp
             adapters/paddle_lite/PaddleLiteBackend.cpp
-            adapters/mindspore/MindSporeBackend.cpp)
+            adapters/mindspore/MindSporeBackend.cpp
+            adapters/mnn/MnnBackend.cpp)
 
     # Android 要一份独立的 libocr.so；iOS 和本地测试直接静态编进 App / 可执行文件。
     option(SORT_OCR_SHARED "Build OCR as a shared library" OFF)
@@ -94,6 +95,14 @@ if (SORT_WITH_OCR)
     endif ()
 
     # MindSpore Lite：模型是 .ms；鸿蒙官方支持，Android/iOS 也能用。
+    # MNN：模型是 .mnn；鸿蒙用官方预编译包，安卓/iOS 也能用。
+    option(SORT_WITH_MNN "Link against MNN" OFF)
+    if (SORT_WITH_MNN)
+        target_compile_definitions(${OCR_TARGET} PUBLIC SORT_WITH_MNN=1)
+        target_include_directories(${OCR_TARGET} PRIVATE
+                ${CMAKE_CURRENT_SOURCE_DIR}/adapters/mnn/include)
+    endif ()
+
     option(SORT_WITH_MINDSORE_LITE "Link against MindSpore Lite" OFF)
     if (SORT_WITH_MINDSORE_LITE)
         target_compile_definitions(${OCR_TARGET} PUBLIC SORT_WITH_MINDSORE_LITE=1)
