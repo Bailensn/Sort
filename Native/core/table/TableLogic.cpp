@@ -299,6 +299,117 @@ std::optional<Edit> fixSingleCell(std::vector<std::string>& row, int rowIndex,
 
 }  // namespace
 
+namespace {
+
+constexpr int kMinNumericCells = 3;
+constexpr double kMinNumericRatio = 0.5;
+
+char lookalike(unsigned char ch) {
+    switch (ch) {
+        case 'O': case 'o': case 'D': case 'Q': return '0';
+        case 'S': case 's': return '5';
+        case 'B': return '8';
+        case 'l': case 'I': case '|': case 'i': return '1';
+        case 'Z': case 'z': return '2';
+        case 'G': case 'g': return '6';
+        case 'T': return '7';
+        case 'q': return '9';
+        default: return 0;
+    }
+}
+
+/// 把一格里能映射成数字的字符挑出来；凑不成合法数字就返回空。
+std::string normalizeCell(const std::string& raw) {
+    std::string builder;
+    for (size_t i = 0; i < raw.size();) {
+        const unsigned char ch = static_cast<unsigned char>(raw[i]);
+        if (ch < 0x80) {
+            if (ch >= '0' && ch <= '9') {
+                builder += static_cast<char>(ch);
+            } else if (ch == '.' || ch == ',') {
+                builder += '.';
+            } else if (const char mapped = lookalike(ch)) {
+                builder += mapped;
+            }
+            ++i;
+            continue;
+        }
+        // 全角：EF BC 80..BF 对应 U+FF00 起，数字是 0x90..0x99，逗号是 0x8C
+        if (ch == 0xEF && i + 2 < raw.size() && static_cast<unsigned char>(raw[i + 1]) == 0xBC) {
+            const unsigned char third = static_cast<unsigned char>(raw[i + 2]);
+            if (third >= 0x90 && third <= 0x99) {
+                builder += static_cast<char>('0' + (third - 0x90));
+            } else if (third == 0x8C) {
+                builder += '.';
+            }
+            i += 3;
+            continue;
+        }
+        ++i;
+    }
+
+    if (builder.empty()) return {};
+    bool hasDigit = false;
+    for (char ch : builder) {
+        if (ch >= '0' && ch <= '9') hasDigit = true;
+    }
+    if (!hasDigit) return {};
+
+    // 小数点只保留第一个，其余当噪声丢掉
+    const size_t firstDot = builder.find('.');
+    if (firstDot != std::string::npos) {
+        std::string tail;
+        for (size_t i = firstDot + 1; i < builder.size(); ++i) {
+            if (builder[i] != '.') tail += builder[i];
+        }
+        builder = builder.substr(0, firstDot + 1) + tail;
+    }
+    if (!builder.empty() && builder.front() == '.') builder = "0" + builder;
+    if (!builder.empty() && builder.back() == '.') builder.pop_back();
+
+    double ignored = 0;
+    return parseNumber(builder, ignored) ? builder : std::string();
+}
+
+}  // namespace
+
+TableRows repairNumbers(const TableRows& rows) {
+    if (rows.empty()) return rows;
+    size_t width = 0;
+    for (const auto& row : rows) width = std::max(width, row.size());
+    if (width == 0) return rows;
+
+    TableRows result = rows;
+    for (size_t column = 0; column < width; ++column) {
+        std::vector<std::string> values;
+        for (const auto& row : result) {
+            if (column >= row.size()) continue;
+            const std::string value = trim(row[column]);
+            if (!value.empty()) values.push_back(value);
+        }
+        if (static_cast<int>(values.size()) < kMinNumericCells) continue;
+
+        int numeric = 0;
+        for (const auto& value : values) {
+            double ignored = 0;
+            if (parseNumber(value, ignored)) ++numeric;
+        }
+        if (static_cast<double>(numeric) / values.size() < kMinNumericRatio) continue;
+
+        for (auto& row : result) {
+            if (column >= row.size()) continue;
+            const std::string value = trim(row[column]);
+            if (value.empty()) continue;
+            double ignored = 0;
+            if (parseNumber(value, ignored)) continue;
+            const std::string fixed = normalizeCell(value);
+            if (fixed.empty()) continue;
+            row[column] = fixed;
+        }
+    }
+    return result;
+}
+
 bool parseNumber(const std::string& raw, double& out) {
     if (raw.empty()) return false;
     size_t index = 0;

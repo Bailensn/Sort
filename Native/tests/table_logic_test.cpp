@@ -215,6 +215,45 @@ void fixesWrongTotalWhenExplicit() {
     check(fixed || flagged, "explicit: 总分算错的行要么改对、要么进存疑");
 }
 
+void repairsLookalikeDigits() {
+    ocr::TableRows rows = {
+        {"张三", "95"},
+        {"李四", "S8"},
+        {"王五", "70"},
+        {"赵六", "85"},
+    };
+
+    const ocr::TableRows fixed = ocr::repairNumbers(rows);
+
+    check(fixed[1][1] == "58", "repair: S8 应修成 58");
+    check(fixed[0][1] == "95", "repair: 正常的数字不该被动");
+}
+
+void repairsFullWidthDigits() {
+    ocr::TableRows rows = {
+        {"张三", "95"},
+        {"李四", "８８"},
+        {"王五", "70"},
+        {"赵六", "85"},
+    };
+
+    const ocr::TableRows fixed = ocr::repairNumbers(rows);
+
+    check(fixed[1][1] == "88", "repair: 全角 88 应修成 88");
+}
+
+void leavesTextColumnAlone() {
+    ocr::TableRows rows = {
+        {"张三", "优秀"},
+        {"李四", "良好"},
+        {"王五", "及格"},
+    };
+
+    const ocr::TableRows fixed = ocr::repairNumbers(rows);
+
+    check(fixed[0][1] == "优秀", "repair: 文字列不该被改");
+}
+
 }  // namespace
 
 int main() {
@@ -228,6 +267,9 @@ int main() {
     ignoresHeaderWhenFirstRowIsData();
     usesExplicitTotalColumnInTheMiddle();
     fixesWrongTotalWhenExplicit();
+    repairsLookalikeDigits();
+    repairsFullWidthDigits();
+    leavesTextColumnAlone();
 
     if (g_failures > 0) {
         std::printf("%d 项失败\n", g_failures);
