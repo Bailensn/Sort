@@ -1,0 +1,60 @@
+name: Harmony MSLite
+
+# 只验鸿蒙的 MindSpore 适配层：垫片把 OH_AI_* 转发给上游 MS_*，用真 .ms 跑一遍。
+# 和 Android 无关——安卓走 ORT，这里只是需要一个有 cmake + gcc 的 Linux。
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - "Native/**"
+      - "Harmony/**"
+      - "tools/**"
+      - ".github/workflows/harmony-mslite.yml"
+  pull_request:
+    paths:
+      - "Native/**"
+      - "Harmony/**"
+      - "tools/**"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: harmony-mslite-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  host-run:
+    name: Run .ms on host
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - name: Cache models
+        id: ms-cache
+        uses: actions/cache@v6
+        with:
+          path: /tmp/ms
+          key: mslite-models-2.10.0-v1
+      - name: Convert models
+        if: steps.ms-cache.outputs.cache-hit != 'true'
+        run: MSLITE_KEEP_RUNTIME=1 bash tools/convert_models.sh /tmp/ms
+      - name: Build and run
+        run: |
+          set -o pipefail
+          root=$(ls -d /tmp/ms/mindspore-lite-* | head -1)
+          echo "[ms] root=$root" | tee -a build.log
+          cmake -S Native -B Native/build-ms -DSORT_MSLITE_HOST_TEST=ON -DMSLITE_ROOT="$root" \
+            -DSORT_BUILD_TESTS=OFF -DSORT_BUILD_TOOLS=OFF 2>&1 | tee -a build.log
+          cmake --build Native/build-ms --parallel 2 --target ocr_mslite_dump 2>&1 | tee -a build.log
+          LD_LIBRARY_PATH="$root/runtime/lib:$root/tools/converter/lib" ./Native/build-ms/ocr_mslite_dump \
+            --det /tmp/ms/det.ms --rec /tmp/ms/rec.ms --charset /tmp/ms/rec.yml \
+            --image Native/tests/data/table.ppm 2>&1 | tee -a build.log > mslite.json
+          cat mslite.json | tee -a build.log
+          grep -q "900000000001" mslite.json || { echo "::error::.ms 模型没识别出学号"; exit 1; }
+      - name: Publish build log
+        if: always()
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: bash "$GITHUB_WORKSPACE/.github/scripts/publish-log.sh" build.log harmony-mslite.log ci-log-harmony-mslite

@@ -38,30 +38,6 @@ jobs:
           cmake --build Native/build --parallel 2 2>&1 | tee build.log
       - name: Smoke test
         run: ctest --test-dir Native/build --output-on-failure
-      - name: Cache MindSpore Lite models
-        id: ms-cache
-        uses: actions/cache@v6
-        with:
-          path: /tmp/ms
-          key: mslite-models-2.10.0-v1
-      - name: Prepare MindSpore Lite models
-        if: steps.ms-cache.outputs.cache-hit != 'true'
-        run: MSLITE_KEEP_RUNTIME=1 bash tools/convert_models.sh /tmp/ms
-      # 这一段验的是**鸿蒙**的 MindSpore 适配层，跟 Android 包无关：
-      # 安卓用 ORT，只有鸿蒙用 .ms。放在这里纯粹因为这个 job 有 cmake + gcc。
-      - name: MindSpore Lite host OCR (Harmony backend)
-        run: |
-          set -o pipefail
-          root=$(ls -d /tmp/ms/mindspore-lite-* | head -1)
-          echo "[ms] root=$root" | tee -a build.log
-          cmake -S Native -B Native/build-ms -DSORT_MSLITE_HOST_TEST=ON -DMSLITE_ROOT="$root" \
-            -DSORT_BUILD_TESTS=OFF -DSORT_BUILD_TOOLS=OFF 2>&1 | tee -a build.log
-          cmake --build Native/build-ms --parallel 2 --target ocr_mslite_dump 2>&1 | tee -a build.log
-          LD_LIBRARY_PATH="$root/runtime/lib:$root/tools/converter/lib" ./Native/build-ms/ocr_mslite_dump \
-            --det /tmp/ms/det.ms --rec /tmp/ms/rec.ms --charset /tmp/ms/rec.yml \
-            --image Native/tests/data/table.ppm 2>&1 | tee -a build.log > mslite.json
-          cat mslite.json | tee -a build.log
-          grep -q "900000000001" mslite.json || { echo "::error::.ms 模型没识别出学号"; exit 1; }
       - name: Publish build log
         if: always()
         env:
