@@ -39,7 +39,9 @@ jobs:
           curl -fsSL -o Resources/models/det.onnx "$hf/PP-OCRv6_medium_det_onnx/resolve/main/inference.onnx"
           curl -fsSL -o Resources/models/rec.onnx "$hf/PP-OCRv6_medium_rec_onnx/resolve/main/inference.onnx"
           curl -fsSL -o Resources/models/rec.yml  "$hf/PP-OCRv6_medium_rec_onnx/resolve/main/inference.yml"
-          ls -lh Resources/models | tee build.log
+          python3 "$GITHUB_WORKSPACE/tools/compress_models.py" \
+            Resources/models/det.onnx Resources/models/rec.onnx Resources/models/rec.yml
+          ls -lh Resources/models | tee -a build.log
       - name: Cache DerivedData
         uses: actions/cache@v6
         with:
@@ -123,31 +125,15 @@ jobs:
           curl -fsSL -o Resources/models/det.onnx "$hf/PP-OCRv6_medium_det_onnx/resolve/main/inference.onnx"
           curl -fsSL -o Resources/models/rec.onnx "$hf/PP-OCRv6_medium_rec_onnx/resolve/main/inference.onnx"
           curl -fsSL -o Resources/models/rec.yml  "$hf/PP-OCRv6_medium_rec_onnx/resolve/main/inference.yml"
-          ls -lh Resources/models | tee build.log
+          python3 "$GITHUB_WORKSPACE/tools/compress_models.py" \
+            Resources/models/det.onnx Resources/models/rec.onnx Resources/models/rec.yml
+          ls -lh Resources/models | tee -a build.log
       - name: Cache DerivedData
         uses: actions/cache@v6
         with:
-          path: |
-            iOS/ios-app/build-sim
-            iOS/ios-app/build-device
-          key: ios-derived-${{ hashFiles('iOS/ios-app/project.yml') }}
-          restore-keys: ios-derived-
-      - name: Cache models
-        id: model-cache
-        uses: actions/cache@v6
-        with:
-          path: iOS/ios-app/Resources/models
-          key: ios-onnx-models-v1
-      - name: Download models
-        if: steps.model-cache.outputs.cache-hit != 'true'
-        run: |
-          set -o pipefail
-          mkdir -p Resources/models
-          hf=https://huggingface.co/PaddlePaddle
-          curl -fsSL -o Resources/models/det.onnx "$hf/PP-OCRv6_medium_det_onnx/resolve/main/inference.onnx"
-          curl -fsSL -o Resources/models/rec.onnx "$hf/PP-OCRv6_medium_rec_onnx/resolve/main/inference.onnx"
-          curl -fsSL -o Resources/models/rec.yml  "$hf/PP-OCRv6_medium_rec_onnx/resolve/main/inference.yml"
-          ls -lh Resources/models | tee build.log
+          path: iOS/ios-app/build-test
+          key: ios-test-derived-${{ hashFiles('iOS/ios-app/project.yml') }}
+          restore-keys: ios-test-derived-
       - name: Generate project
         run: xcodegen generate
       - name: Run tests
