@@ -140,10 +140,9 @@ Java_com_bailensn_sort_OcrBridge_nativeOcrRecognize(JNIEnv *env, jclass, jlong h
 }
 
 JNIEXPORT jobjectArray JNICALL
-Java_com_bailensn_sort_OcrBridge_nativeOcrRecognizeCells(JNIEnv *env, jclass, jlong handle,
-                                                         jbyteArray pixels, jint width, jint height,
-                                                         jint isBgr, jintArray cells,
-                                                         jfloat scale) {
+static jobject recognizeCellsCommon(JNIEnv *env, jlong handle, jbyteArray pixels, jint width,
+                                   jint height, jint isBgr, jintArray cells, jfloat scale,
+                                   bool referee) {
     if (pixels == nullptr || cells == nullptr) return nullptr;
     const jsize cellValues = env->GetArrayLength(cells);
     if (cellValues <= 0 || cellValues % 4 != 0) return nullptr;
@@ -163,9 +162,10 @@ Java_com_bailensn_sort_OcrBridge_nativeOcrRecognizeCells(JNIEnv *env, jclass, jl
     if (buffer == nullptr) return nullptr;
 
     std::vector<CellResult> readings;
-    const int32_t rc = engine_ocr_recognize_cells(
-        asOcrHandle(handle), reinterpret_cast<const uint8_t *>(buffer), width, height, 0, isBgr,
-        rects.data(), cellCount, scale, collectCell, &readings);
+    auto recognize = referee ? engine_ocr_recognize_cells_ref : engine_ocr_recognize_cells;
+    const int32_t rc = recognize(asOcrHandle(handle),
+                                 reinterpret_cast<const uint8_t *>(buffer), width, height, 0, isBgr,
+                                 rects.data(), cellCount, scale, collectCell, &readings);
     env->ReleaseByteArrayElements(pixels, buffer, JNI_ABORT);
     if (rc != ENGINE_OK) return nullptr;
 
@@ -197,6 +197,39 @@ Java_com_bailensn_sort_OcrBridge_nativeOcrRecognizeCells(JNIEnv *env, jclass, jl
                                 reinterpret_cast<const jbyte *>(inks.data()));
     }
     return makeTriple(env, texts, confidenceArray, inkArray);
+}
+
+extern "C" JNIEXPORT jobject JNICALL
+Java_com_bailensn_sort_OcrBridge_nativeOcrRecognizeCells(JNIEnv *env, jclass, jlong handle,
+                                                         jbyteArray pixels, jint width, jint height,
+                                                         jint isBgr, jintArray cells,
+                                                         jfloat scale) {
+    return recognizeCellsCommon(env, handle, pixels, width, height, isBgr, cells, scale, false);
+}
+
+extern "C" JNIEXPORT jobject JNICALL
+Java_com_bailensn_sort_OcrBridge_nativeOcrRecognizeCellsRef(JNIEnv *env, jclass, jlong handle,
+                                                           jbyteArray pixels, jint width,
+                                                           jint height, jint isBgr, jintArray cells,
+                                                           jfloat scale) {
+    return recognizeCellsCommon(env, handle, pixels, width, height, isBgr, cells, scale, true);
+}
+
+extern "C" JNIEXPORT jint JNICALL
+Java_com_bailensn_sort_OcrBridge_nativeOcrSetReferee(JNIEnv *env, jclass, jlong handle,
+                                                     jstring recPath, jstring charsetPath) {
+    if (recPath == nullptr || charsetPath == nullptr) return ENGINE_ERR_NULL;
+    const char *rec = env->GetStringUTFChars(recPath, nullptr);
+    const char *charset = env->GetStringUTFChars(charsetPath, nullptr);
+    if (rec == nullptr || charset == nullptr) {
+        if (rec != nullptr) env->ReleaseStringUTFChars(recPath, rec);
+        if (charset != nullptr) env->ReleaseStringUTFChars(charsetPath, charset);
+        return ENGINE_ERR_NULL;
+    }
+    const int32_t rc = engine_ocr_set_referee(asOcrHandle(handle), rec, charset);
+    env->ReleaseStringUTFChars(recPath, rec);
+    env->ReleaseStringUTFChars(charsetPath, charset);
+    return rc;
 }
 
 }  // extern "C"

@@ -324,8 +324,7 @@ object TablePipeline {
         // 统计用：只看有墨迹的格子，空白格不该拉低置信度。
         val scored = recognized.filter { it.hasInk }
         val averageConfidence = if (scored.isEmpty()) 0f else scored.sumOf { it.confidence.toDouble() }.toFloat() / scored.size
-        // 展示用的门槛固定 98%：TRUSTED_CONFIDENCE 现在是 1.01（表示二遍全跑），
-        // 用它来数会把所有格子都算成「低置信度」。
+        // 展示门槛固定 98%，和 TRUSTED_CONFIDENCE 解耦：改重认策略不该影响统计口径。
         val lowConfidenceCells = scored.count { it.confidence < DISPLAY_TRUSTED_CONFIDENCE }
         // 界面只显示均值，怀疑被固定住时靠这条 logcat 看分布：全在 0.82 附近就说明
         // 是识别输出本身平，不是平均算错。
@@ -517,7 +516,11 @@ object TablePipeline {
 
     private const val MIN_FILL_CONFIDENCE = 0.6f
 
-    private const val TRUSTED_CONFIDENCE = 1.01f
+    /**
+     * 低于这个值才值得再认一遍。之前写的是 1.01（等于「二遍全跑」），
+     * 每格都要跑第二遍和复核模型，时间翻三倍还换来一堆一模一样的结论。
+     */
+    private const val TRUSTED_CONFIDENCE = 0.95f
 
     private const val THIRD_CONFIDENCE = 0.98f
 

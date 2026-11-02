@@ -63,6 +63,26 @@ class OcrBridge(
     }
 
     /** cells 按 left/top/right/bottom 顺序平铺成一个 IntArray。 */
+    /** 挂上复核模型（PP-OCRv5 server rec）；只有 rec，没有 det。 */
+    fun setReferee(recModelPath: String, charsetPath: String): Boolean =
+        nativeOcrSetReferee(handle, recModelPath, charsetPath) == 0
+
+    /** 用复核模型跑同一批格子，给有争议的格子投票。 */
+    fun recognizeCellsReferee(bitmap: Bitmap, cells: IntArray, scale: Float = 1f): List<CellReading> {
+        if (handle == 0L || cells.isEmpty()) return emptyList()
+        val pixels = toBgr(bitmap)
+        val triple = nativeOcrRecognizeCellsRef(
+            handle, pixels, bitmap.width, bitmap.height, 1, cells, scale,
+        ) ?: return emptyList()
+        @Suppress("UNCHECKED_CAST")
+        val texts = triple[0] as Array<String>
+        val confidences = triple[1] as FloatArray
+        val inks = triple[2] as ByteArray
+        return texts.indices.map { i ->
+            CellReading(texts[i], confidences[i], inks[i].toInt() != 0)
+        }
+    }
+
     fun recognizeCells(bitmap: Bitmap, cells: IntArray, scale: Float = 1f): List<CellReading> {
         if (handle == 0L || cells.isEmpty()) return emptyList()
         val pixels = toBgr(bitmap)
@@ -102,6 +122,18 @@ class OcrBridge(
     }
 
     private external fun nativeOcrLastError(): Int
+
+    private external fun nativeOcrSetReferee(handle: Long, rec: String, charset: String): Int
+
+    private external fun nativeOcrRecognizeCellsRef(
+        handle: Long,
+        pixels: ByteArray,
+        width: Int,
+        height: Int,
+        isBgr: Int,
+        cells: IntArray,
+        scale: Float,
+    ): Array<Any>?
 
     private external fun nativeOcrCreate(det: String, rec: String, charset: String): Long
     private external fun nativeOcrDestroy(handle: Long)

@@ -14,6 +14,8 @@ import java.io.File
 class NativeOcr private constructor(
     private val bridge: OcrBridge,
     val coldLoadTimeMs: Long,
+    private val refereeRec: File?,
+    private val refereeCharset: File?,
 ) {
 
     fun recognize(bitmap: Bitmap): OcrRun =
@@ -39,13 +41,32 @@ class NativeOcr private constructor(
         return readings
     }
 
-    /** 复核模型还没接进 C++ 核心；返回空表等价于「没有复核模型」。 */
+    /** 没有复核模型时返回空表，调用方按两路投票走。 */
     fun recognizeCellsReferee(
         bitmap: Bitmap,
         rects: List<Rect>,
         scale: Float = 1f,
         onProgress: ((Float) -> Unit)? = null,
-    ): List<CellReading> = emptyList()
+    ): List<CellReading> {
+        if (rects.isEmpty() || !refereeReady) return emptyList()
+        val cells = IntArray(rects.size * 4)
+        rects.forEachIndexed { index, rect ->
+            cells[index * 4] = rect.left
+            cells[index * 4 + 1] = rect.top
+            cells[index * 4 + 2] = rect.right
+            cells[index * 4 + 3] = rect.bottom
+        }
+        val readings = bridge.recognizeCellsReferee(bitmap, cells, scale)
+        onProgress?.invoke(1f)
+        return readings
+    }
+
+    /** 复核模型 90 MB 上下，第一次要用时才加载，别拖慢冷启动。 */
+    private val refereeReady: Boolean by lazy {
+        val rec = refereeRec ?: return@lazy false
+        val charset = refereeCharset ?: return@lazy false
+        bridge.setReferee(rec.absolutePath, charset.absolutePath)
+    }
 
     fun release() {
         bridge.close()
@@ -64,7 +85,14 @@ class NativeOcr private constructor(
                 bridge.close()
                 throw IllegalStateException("OCR 后端初始化失败，错误码 ${bridge.lastError}")
             }
-            return NativeOcr(bridge, SystemClock.elapsedRealtime() - started)
+            val refereeRec = File(modelDir, "referee/inference.onnx").takeIf { it.isFile }
+            val refereeCharset = File(modelDir, "referee/inference.yml").takeIf { it.isFile }
+            return NativeOcr(
+                bridge = bridge,
+                coldLoadTimeMs = SystemClock.elapsedRealtime() - started,
+                refereeRec = refereeRec,
+                refereeCharset = refereeCharset,
+            )
         }
     }
 }

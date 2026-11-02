@@ -40,6 +40,7 @@ bool openSession(Session& out, const std::string& path, int numThreads) {
 }
 
 bool runSession(Session& session, const Tensor& input, Tensor& output) {
+    if (!session.session) return false;
     if (input.dims.size() != 4) return false;
 
     Ort::MemoryInfo memory =
@@ -77,7 +78,10 @@ std::unique_ptr<OnnxBackend> OnnxBackend::create(const std::string& detModelPath
                                                  const std::string& recModelPath,
                                                  int numThreads) {
     auto backend = std::unique_ptr<OnnxBackend>(new OnnxBackend());
-    if (!openSession(backend->impl_->det, detModelPath, numThreads)) return nullptr;
+    // 复核模型只要 rec：det 路径为空就跳过 det 会话
+    if (!detModelPath.empty() && !openSession(backend->impl_->det, detModelPath, numThreads)) {
+        return nullptr;
+    }
     if (!openSession(backend->impl_->rec, recModelPath, numThreads)) return nullptr;
     return backend;
 }

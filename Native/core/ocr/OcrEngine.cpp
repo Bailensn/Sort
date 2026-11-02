@@ -162,7 +162,8 @@ OcrResult OcrEngine::recognize(const Image8& image) {
 }
 
 void OcrEngine::runCellBatch(const std::vector<int>& indices, const std::vector<Image8>& crops,
-                             std::vector<CellReading>& output) {
+                             std::vector<CellReading>& output, InferenceBackend* backend,
+                             const std::vector<std::string>& charset) {
     if (indices.empty()) return;
 
     // 先按宽度排序再成组：同批宽高接近，补边的浪费最小。
@@ -195,7 +196,7 @@ void OcrEngine::runCellBatch(const std::vector<int>& indices, const std::vector<
 
         const RecPreprocessResult pre = preprocessRec(sliceCrops);
         Tensor decodedTensor;
-        if (!backend_ || !backend_->runRec(pre.tensor, decodedTensor)) {
+        if (backend == nullptr || !backend->runRec(pre.tensor, decodedTensor)) {
             for (int index : sliceIndices) {
                 output[static_cast<size_t>(index)] = CellReading{"", 0.0f, true};
             }
@@ -203,7 +204,7 @@ void OcrEngine::runCellBatch(const std::vector<int>& indices, const std::vector<
             continue;
         }
 
-        const auto decoded = ctcDecode(decodedTensor, charset_);
+        const auto decoded = ctcDecode(decodedTensor, charset);
         for (size_t i = 0; i < sliceIndices.size(); ++i) {
             if (i >= decoded.size()) {
                 output[static_cast<size_t>(sliceIndices[i])] = CellReading{"", 0.0f, true};
@@ -216,10 +217,21 @@ void OcrEngine::runCellBatch(const std::vector<int>& indices, const std::vector<
     }
 }
 
+bool OcrEngine::setReferee(std::unique_ptr<InferenceBackend> backend,
+                           std::vector<std::string> charset) {
+    if (!backend || charset.empty()) return false;
+    refereeBackend_ = std::move(backend);
+    refereeCharset_ = std::move(charset);
+    return true;
+}
+
 std::vector<CellReading> OcrEngine::recognizeCells(const Image8& image,
-                                                   const std::vector<Rect>& cells, float scale) {
+                                                   const std::vector<Rect>& cells, float scale,
+                                                   bool referee) {
     std::vector<CellReading> output(cells.size(), CellReading{"", 0.0f, false});
-    if (image.empty() || cells.empty() || !backend_ || charset_.empty()) return output;
+    InferenceBackend* backend = referee ? refereeBackend_.get() : backend_.get();
+    const std::vector<std::string>& charset = referee ? refereeCharset_ : charset_;
+    if (image.empty() || cells.empty() || backend == nullptr || charset.empty()) return output;
 
     std::vector<int> pendingIndices;
     std::vector<Image8> pendingCrops;
@@ -228,7 +240,7 @@ std::vector<CellReading> OcrEngine::recognizeCells(const Image8& image,
 
     auto flush = [&]() {
         if (pendingCrops.empty()) return;
-        runCellBatch(pendingIndices, pendingCrops, output);
+        runCellBatch(pendingIndices, pendingCrops, output, backend, charset);
         pendingIndices.clear();
         pendingCrops.clear();
     };

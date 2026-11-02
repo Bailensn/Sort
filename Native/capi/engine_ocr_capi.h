@@ -58,11 +58,22 @@ int32_t engine_ocr_recognize(OcrHandle *h, const uint8_t *pixels, int32_t width,
                              int32_t stride, int32_t isBgr, engine_ocr_item_cb cb,
                              void *userData, int32_t *outCount);
 
-/* ---- 逐格识别：cells 里是原图像素坐标，scale > 1 时放大重认 ---- */
+/* ---- 复核模型：第二套 rec 后端，只给有争议的格子投票 ----
+ * 成功返回 ENGINE_OK；没有模型文件或后端初始化失败返回 ENGINE_ERR_NO_BACKEND。 */
+int32_t engine_ocr_set_referee(OcrHandle *h, const char *recModelPath, const char *charsetPath);
+
+/* ---- 逐格识别：cells 里是原图像素坐标，scale > 1 时放大重认 ----
+ * engine_ocr_recognize_cells_ref 用复核模型跑同一批格子；
+ * 没配置复核模型时返回 ENGINE_ERR_NO_BACKEND。 */
 int32_t engine_ocr_recognize_cells(OcrHandle *h, const uint8_t *pixels, int32_t width,
                                    int32_t height, int32_t stride, int32_t isBgr,
                                    const engine_ocr_cell *cells, int32_t cellCount, float scale,
                                    engine_ocr_cell_cb cb, void *userData);
+
+int32_t engine_ocr_recognize_cells_ref(OcrHandle *h, const uint8_t *pixels, int32_t width,
+                                       int32_t height, int32_t stride, int32_t isBgr,
+                                       const engine_ocr_cell *cells, int32_t cellCount, float scale,
+                                       engine_ocr_cell_cb cb, void *userData);
 
 #ifdef __cplusplus
 }

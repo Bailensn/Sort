@@ -10,6 +10,18 @@
 
 namespace ocr {
 
+std::unique_ptr<InferenceBackend> createRefereeBackend(const std::string& recModelPath,
+                                                       int numThreads) {
+#if defined(SORT_WITH_ONNXRUNTIME)
+    // 只有 ORT 支持只建 rec；MindSpore / Paddle-Lite 这边没有复核模型
+    return OnnxBackend::create(std::string(), recModelPath, numThreads);
+#else
+    (void)recModelPath;
+    (void)numThreads;
+    return nullptr;
+#endif
+}
+
 std::unique_ptr<InferenceBackend> createInferenceBackend(const std::string& detModelPath,
                                                          const std::string& recModelPath,
                                                          int numThreads) {
