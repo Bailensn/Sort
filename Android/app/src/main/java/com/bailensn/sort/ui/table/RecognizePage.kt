@@ -198,7 +198,11 @@ internal fun RecognizePage(
                             }
                             item("table-title") { SmallTitle(stringResource(R.string.preview_title)) }
                             item("table") {
-                                TableCard(grid = grid, onCellClick = onCellClick)
+                                TableCard(
+                                    grid = grid,
+                                    onCellClick = onCellClick,
+                                    headerRow = state.header.fromImage,
+                                )
                             }
                         }
 
@@ -379,6 +383,8 @@ internal fun HeaderCard(
 internal fun TableCard(
     grid: TableGrid,
     onCellClick: (row: Int, column: Int, value: String) -> Unit,
+    /** 首行确实是表头时，只给它换个底色；没有表头时首行就是普通数据。 */
+    headerRow: Boolean = false,
 ) {
     // 所有行共用同一个滚动状态，左右滑动时整张表一起对齐。
     val horizontal = rememberScrollState()
@@ -406,7 +412,7 @@ internal fun TableCard(
                                 .width(CELL_WIDTH)
                                 .height(CELL_HEIGHT)
                                 .background(
-                                    if (rowIndex == 0) {
+                                    if (headerRow && rowIndex == 0) {
                                         MiuixTheme.colorScheme.secondaryContainer
                                     } else {
                                         MiuixTheme.colorScheme.surfaceContainerHigh

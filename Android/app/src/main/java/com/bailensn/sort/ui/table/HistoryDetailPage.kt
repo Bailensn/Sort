@@ -30,6 +30,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bailensn.sort.R
+import com.bailensn.sort.table.TableHeaderDetector
 import com.kyant.backdrop.backdrops.layerBackdrop
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -122,9 +123,16 @@ internal fun HistoryDetailPage(
                     if (grid != null) {
                         item("table-title") { SmallTitle(stringResource(R.string.preview_title)) }
                         item("table") {
-                            TableCard(grid = grid, onCellClick = { row, column, value ->
-                                editing = CellEdit(row, column, value)
-                            })
+                            TableCard(
+                                grid = grid,
+                                onCellClick = { row, column, value ->
+                                    editing = CellEdit(row, column, value)
+                                },
+                                // 老记录没存结构，按行数据现认一次
+                                headerRow = remember(grid) {
+                                    TableHeaderDetector.detect(grid.rows).fromImage
+                                },
+                            )
                         }
                     }
                 }
