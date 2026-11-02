@@ -26,7 +26,8 @@ if (SORT_WITH_OCR)
             capi/engine_ocr_capi.cpp
             adapters/BackendFactory.cpp
             adapters/onnx/OnnxBackend.cpp
-            adapters/paddle_lite/PaddleLiteBackend.cpp)
+            adapters/paddle_lite/PaddleLiteBackend.cpp
+            adapters/mindspore/MindSporeBackend.cpp)
 
     # Android 要一份独立的 libocr.so；iOS 和本地测试直接静态编进 App / 可执行文件。
     option(SORT_OCR_SHARED "Build OCR as a shared library" OFF)
@@ -69,6 +70,12 @@ if (SORT_WITH_OCR)
 
     if (SORT_WITH_ONNXRUNTIME)
         target_compile_definitions(${OCR_TARGET} PUBLIC SORT_WITH_ONNXRUNTIME=1)
+    endif ()
+
+    # MindSpore Lite：模型是 .ms；鸿蒙官方支持，Android/iOS 也能用。
+    option(SORT_WITH_MINDSORE_LITE "Link against MindSpore Lite" OFF)
+    if (SORT_WITH_MINDSORE_LITE)
+        target_compile_definitions(${OCR_TARGET} PUBLIC SORT_WITH_MINDSORE_LITE=1)
     endif ()
 
     # Paddle-Lite：模型是 .nb；三端各有自己的库，用法和 ORT 那套一样。

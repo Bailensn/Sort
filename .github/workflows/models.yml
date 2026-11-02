@@ -1,8 +1,7 @@
 name: Convert Models
 
 on:
-  # 只在转换脚本本身改动时跑（它要下 130 MB 模型、约 10 分钟），
-  # 平时推送不带上；需要时手动触发。
+  # 只在转换脚本本身改动时跑（要下上百 MB 的工具和模型），平时推送不带上。
   push:
     branches: [ "main" ]
     paths:
@@ -15,61 +14,57 @@ permissions:
 
 jobs:
   convert:
-    name: Convert to .nb
+    name: Convert to .ms
     runs-on: ubuntu-24.04
     timeout-minutes: 40
+    env:
+      MSLITE_VERSION: "2.7.0"
+      HF: https://huggingface.co/PaddlePaddle
     defaults:
       run:
         shell: bash
     steps:
       - uses: actions/checkout@v7
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.10"
-      - name: Install paddlelite
+      - name: Download ONNX models
         run: |
           set -o pipefail
-          python -m pip install --upgrade pip 2>&1 | tee -a build.log
-          pip install paddlelite 2>&1 | tee -a build.log
-          python -c "import paddlelite, os; print('paddlelite', paddlelite.__file__)" 2>&1 | tee -a build.log
-          # 这个包里没有 python -m 入口，opt 是单独的二进制
-          command -v paddle_lite_opt | tee -a build.log || true
-          pkg_bin="$(python -c 'import paddlelite,os;print(os.path.join(os.path.dirname(paddlelite.__file__),"bin"))')"
-          ls "$pkg_bin" 2>&1 | tee -a build.log || true
-          paddle_lite_opt --help 2>&1 | head -40 | tee -a build.log || true
-      - name: Download Paddle inference models
+          mkdir -p models
+          curl -fsSL -o models/det.onnx "$HF/PP-OCRv6_medium_det_onnx/resolve/main/inference.onnx"
+          curl -fsSL -o models/rec.onnx "$HF/PP-OCRv6_medium_rec_onnx/resolve/main/inference.onnx"
+          ls -lh models | tee -a build.log
+      - name: Download MindSpore Lite toolkit
         run: |
           set -o pipefail
-          mkdir -p models/det models/rec
-          base=https://huggingface.co/PaddlePaddle
-          for f in inference.json inference.pdiparams inference.yml; do
-            curl -fsSL -o "models/det/$f" "$base/PP-OCRv6_medium_det/resolve/main/$f"
-            curl -fsSL -o "models/rec/$f" "$base/PP-OCRv6_medium_rec/resolve/main/$f"
-          done
-          ls -lh models/det models/rec 2>&1 | tee -a build.log
-      - name: Try conversion
+          base="https://ms-release.obs.cn-north-4.myhuaweicloud.com/${MSLITE_VERSION}/MindSpore/lite/release/linux/x86_64"
+          url="${base}/mindspore-lite-${MSLITE_VERSION}-linux-x64.tar.gz"
+          echo "下载 $url" | tee -a build.log
+          curl -fsSL -o mslite.tar.gz "$url" 2>&1 | tee -a build.log
+          tar xzf mslite.tar.gz 2>&1 | tee -a build.log
+          ls -d mindspore-lite-* | tee -a build.log
+          find mindspore-lite-* -name 'converter_lite' | tee -a build.log
+      - name: Convert ONNX to .ms
         run: |
           set -o pipefail
           set +e
-          paddle_lite_opt \
-            --model_dir=models/det \
-            --valid_targets=arm \
-            --optimize_out=models/det 2>&1 | tee -a build.log
+          CONVERTER=$(find mindspore-lite-* -name converter_lite | head -1)
+          echo "converter: $CONVERTER" | tee -a build.log
+          "$CONVERTER" --help 2>&1 | head -30 | tee -a build.log
+          # det 的输入是动态的（32 的倍数），先按 640x640 试一版
+          "$CONVERTER" --fmk=ONNX --modelFile=models/det.onnx \
+            --outputFile=models/det --inputShape="x:1,3,640,640" 2>&1 | tee -a build.log
           echo "det rc=$?" | tee -a build.log
-          paddle_lite_opt \
-            --model_dir=models/rec \
-            --valid_targets=arm \
-            --optimize_out=models/rec 2>&1 | tee -a build.log
+          # rec 高固定 48、宽按比例，这里给一个典型宽度
+          "$CONVERTER" --fmk=ONNX --modelFile=models/rec.onnx \
+            --outputFile=models/rec --inputShape="x:1,3,48,320" 2>&1 | tee -a build.log
           echo "rec rc=$?" | tee -a build.log
           set -e
-          ls -lh models 2>&1 | tee -a build.log
-      - name: Upload nb
+          ls -lh models | tee -a build.log
+      - name: Upload ms
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: ocr-nb-models
-          path: models/**/*.nb
+          name: ocr-ms-models
+          path: models/**/*.ms
           if-no-files-found: warn
           retention-days: 14
       - name: Publish build log
