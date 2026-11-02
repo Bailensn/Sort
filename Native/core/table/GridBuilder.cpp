@@ -1,6 +1,7 @@
 #include "table/GridBuilder.hpp"
 
 #include <algorithm>
+#include <cctype>
 #include <cmath>
 #include <map>
 #include <numeric>

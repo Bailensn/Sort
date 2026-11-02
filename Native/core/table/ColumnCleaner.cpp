@@ -1,6 +1,7 @@
 #include "table/ColumnCleaner.hpp"
 
 #include <algorithm>
+#include <cctype>
 #include <cstdint>
 #include <string>
 #include <vector>
