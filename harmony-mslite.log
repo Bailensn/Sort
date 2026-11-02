@@ -1,0 +1,54 @@
+[ms] root=/tmp/ms/mindspore-lite-2.10.0-linux-x64
+-- The C compiler identification is GNU 13.3.0
+-- The CXX compiler identification is GNU 13.3.0
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/cc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Configuring done (1.6s)
+-- Generating done (0.0s)
+-- Build files have been written to: /home/runner/work/Sort/Sort/Native/build-ms
+[  3%] Building CXX object CMakeFiles/ocr_core.dir/core/ocr/Charset.cpp.o
+[  7%] Building CXX object CMakeFiles/ocr_core.dir/core/ocr/DbPostprocess.cpp.o
+[ 11%] Building CXX object CMakeFiles/ocr_core.dir/core/ocr/Geometry.cpp.o
+[ 14%] Building CXX object CMakeFiles/ocr_core.dir/core/ocr/ImageOps.cpp.o
+[ 18%] Building CXX object CMakeFiles/ocr_core.dir/core/ocr/OcrEngine.cpp.o
+[ 22%] Building CXX object CMakeFiles/ocr_core.dir/core/ocr/Postprocess.cpp.o
+[ 25%] Building CXX object CMakeFiles/ocr_core.dir/core/ocr/Preprocess.cpp.o
+[ 29%] Building CXX object CMakeFiles/ocr_core.dir/core/ocr/QuadCrop.cpp.o
+[ 33%] Building CXX object CMakeFiles/ocr_core.dir/core/imgproc/Binary.cpp.o
+[ 37%] Building CXX object CMakeFiles/ocr_core.dir/core/imgproc/Enhance.cpp.o
+[ 40%] Building CXX object CMakeFiles/ocr_core.dir/core/imgproc/Gray.cpp.o
+[ 44%] Building CXX object CMakeFiles/ocr_core.dir/core/table/ColumnCleaner.cpp.o
+[ 48%] Building CXX object CMakeFiles/ocr_core.dir/core/table/GridBuilder.cpp.o
+[ 51%] Building CXX object CMakeFiles/ocr_core.dir/core/table/LineDetector.cpp.o
+[ 55%] Building CXX object CMakeFiles/ocr_core.dir/core/table/Perspective.cpp.o
+[ 59%] Building CXX object CMakeFiles/ocr_core.dir/core/table/TableAnalyzer.cpp.o
+[ 62%] Building CXX object CMakeFiles/ocr_core.dir/core/table/TableLogic.cpp.o
+[ 66%] Building CXX object CMakeFiles/ocr_core.dir/capi/engine_ocr_capi.cpp.o
+[ 70%] Building CXX object CMakeFiles/ocr_core.dir/adapters/BackendFactory.cpp.o
+[ 74%] Building CXX object CMakeFiles/ocr_core.dir/adapters/onnx/OnnxBackend.cpp.o
+[ 77%] Building CXX object CMakeFiles/ocr_core.dir/adapters/paddle_lite/PaddleLiteBackend.cpp.o
+[ 81%] Building CXX object CMakeFiles/ocr_core.dir/adapters/mindspore/MindSporeBackend.cpp.o
+[ 85%] Building CXX object CMakeFiles/ocr_core.dir/adapters/mnn/MnnBackend.cpp.o
+[ 88%] Linking CXX static library libocr_core.a
+[ 88%] Built target ocr_core
+[ 92%] Building CXX object CMakeFiles/ocr_mslite_dump.dir/tools/ocr_dump/main.cpp.o
+[ 96%] Building CXX object CMakeFiles/ocr_mslite_dump.dir/tests/mslite_shim/oh_ai_shim.cpp.o
+[100%] Linking CXX executable ocr_mslite_dump
+[100%] Built target ocr_mslite_dump
+[ERROR] ME(2377,7fea618df6c0,ocr_mslite_dump):2026-11-02-18:05:19.924.828 [te_kernel.cc:51] PreProcess] InferShape fail!
+[ERROR] ME(2377,7fea618df6c0,ocr_mslite_dump):2026-11-02-18:05:19.924.852 [te_kernel.cc:110] Execute] run kernel PreProcess failed, name: Conv.0
+[ERROR] ME(2377,7fea618df6c0,ocr_mslite_dump):2026-11-02-18:05:19.924.857 [sub_graph_kernel.cc:462] Execute] run kernel failed, name: Conv.0
+[ERROR] ME(2377,7fea618df6c0,ocr_mslite_dump):2026-11-02-18:05:19.924.861 [te_mindrt.cc:52] RunOpData] run kernel failed, name: CpuFP32SubGraph0_0
+[ERROR] ME(2377,7fea62314e40,ocr_mslite_dump):2026-11-02-18:05:19.924.884 [ndrt_executor.cc:341] Run] MindrtRun failed
+[ERROR] ME(2377,7fea62314e40,ocr_mslite_dump):2026-11-02-18:05:19.924.889 [te_session.cc:888] RunGraph] RunGraph failed : -1
+[ERROR] ME(2377,7fea62314e40,ocr_mslite_dump):2026-11-02-18:05:19.924.898 [x_api/model/model_impl.cc:645] Predict] Run graph failed!ret = Common error code.
+[ERROR] ME(2377,7fea62314e40,ocr_mslite_dump):2026-11-02-18:05:19.924.902 [api/model_c.cc:276] MSModelPredict] Predict fail, ret :Common error code.
+corrupted double-linked list
