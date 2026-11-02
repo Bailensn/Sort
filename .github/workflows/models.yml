@@ -76,10 +76,10 @@ jobs:
           set -o pipefail
           BENCH=$(find mindspore-lite-* -name benchmark -type f | head -1)
           echo "benchmark: $BENCH" | tee -a build.log
-          # 这个包的 benchmark 依赖 libmindspore-lite.so，位置不一定在 ../lib，直接找
-          LITEDIR=$(dirname "$(find mindspore-lite-* -name 'libmindspore-lite.so' | head -1)")
-          echo "lite lib: $LITEDIR" | tee -a build.log
-          export LD_LIBRARY_PATH="$(cd "$LITEDIR" && pwd):${LD_LIBRARY_PATH:-}"
+          # 包里的 .so 散在好几个目录，把所有含 .so 的目录都塞进 LD_LIBRARY_PATH
+          LIBDIRS=$(find mindspore-lite-* -name '*.so*' -printf '%h\n' | sort -u | tr '\n' ':')
+          echo "lib dirs: $LIBDIRS" | tee -a build.log
+          export LD_LIBRARY_PATH="${LIBDIRS}${LD_LIBRARY_PATH:-}"
           for m in models/det_dyn.ms models/rec_dyn.ms; do
             echo "=== $m" | tee -a build.log
             "$BENCH" --modelFile="$m" --device=CPU 2>&1 | head -30 | tee -a build.log || true
