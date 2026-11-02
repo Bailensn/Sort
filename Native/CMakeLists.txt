@@ -31,6 +31,7 @@ if (SORT_WITH_OCR)
             core/ocr/Preprocess.cpp
             core/ocr/QuadCrop.cpp
             core/imgproc/Binary.cpp
+            core/imgproc/Enhance.cpp
             core/imgproc/Gray.cpp
             core/table/ColumnCleaner.cpp
             core/table/GridBuilder.cpp
