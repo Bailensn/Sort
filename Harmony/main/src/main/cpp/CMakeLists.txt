@@ -8,10 +8,10 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(NATIVERENDER_ROOT_PATH ${CMAKE_CURRENT_SOURCE_DIR})
 set(SHARED_ROOT ${NATIVERENDER_ROOT_PATH}/../../../../../Native)
 
-# MindSpore Lite 在鸿蒙上是系统 Kit：运行时由系统提供，链接时借 SDK sysroot 里那份。
-# 头文件用仓库里 vendored 的 OH_AI 头（Native/adapters/mindspore/ohos），不依赖 NDK 带没带。
-if (DEFINED ENV{MSLITE_LIB})
-    set(SORT_WITH_MINDSORE_LITE ON CACHE BOOL "" FORCE)
+# 鸿蒙走 MNN：官方预编译包（mnn_<ver>_harmony_arm64_cpu.zip）由 CI 下到 third_party/mnn。
+# 头文件用仓库里 vendored 的（Native/adapters/mnn/include）。
+if (DEFINED ENV{MNN_LIB})
+    set(SORT_WITH_MNN ON CACHE BOOL "" FORCE)
 endif ()
 
 # 只编 OCR 核心，测试和命令行工具留给本地/CI 的 host 构建。
@@ -26,6 +26,6 @@ add_definitions("-DLOG_TAG=\"engine\"")
 add_library(main SHARED napi_init.cpp)
 target_link_libraries(main PUBLIC ocr_core libace_napi.z.so libhilog_ndk.z.so)
 
-if (DEFINED ENV{MSLITE_LIB})
-    target_link_libraries(main PUBLIC $ENV{MSLITE_LIB})
+if (DEFINED ENV{MNN_LIB})
+    target_link_libraries(main PUBLIC $ENV{MNN_LIB})
 endif ()
