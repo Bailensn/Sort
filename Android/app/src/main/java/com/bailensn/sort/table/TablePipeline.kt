@@ -39,6 +39,9 @@ object TablePipeline {
         val enhanced: Bitmap? = null,
         /** 有墨迹格子的平均置信度。 */
         val averageConfidence: Float = 0f,
+        /** 置信度的最低/最高值，界面上和均值一起显示，方便判断是不是被固定住了。 */
+        val confidenceMin: Float = 0f,
+        val confidenceMax: Float = 0f,
         /** 三遍走完仍低于可信线的格子数。 */
         val lowConfidenceCells: Int = 0,
         /** 算术自检的结论（序号/学号连续、求和校验、反推纠正）。 */
@@ -107,6 +110,7 @@ object TablePipeline {
         var cellMs = 0L
         var detectMs = 0L
         var averageConfidence = 0f
+        var confidenceRange = 0f to 0f
         var lowConfidenceCells = 0
         var selfCheck = TableSelfCheck.Report()
         var header = TableHeader()
@@ -118,6 +122,7 @@ object TablePipeline {
             cellMs = pass.cellMs
             detectMs = pass.detectMs
             averageConfidence = pass.averageConfidence
+            confidenceRange = pass.confidenceRange
             lowConfidenceCells = pass.lowConfidenceCells
             selfCheck = pass.selfCheck
             header = pass.header
@@ -149,6 +154,8 @@ object TablePipeline {
             detectMs = detectMs,
             enhanced = enhanced,
             averageConfidence = averageConfidence,
+            confidenceMin = confidenceRange.first,
+            confidenceMax = confidenceRange.second,
             lowConfidenceCells = lowConfidenceCells,
             selfCheck = selfCheck,
             header = header,
@@ -161,6 +168,7 @@ object TablePipeline {
         val cellMs: Long = 0L,
         val detectMs: Long = 0L,
         val averageConfidence: Float = 0f,
+        val confidenceRange: Pair<Float, Float> = 0f to 0f,
         val lowConfidenceCells: Int = 0,
         val selfCheck: TableSelfCheck.Report = TableSelfCheck.Report(),
         val header: TableHeader = TableHeader(),
@@ -326,6 +334,11 @@ object TablePipeline {
         val averageConfidence = if (scored.isEmpty()) 0f else scored.sumOf { it.confidence.toDouble() }.toFloat() / scored.size
         // 展示门槛固定 98%，和 TRUSTED_CONFIDENCE 解耦：改重认策略不该影响统计口径。
         val lowConfidenceCells = scored.count { it.confidence < DISPLAY_TRUSTED_CONFIDENCE }
+        val confidenceRange = if (scored.isEmpty()) {
+            0f to 0f
+        } else {
+            scored.minOf { it.confidence } to scored.maxOf { it.confidence }
+        }
         // 界面只显示均值，怀疑被固定住时靠这条 logcat 看分布：全在 0.82 附近就说明
         // 是识别输出本身平，不是平均算错。
         runCatching {
@@ -454,6 +467,7 @@ object TablePipeline {
             cellMs = cellMs,
             detectMs = detectMs,
             averageConfidence = averageConfidence,
+            confidenceRange = confidenceRange,
             lowConfidenceCells = lowConfidenceCells,
             selfCheck = selfCheck,
             header = header,

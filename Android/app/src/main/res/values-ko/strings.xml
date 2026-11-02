@@ -83,4 +83,5 @@
     <string name="history_subtitle">탭하면 열기, 선택하면 삭제</string>
     <string name="header_hint_manual">머리글을 찾지 못했습니다. 열 이름을 입력할 수 있어요</string>
     <string name="section_header">머리글</string>
+    <string name="stats_confidence_range">%1$.1f%% (%2$.1f–%3$.1f)</string>
 </resources>

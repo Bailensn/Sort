@@ -288,7 +288,16 @@ internal fun StatsCard(state: TableUiState, grid: TableGrid) {
         )
         StatRow(
             label = stringResource(R.string.stats_confidence_label),
-            value = String.format(Locale.US, "%.1f%%", state.averageConfidence * 100),
+            value = if (state.confidenceMax > 0f) {
+                stringResource(
+                    R.string.stats_confidence_range,
+                    state.averageConfidence * 100,
+                    state.confidenceMin * 100,
+                    state.confidenceMax * 100,
+                )
+            } else {
+                String.format(Locale.US, "%.1f%%", state.averageConfidence * 100)
+            },
         )
         StatRow(
             label = stringResource(R.string.stats_corrected),

@@ -84,4 +84,5 @@
     <string name="history_subtitle">点选可打开，勾选可删除</string>
     <string name="header_hint_manual">没认出表头，可以给每列填个名字</string>
     <string name="section_header">表头</string>
+    <string name="stats_confidence_range">%1$.1f%%（%2$.1f–%3$.1f）</string>
 </resources>

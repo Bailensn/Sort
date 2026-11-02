@@ -83,4 +83,5 @@
     <string name="history_subtitle">タップで開く、選択で削除</string>
     <string name="header_hint_manual">見出しが見つかりません。列名を入力できます</string>
     <string name="section_header">見出し</string>
+    <string name="stats_confidence_range">%1$.1f%%（%2$.1f〜%3$.1f）</string>
 </resources>
