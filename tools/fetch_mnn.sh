@@ -34,5 +34,7 @@ rm -rf "$dest"
 mkdir -p "$dest"
 unzip -q "$tmp/mnn.zip" -d "$dest"
 
-[ -d "$dest/include" ] || { echo "[mnn] 没解出 include/"; exit 1; }
-echo "[mnn] ok: $(du -sh "$dest" | cut -f1)  $(find "$dest" -name '*.so' | head -3 | tr '\n' ' ')"
+# 官方预编译包只有 lib/，没有 include/（头文件已 vendored 在 Native/adapters/mnn/include）
+lib=$(find "$dest" -name 'libMNN.so' | head -1) || true
+[ -n "${lib:-}" ] || { echo "[mnn] 包里没有 libMNN.so"; find "$dest" -maxdepth 3 | head -20; exit 1; }
+echo "[mnn] ok: $(du -sh "$dest" | cut -f1)  $lib"
