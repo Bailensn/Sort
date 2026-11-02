@@ -82,13 +82,6 @@
     <string name="tab_recognize">识别</string>
     <string name="tab_history">历史</string>
     <string name="history_subtitle">点选可打开，勾选可删除</string>
-    <string name="header_hint">认到表头了，列名和身份可以改</string>
-    <string name="header_hint_manual">没认出表头，给每列起个名字，标出科目和总分</string>
-    <string name="header_column">第 %1$d 列</string>
-    <string name="header_role_sequence">序号</string>
-    <string name="header_role_id">学号</string>
-    <string name="header_role_subject">科目</string>
-    <string name="header_role_total">总分</string>
-    <string name="header_role_other">其他</string>
-    <string name="header_tip">点一下身份格子可以切换：序号 / 学号 / 科目 / 总分 / 其他</string>
+    <string name="header_hint_manual">没认出表头，可以给每列填个名字</string>
+    <string name="section_header">表头</string>
 </resources>

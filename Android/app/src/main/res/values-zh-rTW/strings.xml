@@ -81,13 +81,6 @@
     <string name="tab_recognize">辨識</string>
     <string name="tab_history">歷史</string>
     <string name="history_subtitle">點選可開啟，勾選可刪除</string>
-    <string name="header_hint">認到表頭了，欄名和身分可以改</string>
-    <string name="header_hint_manual">沒認出表頭，給每欄取個名字，標出科目和總分</string>
-    <string name="header_column">第 %1$d 欄</string>
-    <string name="header_role_sequence">序號</string>
-    <string name="header_role_id">學號</string>
-    <string name="header_role_subject">科目</string>
-    <string name="header_role_total">總分</string>
-    <string name="header_role_other">其他</string>
-    <string name="header_tip">點一下身分格子可以切換：序號 / 學號 / 科目 / 總分 / 其他</string>
+    <string name="header_hint_manual">沒認出表頭，可以給每欄填個名字</string>
+    <string name="section_header">表頭</string>
 </resources>

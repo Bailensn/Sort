@@ -81,13 +81,6 @@
     <string name="tab_recognize">인식</string>
     <string name="tab_history">기록</string>
     <string name="history_subtitle">탭하면 열기, 선택하면 삭제</string>
-    <string name="header_hint">머리글을 찾았습니다. 열 이름과 종류를 고칠 수 있어요</string>
-    <string name="header_hint_manual">머리글이 없습니다. 열 이름을 정하고 과목과 총점을 표시하세요</string>
-    <string name="header_column">%1$d열</string>
-    <string name="header_role_sequence">번호</string>
-    <string name="header_role_id">학번</string>
-    <string name="header_role_subject">과목</string>
-    <string name="header_role_total">총점</string>
-    <string name="header_role_other">기타</string>
-    <string name="header_tip">종류 칸을 탭하면 전환: 번호 / 학번 / 과목 / 총점 / 기타</string>
+    <string name="header_hint_manual">머리글을 찾지 못했습니다. 열 이름을 입력할 수 있어요</string>
+    <string name="section_header">머리글</string>
 </resources>

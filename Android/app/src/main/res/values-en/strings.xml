@@ -81,13 +81,6 @@
     <string name="tab_recognize">Scan</string>
     <string name="tab_history">History</string>
     <string name="history_subtitle">Tap to open, tick to delete</string>
-    <string name="header_hint">Header detected — fix the names and roles if needed</string>
-    <string name="header_hint_manual">No header found — name each column, then mark subjects and the total</string>
-    <string name="header_column">Column %1$d</string>
-    <string name="header_role_sequence">No.</string>
-    <string name="header_role_id">ID</string>
-    <string name="header_role_subject">Subject</string>
-    <string name="header_role_total">Total</string>
-    <string name="header_role_other">Other</string>
-    <string name="header_tip">Tap a role cell to cycle: No. / ID / Subject / Total / Other</string>
+    <string name="header_hint_manual">No header found — you can name each column</string>
+    <string name="section_header">Header</string>
 </resources>

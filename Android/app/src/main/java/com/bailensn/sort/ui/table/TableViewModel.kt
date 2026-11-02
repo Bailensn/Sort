@@ -11,7 +11,6 @@ import com.bailensn.sort.data.HistoryStore
 import com.bailensn.sort.data.NameMemory
 import com.bailensn.sort.table.TableGrid
 import com.bailensn.sort.table.TablePipeline
-import com.bailensn.sort.table.ColumnRole
 import com.bailensn.sort.table.TableHeader
 import com.bailensn.sort.table.TableHeaderDetector
 import com.bailensn.sort.table.TableSelfCheck
@@ -535,11 +534,6 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
     /** 改列名：只影响展示与之后的排序，不重跑识别。 */
     fun setColumnName(index: Int, name: String) {
         applyHeader { it.withName(index, name) }
-    }
-
-    /** 改列身份：科目/总分一变，求和校验按新结构重算一遍。 */
-    fun setColumnRole(index: Int, role: ColumnRole) {
-        applyHeader { it.withRole(index, role) }
     }
 
     private fun applyHeader(transform: (TableHeader) -> TableHeader) {

@@ -81,13 +81,6 @@
     <string name="tab_recognize">認識</string>
     <string name="tab_history">履歴</string>
     <string name="history_subtitle">タップで開く、選択で削除</string>
-    <string name="header_hint">見出しを検出しました。列名と種別を直せます</string>
-    <string name="header_hint_manual">見出しがありません。列名を付けて科目と合計を指定してください</string>
-    <string name="header_column">%1$d 列目</string>
-    <string name="header_role_sequence">番号</string>
-    <string name="header_role_id">学籍番号</string>
-    <string name="header_role_subject">科目</string>
-    <string name="header_role_total">合計</string>
-    <string name="header_role_other">その他</string>
-    <string name="header_tip">種別セルをタップで切替：番号 / 学籍番号 / 科目 / 合計 / その他</string>
+    <string name="header_hint_manual">見出しが見つかりません。列名を入力できます</string>
+    <string name="section_header">見出し</string>
 </resources>
