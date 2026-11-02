@@ -143,7 +143,7 @@ jobs:
           hap=$(find "$GITHUB_WORKSPACE/Harmony" -path '*outputs*' -name '*.hap' | head -1)
           [ -n "$hap" ] || { echo "::error::没有产出 .hap"; exit 1; }
 
-          # 模型是 .ms 二进制，HAP 必须有十几 MB 以上；不到就是 rawfile 没打进去（曾经的 Harmony/Harmony 路径 bug）。
+          # 模型是二进制，HAP 必须有几十 MB 以上；不到就是 rawfile 没打进去（曾经的 Harmony/Harmony 路径 bug）。
           size=$(stat -c%s "$hap")
           echo "HAP 大小: $((size / 1024 / 1024)) MB" | tee -a build.log
           [ "$size" -gt 30000000 ] || { echo "::error::HAP 只有 $((size/1024)) KB，模型没打进去"; exit 1; }
