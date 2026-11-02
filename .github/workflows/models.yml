@@ -1,0 +1,71 @@
+name: Convert Models
+
+on:
+  # 手动跑：把 Paddle 推理模型（PIR 的 json + pdiparams）转成 Paddle-Lite 的 .nb。
+  # 这一步只在 Linux x86 上做，产物给三端共用。
+  workflow_dispatch:
+
+permissions:
+  # 失败时把日志推到 ci-log-models
+  contents: write
+
+jobs:
+  convert:
+    name: Convert to .nb
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - name: Install paddlelite
+        run: |
+          set -o pipefail
+          python -m pip install --upgrade pip 2>&1 | tee -a build.log
+          pip install paddlelite 2>&1 | tee -a build.log
+          python -c "import paddlelite; print('paddlelite', paddlelite.__file__)" 2>&1 | tee -a build.log
+          python -m paddlelite.lite --help 2>&1 | tee -a build.log || true
+      - name: Download Paddle inference models
+        run: |
+          set -o pipefail
+          mkdir -p models/det models/rec
+          base=https://huggingface.co/PaddlePaddle
+          for f in inference.json inference.pdiparams inference.yml; do
+            curl -fsSL -o "models/det/$f" "$base/PP-OCRv6_medium_det/resolve/main/$f"
+            curl -fsSL -o "models/rec/$f" "$base/PP-OCRv6_medium_rec/resolve/main/$f"
+          done
+          ls -lh models/det models/rec 2>&1 | tee -a build.log
+      - name: Try conversion
+        run: |
+          set -o pipefail
+          set +e
+          python -m paddlelite.lite \
+            --model_dir=models/det \
+            --valid_targets=arm \
+            --optimize_out=models/det 2>&1 | tee -a build.log
+          echo "det rc=$?" | tee -a build.log
+          python -m paddlelite.lite \
+            --model_dir=models/rec \
+            --valid_targets=arm \
+            --optimize_out=models/rec 2>&1 | tee -a build.log
+          echo "rec rc=$?" | tee -a build.log
+          set -e
+          ls -lh models 2>&1 | tee -a build.log
+      - name: Upload nb
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ocr-nb-models
+          path: models/**/*.nb
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Publish build log
+        if: always()
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: bash .github/scripts/publish-log.sh build.log models.log ci-log-models
