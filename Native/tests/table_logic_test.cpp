@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 
+#include "table/ColumnCleaner.hpp"
 #include "table/TableLogic.hpp"
 
 namespace {
@@ -254,6 +255,48 @@ void leavesTextColumnAlone() {
     check(fixed[0][1] == "优秀", "repair: 文字列不该被改");
 }
 
+void trimsGarbageEdges() {
+    const ocr::TableRows rows = {
+        {"", "1", "张三", "95", "Ab"},
+        {"", "2", "李四", "88", "Cd"},
+        {"", "3", "王五", "70", "Ef"},
+    };
+
+    const ocr::TrimmedColumns trimmed = ocr::trimColumns(rows);
+
+    check(trimmed.droppedLeading == 1, "trim: 左边空列应被丢掉");
+    check(trimmed.rows.front().size() == 3, "trim: 右边字母列应被丢掉");
+    check(trimmed.rows[0][1] == "张三", "trim: 剩下的列应对齐");
+}
+
+void cleansNoisyColumn() {
+    const ocr::TableRows rows = {
+        {"1", "张三", "95", "x"},
+        {"2", "李四", "", "y"},
+        {"3", "王五", "70", ""},
+        {"4", "赵六", "", "z"},
+    };
+
+    const ocr::TableRows cleaned = ocr::cleanNoisyColumns(rows);
+
+    check(cleaned[0].size() == 4, "noisy: 列数不该变，只清空");
+    check(cleaned[0][2] == "95", "noisy: 正常列不该被动");
+}
+
+void cleansNonNumericNonChineseColumn() {
+    const ocr::TableRows rows = {
+        {"1", "张三", "95", "Ab12"},
+        {"2", "李四", "88", "Ab34"},
+        {"3", "王五", "70", "Ab56"},
+        {"4", "赵六", "66", "Ab78"},
+    };
+
+    const ocr::TableRows cleaned = ocr::cleanBadColumns(rows);
+
+    check(cleaned[0][3].empty(), "bad: 非数字非中文的列应被清空");
+    check(cleaned[0][1] == "张三", "bad: 姓名列必须保留");
+}
+
 }  // namespace
 
 int main() {
@@ -270,6 +313,9 @@ int main() {
     repairsLookalikeDigits();
     repairsFullWidthDigits();
     leavesTextColumnAlone();
+    trimsGarbageEdges();
+    cleansNoisyColumn();
+    cleansNonNumericNonChineseColumn();
 
     if (g_failures > 0) {
         std::printf("%d 项失败\n", g_failures);
