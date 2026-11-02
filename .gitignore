@@ -17,3 +17,5 @@ ci-report/
 # CI 现场转换出来的鸿蒙模型
 /Harmony/main/src/main/resources/rawfile/models/
 iOS/ios-app/Vendor/
+# MNN 的鸿蒙预编译包（CI 现场下载）
+/Harmony/main/src/main/cpp/third_party/mnn/
