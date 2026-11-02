@@ -38,7 +38,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.bailensn.sort.R
+import com.bailensn.sort.table.ColumnRole
 import com.bailensn.sort.table.TableGrid
+import com.bailensn.sort.table.TableHeader
 import com.bailensn.sort.table.TablePipeline
 import java.util.Locale
 import top.yukonga.miuix.kmp.basic.BasicComponent
@@ -52,6 +54,7 @@ import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.TabRow
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
+import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /** 预览行数上限，超过就只提示，不把整页撑爆。 */
@@ -72,6 +75,8 @@ internal fun RecognizePage(
     onReset: () -> Unit,
     onImageClick: (Bitmap) -> Unit,
     onCellClick: (row: Int, column: Int, value: String) -> Unit,
+    onColumnName: (Int, String) -> Unit,
+    onColumnRole: (Int, ColumnRole) -> Unit,
     contentPadding: PaddingValues,
 ) {
     LazyColumn(
@@ -184,6 +189,13 @@ internal fun RecognizePage(
                                     SmallTitle(stringResource(R.string.stats_selfcheck))
                                 }
                                 item("selfcheck") { SelfCheckCard(state = state) }
+                            }
+                            item("header") {
+                                HeaderCard(
+                                    header = state.header,
+                                    onNameChange = onColumnName,
+                                    onRoleChange = onColumnRole,
+                                )
                             }
                             item("table-title") { SmallTitle(stringResource(R.string.preview_title)) }
                             item("table") {
@@ -320,6 +332,78 @@ internal fun SelfCheckCard(state: TableUiState) {
         )
     }
 }
+
+/**
+ * 表格结构卡片：每列的列名与身份。
+ * 认到表头就填好给用户改，没认到就留空让用户自己填——总分校验和单科排序都读这份结构。
+ */
+@Composable
+internal fun HeaderCard(
+    header: TableHeader,
+    onNameChange: (Int, String) -> Unit,
+    onRoleChange: (Int, ColumnRole) -> Unit,
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp)
+            .padding(bottom = 12.dp),
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            Text(
+                text = stringResource(
+                    if (header.hasNames) R.string.header_hint else R.string.header_hint_manual,
+                ),
+                style = MiuixTheme.textStyles.footnote1,
+                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+            )
+            header.columns.forEach { spec ->
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = stringResource(R.string.header_column, spec.index + 1),
+                            modifier = Modifier.width(64.dp),
+                            style = MiuixTheme.textStyles.footnote1,
+                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        )
+                        TextField(
+                            value = spec.name,
+                            onValueChange = { onNameChange(spec.index, it) },
+                            modifier = Modifier.weight(1f),
+                            singleLine = true,
+                        )
+                    }
+                    Row(
+                        modifier = Modifier.horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        ColumnRole.values().forEach { role ->
+                            val label = roleLabel(role)
+                            TextButton(
+                                text = if (spec.role == role) "● $label" else label,
+                                onClick = { onRoleChange(spec.index, role) },
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun roleLabel(role: ColumnRole): String = stringResource(
+    when (role) {
+        ColumnRole.SEQUENCE -> R.string.header_role_sequence
+        ColumnRole.ID -> R.string.header_role_id
+        ColumnRole.SUBJECT -> R.string.header_role_subject
+        ColumnRole.TOTAL -> R.string.header_role_total
+        ColumnRole.OTHER -> R.string.header_role_other
+    },
+)
 
 @Composable
 internal fun TableCard(

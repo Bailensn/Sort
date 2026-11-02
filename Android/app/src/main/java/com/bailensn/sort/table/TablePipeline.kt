@@ -43,6 +43,8 @@ object TablePipeline {
         val lowConfidenceCells: Int = 0,
         /** 算术自检的结论（序号/学号连续、求和校验、反推纠正）。 */
         val selfCheck: TableSelfCheck.Report = TableSelfCheck.Report(),
+        /** 表头结构：每列的列名与身份，界面上的结构卡片靠它。 */
+        val header: TableHeader = TableHeader(),
     ) {
         /** 除识别以外的耗时：纠偏、线检测、切格、画网格。 */
         val structureMs: Long get() = (elapsedMs - cellMs).coerceAtLeast(0L)
@@ -107,6 +109,7 @@ object TablePipeline {
         var averageConfidence = 0f
         var lowConfidenceCells = 0
         var selfCheck = TableSelfCheck.Report()
+        var header = TableHeader()
 
         if (cellGrid.cells.isNotEmpty()) {
             val pass = recognizeByCells(ocr, working, enhanced, cellGrid, borderInset, onStage, onProgress)
@@ -117,6 +120,7 @@ object TablePipeline {
             averageConfidence = pass.averageConfidence
             lowConfidenceCells = pass.lowConfidenceCells
             selfCheck = pass.selfCheck
+            header = pass.header
 
             if (grid.filledCellCount < 2) {
                 onStage(Stage.RECOGNIZE)
@@ -147,6 +151,7 @@ object TablePipeline {
             averageConfidence = averageConfidence,
             lowConfidenceCells = lowConfidenceCells,
             selfCheck = selfCheck,
+            header = header,
         )
     }
 
@@ -158,6 +163,7 @@ object TablePipeline {
         val averageConfidence: Float = 0f,
         val lowConfidenceCells: Int = 0,
         val selfCheck: TableSelfCheck.Report = TableSelfCheck.Report(),
+        val header: TableHeader = TableHeader(),
     )
 
     private suspend fun recognizeByCells(
@@ -421,12 +427,17 @@ object TablePipeline {
             row.drop(trimmedAligned.droppedLeading).take(width)
         }
 
-        val selfCheckResult = TableSelfCheck.check(trimmedAligned.rows, alignedConfidence)
+        // 表头要在自检之前认：表头那一行全是文字，会让「数字列」「求和」全判错。
+        val header = TableHeaderDetector.detect(trimmedAligned.rows)
+        val bodyRows = if (header.fromImage) trimmedAligned.rows.drop(1) else trimmedAligned.rows
+        val bodyConfidence = if (header.fromImage) alignedConfidence.drop(1) else alignedConfidence
+
+        val selfCheckResult = TableSelfCheck.check(bodyRows, bodyConfidence, header)
         val selfCheck = selfCheckResult.report
-        val trimmed = selfCheckResult.rows
         // 分数列里 5→S、0→O 这类错字按列纠正：整列大多是数字时才动手。
-        val repaired = NumericColumnRepair.repair(trimmed)
-        val grid = TableGridBuilder.normalize(repaired, TableGrid.Mode.GRID_LINES)
+        val repaired = NumericColumnRepair.repair(selfCheckResult.rows)
+        val merged = if (header.fromImage) listOf(trimmedAligned.rows.first()) + repaired else repaired
+        val grid = TableGridBuilder.normalize(merged, TableGrid.Mode.GRID_LINES)
             ?: TableGrid(emptyList(), TableGrid.Mode.GRID_LINES)
         CellPass(
             grid = grid,
@@ -436,6 +447,7 @@ object TablePipeline {
             averageConfidence = averageConfidence,
             lowConfidenceCells = lowConfidenceCells,
             selfCheck = selfCheck,
+            header = header,
         )
     }
 

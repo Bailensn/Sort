@@ -47,7 +47,15 @@ object TableSelfCheck {
 
     data class Result(val rows: List<List<String>>, val report: Report)
 
-    fun check(input: List<List<String>>, confidences: List<List<Float>>? = null): Result {
+    /**
+     * header 是用户/图片确认过的列结构：给了总分列和科目列就直接用，
+     * 不再靠「最右一列是总分」这类猜测。
+     */
+    fun check(
+        input: List<List<String>>,
+        confidences: List<List<Float>>? = null,
+        header: TableHeader? = null,
+    ): Result {
         if (input.isEmpty() || input.first().isEmpty()) return Result(input, Report())
         val rows = input.map { it.toMutableList() }
 
@@ -84,7 +92,8 @@ object TableSelfCheck {
         }
 
         // 2) 求和校验 + 单格反推
-        val total = findTotalColumn(rows, columns, numeric, constant, sequences, identifiers)
+        val total = explicitColumns(header)
+            ?: findTotalColumn(rows, columns, numeric, constant, sequences, identifiers)
         var corrected = 0
         var partialTotals = 0
         if (total != null) {
@@ -196,6 +205,15 @@ object TableSelfCheck {
         val runnerUp = scored.getOrNull(1)
         if (runnerUp != null && best.third > runnerUp.third - 0.02f) return null
         return best.first to best.second
+    }
+
+    /** 表头里已经标了总分和科目，直接采信。 */
+    private fun explicitColumns(header: TableHeader?): Pair<Int, List<Int>>? {
+        val total = header?.totalColumn ?: return null
+        val subjects = header.subjectColumns
+        if (total !in 0 until (header.columns.maxOfOrNull { it.index } ?: -1) + 1) return null
+        if (subjects.isEmpty() || total in subjects) return null
+        return total to subjects
     }
 
     private fun findTotalColumn(

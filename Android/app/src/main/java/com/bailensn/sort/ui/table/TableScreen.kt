@@ -281,6 +281,8 @@ private fun MainPage(
                             scope.launch { openInGallery(context, bitmap, "scope-$viewMode.jpg") }
                         },
                         onCellClick = { row, column, value -> editing = CellEdit(row, column, value) },
+                        onColumnName = viewModel::setColumnName,
+                        onColumnRole = viewModel::setColumnRole,
                         contentPadding = pagePadding,
                     )
                 } else {

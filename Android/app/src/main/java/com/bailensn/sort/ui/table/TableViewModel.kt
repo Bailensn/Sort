@@ -11,6 +11,8 @@ import com.bailensn.sort.data.HistoryStore
 import com.bailensn.sort.data.NameMemory
 import com.bailensn.sort.table.TableGrid
 import com.bailensn.sort.table.TablePipeline
+import com.bailensn.sort.table.ColumnRole
+import com.bailensn.sort.table.TableHeader
 import com.bailensn.sort.table.TableSelfCheck
 import com.bailensn.sort.ui.table.TableUiState.Phase
 import com.bailensn.sort.util.ImageLoader
@@ -62,6 +64,8 @@ data class TableUiState(
     val enhanced: Bitmap? = null,
     val averageConfidence: Float = 0f,
     val lowConfidenceCells: Int = 0,
+    /** 表头结构：列名 + 每列的身份，结构卡片直接编辑它。 */
+    val header: TableHeader = TableHeader(),
     val selfCheckSummary: String = "",
     val suspiciousRows: List<Int> = emptyList(),
     /** 识别进度 0..1，界面用它画横向进度条。 */
@@ -234,6 +238,7 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
                         lowConfidenceCells = analysis.lowConfidenceCells,
                         selfCheckSummary = describeSelfCheck(analysis.selfCheck),
                         suspiciousRows = analysis.selfCheck.suspiciousRows,
+                        header = analysis.header,
                     )
                 }
             } else {
@@ -288,6 +293,7 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
                         lowConfidenceCells = analysis.lowConfidenceCells,
                         selfCheckSummary = describeSelfCheck(analysis.selfCheck),
                         suspiciousRows = analysis.selfCheck.suspiciousRows,
+                        header = analysis.header,
                     )
                 }
             }
@@ -489,6 +495,7 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
             deskewAngle = meta?.deskewAngle ?: 0.0,
             rectified = meta?.rectified ?: false,
             selfCheckSummary = meta?.let { describeSelfCheck(it.report()) }.orEmpty(),
+            header = TableHeader.of(rows.maxOfOrNull { row -> row.size } ?: 0),
             suspiciousRows = meta?.suspiciousRows.orEmpty(),
         )
     }
@@ -523,6 +530,37 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
         val enhanced: Bitmap?,
         val meta: HistoryMeta?,
     )
+
+    /** 改列名：只影响展示与之后的排序，不重跑识别。 */
+    fun setColumnName(index: Int, name: String) {
+        applyHeader { it.withName(index, name) }
+    }
+
+    /** 改列身份：科目/总分一变，求和校验按新结构重算一遍。 */
+    fun setColumnRole(index: Int, role: ColumnRole) {
+        applyHeader { it.withRole(index, role) }
+    }
+
+    private fun applyHeader(transform: (TableHeader) -> TableHeader) {
+        val current = _state.value
+        val grid = current.grid ?: return
+        val header = transform(current.header)
+        val body = if (header.fromImage) grid.rows.drop(1) else grid.rows
+        val result = TableSelfCheck.check(body, null, header)
+        val rows = if (header.fromImage) {
+            listOfNotNull(grid.rows.firstOrNull()) + result.rows
+        } else {
+            result.rows
+        }
+        _state.update {
+            it.copy(
+                header = header,
+                grid = grid.copy(rows = rows),
+                selfCheckSummary = describeSelfCheck(result.report),
+                suspiciousRows = result.report.suspiciousRows,
+            )
+        }
+    }
 
     private fun describeSelfCheck(report: TableSelfCheck.Report): String {
         val app = getApplication<Application>()
