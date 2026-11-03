@@ -19,7 +19,9 @@ import java.security.MessageDigest
  */
 object ModelInstaller {
 
-    private const val VERSION = "mnn-1"
+    /** 三代模型各一套；改这一行就整体换，本地文件名始终是 det.mnn / rec.mnn / rec.yml。 */
+    private const val FLAVOR = "v6"
+    private val VERSION = "mnn-$FLAVOR-1"
     private const val DIR = "ocr-models"
 
     /** 主源：分享目录，先 PUT 换签名直链，再 GET 下载（直链约 1 小时过期）。 */
@@ -40,21 +42,43 @@ object ModelInstaller {
         val required: Boolean,
     )
 
-    // 哈希来自 tools/models.mnn.lock；MNN 的 .mnn 是转换产物，只对 3.6.2 成立。
-    private val FILES = listOf(
-        Spec(
-            "det.mnn.pak", "det.mnn", "det.mnn", 61993116L,
-            "25b63452e40842c65df963c67bbd0e8714cf51a4d0b3b1966b4c6a92e7249131", true,
+    // 哈希来自 tools/models.mnn.lock，和仓库里那份逐字节一致。
+    private val SETS: Map<String, List<Spec>> = mapOf(
+        "v6" to listOf(
+            Spec("det.mnn.pak", "det.mnn", "det.mnn", 61993116L,
+                "25b63452e40842c65df963c67bbd0e8714cf51a4d0b3b1966b4c6a92e7249131", true),
+            Spec("rec.mnn.pak", "rec.mnn", "rec.mnn", 76498560L,
+                "c5dfb3d7cd2af443c213bc050fc394cb2a40b66f0619b8228d44d9878c77d78b", true),
+            Spec("rec.yml.pak", "rec.yml", "rec.yml", 150580L,
+                "991b700facf5b50a7de193468207d5f4255b538dde0d312ae3b7c7a9b6873129", true),
         ),
-        Spec(
-            "rec.mnn.pak", "rec.mnn", "rec.mnn", 76498560L,
-            "c5dfb3d7cd2af443c213bc050fc394cb2a40b66f0619b8228d44d9878c77d78b", true,
+        "v5" to listOf(
+            Spec("v5-det.mnn.pak", "v5-det.mnn", "det.mnn", 4736856L,
+                "1fabdff6b36cc1148f08c3b4be5119c5982169823db123901527e005e6b347cb", true),
+            Spec("v5-rec.mnn.pak", "v5-rec.mnn", "rec.mnn", 16506548L,
+                "df930536b573dd482a00346e83f6bca01cc9d8894f915bd241efafd1bda09050", true),
+            Spec("v5-rec.yml.pak", "v5-rec.yml", "rec.yml", 148345L,
+                "5dfeb2777f6d0db8177d8128a8acfcf6e6276dc4ac73ea3bf0dc06d6a5e85d8e", true),
         ),
-        Spec(
-            "rec.yml.pak", "rec.yml", "rec.yml", 150580L,
-            "991b700facf5b50a7de193468207d5f4255b538dde0d312ae3b7c7a9b6873129", true,
+        "v4" to listOf(
+            Spec("v4-det.mnn.pak", "v4-det.mnn", "det.mnn", 4736532L,
+                "41ba3e89a2803afe2a7fb2ec99b52fb7a1c5f836d94b7965bcb235ab575bc1fc", true),
+            Spec("v4-rec.mnn.pak", "v4-rec.mnn", "rec.mnn", 10814472L,
+                "99b8e8b19133aec4ebfab25cb67b3ec3a1ac97513727a882f3574f22cd4492fd", true),
+            Spec("v4-rec.yml.pak", "v4-rec.yml", "rec.yml", 53543L,
+                "1207e8ba3d3dad6b99115f7febf515f5ffc0d87ed77366d7a4b4b3f1709c005d", true),
         ),
     )
+
+    /** 复核模型和主模型无关，哪一代都能配；下不下来都不影响主流程。 */
+    private val REFEREE = listOf(
+        Spec("referee.mnn.pak", "referee.mnn", "referee.mnn", 84115172L,
+            "204c57f63fd61a0fec771799c3cf0d00e009a858e3b87524c0d1398935ecb81c", false),
+        Spec("referee.yml.pak", "referee.yml", "referee.yml", 148345L,
+            "2c719dba044c4e2228aef8ff92f5f575394d75d24c16de096a33b7cfd902f66d", false),
+    )
+
+    private val FILES: List<Spec> = (SETS[FLAVOR] ?: SETS.getValue("v6")) + REFEREE
 
     fun modelDir(context: Context): File = File(context.filesDir, DIR)
 
