@@ -37,7 +37,8 @@ while IFS= read -r file; do
     esac
     echo "::error file=$file::出现疑似真实学号（${#number} 位数字），请改用 9000 开头的假号"
     found=1
-  done < <(grep -oE '[0-9]{10,13}' "$file" 2>/dev/null | sort -u | sed "s|^|$file:|" || true)
+  # 先抹掉 32 位以上的十六进制串（sha256 之类），否则哈希里的数字段会被当成学号
+  done < <(sed -E 's/[0-9a-fA-F]{32,}//g' "$file" 2>/dev/null | grep -oE '[0-9]{10,13}' | sort -u | sed "s|^|$file:|" || true)
 done < <(git ls-files '*.kt' '*.java' '*.xml' '*.md' '*.txt' '*.kts' '*.yml' '*.yaml' '*.json' '*.cpp' '*.h' '*.hpp' '*.ets' '*.swift')
 
 if [[ "$found" -eq 1 ]]; then

@@ -37,6 +37,11 @@ jobs:
           curl -fsSL -o out/rec.yml "$hf/PP-OCRv6_medium_rec_onnx/resolve/main/inference.yml"
           curl -fsSL -o out/referee.onnx "$hf/PP-OCRv5_server_rec_onnx/resolve/main/inference.onnx"
           curl -fsSL -o out/referee.yml "$hf/PP-OCRv5_server_rec_onnx/resolve/main/inference.yml"
+          # PP-OCRv4：官方只发 Paddle 权重，onnx 用社区镜像（哈希钉死）
+          v4=https://huggingface.co/webnn/PP-OCRv4-ONNX/resolve/main
+          curl -fsSL -o out/ch_PP-OCRv4_det.onnx "$v4/ch_PP-OCRv4_det.onnx"
+          curl -fsSL -o out/ch_PP-OCRv4_rec.onnx "$v4/ch_PP-OCRv4_rec.onnx"
+          curl -fsSL -o out/v4-rec.yml "$hf/PP-OCRv4_mobile_rec/resolve/main/inference.yml"
           ls -l out
       - name: Verify against models.lock
         run: |
@@ -72,7 +77,13 @@ jobs:
           echo "[mnn] 用 $conv"
           "$conv" -f ONNX --modelFile out/det.onnx --MNNModel out/det.mnn --bizCode sort 2>&1 | tail -3
           "$conv" -f ONNX --modelFile out/rec.onnx --MNNModel out/rec.mnn --bizCode sort 2>&1 | tail -3
+          "$conv" -f ONNX --modelFile out/referee.onnx --MNNModel out/referee.mnn --bizCode sort 2>&1 | tail -3
+          "$conv" -f ONNX --modelFile out/ch_PP-OCRv4_det.onnx --MNNModel out/v4-det.mnn --bizCode sort 2>&1 | tail -3
+          "$conv" -f ONNX --modelFile out/ch_PP-OCRv4_rec.onnx --MNNModel out/v4-rec.mnn --bizCode sort 2>&1 | tail -3
           ls -l out/*.mnn
+          # 转换产物的哈希要回填进 tools/models.mnn.lock 和 App，这里打出来方便抄
+          echo "--- 转换产物哈希 ---"
+          sha256sum out/*.mnn out/v4-rec.yml | sed 's|  out/|  |'
       - name: Upload release assets
         env:
           GH_TOKEN: ${{ github.token }}
@@ -87,5 +98,7 @@ jobs:
           gh release upload "$RELEASE_TAG" \
             out/det.onnx out/rec.onnx out/rec.yml \
             out/referee.onnx out/referee.yml \
-            out/det.mnn out/rec.mnn --clobber
+            out/ch_PP-OCRv4_det.onnx out/ch_PP-OCRv4_rec.onnx out/v4-rec.yml \
+            out/det.mnn out/rec.mnn out/referee.mnn \
+            out/v4-det.mnn out/v4-rec.mnn --clobber
           echo "已发布：https://github.com/${{ github.repository }}/releases/tag/$RELEASE_TAG"
