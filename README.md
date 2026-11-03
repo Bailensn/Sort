@@ -88,8 +88,10 @@
   校验不过宁可报错，也不拿半截模型去识别；
 - 首启需要联网约 220 MB；
 - GitHub 备用源由 `.github/workflows/models.yml` 发布：手动跑一次（或推 `models-*` 标签），
-  它从官方仓库下载、按 `tools/models.lock` 校验，再现场用 mnnconvert 转出
-  `det.mnn` / `rec.mnn`，一起挂到固定的 prerelease「tag `models-v1` / 名称 `OCR Models`」上；
+  它从官方仓库下载、按 `tools/models.lock` 校验，再现场用 mnnconvert 转出 `.mnn`；
+  release 里**只放运行时需要的**：`det.mnn` / `rec.mnn` / `rec.yml`，外加
+  `referee.mnn` / `referee.yml` 和 v4 那一套（`v4-det.mnn` / `v4-rec.mnn` / `v4-rec.yml`）；
+  onnx 是转换的中间物，上游本来就有，不往 release 堆；
   触发方式怎么变都只更新这一个 release。转换器版本与 `tools/fetch_mnn.sh` 的运行时一致（3.6.2）。
   用 prerelease 而不是普通 release，是为了不顶掉正式版本的「最新」标记；
   也不能用 draft，草稿的资源匿名下不到。
