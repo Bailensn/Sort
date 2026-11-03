@@ -25,7 +25,8 @@ jobs:
       - name: Try pip mnnconvert
         id: pip
         run: |
-          if pip3 install --quiet --break-system-packages "MNN>=3.0" && command -v mnnconvert > /dev/null; then
+          # 钉死版本：转换器和运行时（fetch_mnn.sh 里的 3.6.2）必须对得上
+          if pip3 install --quiet --break-system-packages "MNN==3.6.2" && command -v mnnconvert > /dev/null; then
             echo "ok=true" >> "$GITHUB_OUTPUT"
             echo "[mnn] 用 pip 的 mnnconvert：$(command -v mnnconvert)"
           else
