@@ -1,17 +1,7 @@
 name: Harmony CI
 
 on:
-  push:
-    branches: [ "main" ]
-    paths:
-      - "Harmony/**"
-      - "Native/**"
-      - "tools/**"
-      - ".github/workflows/harmony.yml"
-  pull_request:
-    paths:
-      - "Harmony/**"
-      - "Native/**"
+  # 改成手动：鸿蒙没有真机可验，改 Native 由安卓那边先挡一道
   workflow_dispatch:
 
 permissions:

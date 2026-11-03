@@ -1,7 +1,18 @@
 name: Android CI
 
 on:
-  # 只在手动点的时候跑：安卓一次二十分钟，改了 Native 会自动带走鸿蒙
+  # 改了安卓或 Native 就自己跑：这是唯一能在真机上验证的端
+  push:
+    branches: [ "main" ]
+    paths:
+      - "Android/**"
+      - "Native/**"
+      - "tools/**"
+      - ".github/workflows/android.yml"
+  pull_request:
+    paths:
+      - "Android/**"
+      - "Native/**"
   workflow_dispatch:
 
 permissions:

@@ -125,12 +125,12 @@ hvigorw assembleApp -p buildMode=release   # 整包 app
 
 三个 workflow，各自独立：
 
-| 文件 | job | 跑什么 |
-| --- | --- | --- |
-| `android.yml` | `native-core` | `cmake` 编译 + `ctest` 冒烟测试 + 用 `gcc` 验证契约头是纯 C |
-| | `assemble-release` / `lint` / `unit-test` / `android-test` | Gradle 四个任务，release 出 apk + aab |
-| `ios.yml` | `build` | `xcodegen` + 模拟器 Release + 无签名 ipa |
-| `harmony.yml` | `build` | `hvigorw assembleHap` + `assembleApp`（DevEco 容器镜像） |
+| 文件 | 触发 | job | 跑什么 |
+| --- | --- | --- | --- |
+| `android.yml` | 推送自动（`Android/**`、`Native/**`、`tools/**`） | `native-core` | `cmake` 编译 + `ctest` 冒烟测试 + 用 `gcc` 验证契约头是纯 C |
+| | | `assemble-release` / `lint` / `unit-test` / `android-test` | Gradle 四个任务，release 出 apk + aab |
+| `ios.yml` | 手动 | `build` | `xcodegen` + 模拟器 Release + 无签名 ipa |
+| `harmony.yml` | 手动 | `models` / `build` | ONNX→MNN 转换；`hvigorw assembleHap` + `assembleApp`（DevEco 容器镜像） |
 
 Android 部分：顶层 `defaults.run.working-directory: Android`，`./gradlew` 与 `build.log` 都落在 `Android/`；artifact 和缓存这类不经过 `run` 的路径显式写 `Android/app/build/...`。SDK 组件安装抽成 `.github/scripts/install-sdk-components.sh`，四个 job 共用。失败时 `print-errors.sh` 直接把 Kotlin/Java 错误和 `What went wrong` 打在同一个 step 里，带 `::error file=...,line=...` 注解。
 

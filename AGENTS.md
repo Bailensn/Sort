@@ -49,6 +49,8 @@ CI 里还有一道基于 sha256 白名单的反向检查（名单不进仓库，
 ## 3. 构建与验证
 
 - CI 是唯一构建验证入口（本机跑不了 aapt2/NDK）；
+- 自动触发只有 Android（push 到 main，改动 `Android/**`、`Native/**`、`tools/**` 时）；
+  iOS 与鸿蒙一律手动——没有对应真机可验，别改回去；
 - 推之前至少保证 `cd Android && ./gradlew :app:compileDebugKotlin` 能过；
 - 单测在 CI 的 `unit-test` job 里跑，本地可用 JVM 直跑。
 
