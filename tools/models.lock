@@ -1,0 +1,9 @@
+# 模型清单：任何来源（官方源、网盘、Release）下载后都必须对得上这里的哈希。
+# 三端用的是同一批文件，只是扩展名/命名不同，内容逐字节一致。
+# 校验：grep -v '^#' tools/models.lock | awk '{print $2"  "$3}' | sha256sum -c -
+# 大小 / sha256 均取自官方发布物（HuggingFace PaddlePaddle 组织，LFS 或 Git 原文）。
+62032837 eb13b44b25bb36f89528b68720af8a61d9cf381176107f465db1757b65d086e1 det.onnx
+76554979 9c09abf0957f7968c7586464b7397b84ad2387a0497a351af40e9acc71b673ba rec.onnx
+84503027 d9dc333c9c7b042c6dffb8e33d72b6f65c9c1d463d0a3c2f78174fea55e94752 referee.onnx
+150580 991b700facf5b50a7de193468207d5f4255b538dde0d312ae3b7c7a9b6873129 rec.yml
+148345 2c719dba044c4e2228aef8ff92f5f575394d75d24c16de096a33b7cfd902f66d referee.yml

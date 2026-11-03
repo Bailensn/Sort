@@ -59,6 +59,11 @@ jobs:
           curl -fsSL -o out/det.onnx "$hf/PP-OCRv6_medium_det_onnx/resolve/main/inference.onnx"
           curl -fsSL -o out/rec.onnx "$hf/PP-OCRv6_medium_rec_onnx/resolve/main/inference.onnx"
           curl -fsSL -o out/rec.yml  "$hf/PP-OCRv6_medium_rec_onnx/resolve/main/inference.yml"
+          # 转之前先验货：下坏了会转出一个同样坏掉的 .mnn，运行时才炸
+          grep -v '^#' tools/models.lock \
+            | awk '$3=="det.onnx"||$3=="rec.onnx"||$3=="rec.yml"{print $2"  out/"$3}' \
+            | sha256sum -c -
+
           conv=$(command -v mnnconvert || echo ./mnn-build/MNNConvert)
           echo "[mnn] 用 $conv"
           "$conv" -f ONNX --modelFile out/det.onnx --MNNModel out/det.mnn --bizCode sort 2>&1 | tail -5
