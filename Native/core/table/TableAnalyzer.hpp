@@ -1,5 +1,6 @@
 #pragma once
 
+#include <functional>
 #include <string>
 #include <vector>
 
@@ -40,7 +41,14 @@ struct TableAnalysis {
     TableStats stats;
 };
 
+/// 流水线阶段，界面按它换文案。
+enum class TableStage { Prepare, Segment, Recognize, Verify };
+
+/// fraction 是 0..1 的完成度，只在同一线程同步回调。
+using TableProgress = std::function<void(TableStage stage, float fraction)>;
+
 /// 一整条表格流水线：裁内容 → 纠偏 → 找线 → 透视校正 → 多遍识别投票 → 清洗 → 表头 → 自检。
-TableAnalysis analyzeTable(OcrEngine& engine, const Image8& image);
+TableAnalysis analyzeTable(OcrEngine& engine, const Image8& image,
+                           const TableProgress& progress = TableProgress{});
 
 }  // namespace ocr

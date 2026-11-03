@@ -20,6 +20,53 @@ std::vector<long long> integralOf(const std::vector<uint8_t>& src, int width, in
     return sum;
 }
 
+/// 一维形态学：erode 要求窗口内全是前景，dilate 只要有一个前景。
+/// 前缀和求窗口内前景数，边界按复制处理，和逐点扫描的写法等价。
+std::vector<uint8_t> morphLine(const std::vector<uint8_t>& src, int width, int height, int radius,
+                               bool horizontal, bool erode) {
+    if (radius <= 0) return src;
+
+    std::vector<uint8_t> out(src.size(), 0);
+    if (horizontal) {
+        std::vector<int> prefix(static_cast<size_t>(width) + 1, 0);
+        for (int y = 0; y < height; ++y) {
+            const size_t row = static_cast<size_t>(y) * static_cast<size_t>(width);
+            for (int x = 0; x < width; ++x) {
+                prefix[static_cast<size_t>(x) + 1] =
+                    prefix[static_cast<size_t>(x)] + (src[row + static_cast<size_t>(x)] != 0 ? 1 : 0);
+            }
+            for (int x = 0; x < width; ++x) {
+                const int x0 = std::max(0, x - radius);
+                const int x1 = std::min(width - 1, x + radius);
+                const int count = prefix[static_cast<size_t>(x1) + 1] - prefix[static_cast<size_t>(x0)];
+                const int span = x1 - x0 + 1;
+                out[row + static_cast<size_t>(x)] =
+                    erode ? (count == span ? 255 : 0) : (count > 0 ? 255 : 0);
+            }
+        }
+        return out;
+    }
+
+    std::vector<int> prefix(static_cast<size_t>(height) + 1, 0);
+    for (int x = 0; x < width; ++x) {
+        for (int y = 0; y < height; ++y) {
+            prefix[static_cast<size_t>(y) + 1] =
+                prefix[static_cast<size_t>(y)] +
+                (src[static_cast<size_t>(y) * static_cast<size_t>(width) + static_cast<size_t>(x)] != 0 ? 1
+                                                                                                       : 0);
+        }
+        for (int y = 0; y < height; ++y) {
+            const int y0 = std::max(0, y - radius);
+            const int y1 = std::min(height - 1, y + radius);
+            const int count = prefix[static_cast<size_t>(y1) + 1] - prefix[static_cast<size_t>(y0)];
+            const int span = y1 - y0 + 1;
+            out[static_cast<size_t>(y) * static_cast<size_t>(width) + static_cast<size_t>(x)] =
+                erode ? (count == span ? 255 : 0) : (count > 0 ? 255 : 0);
+        }
+    }
+    return out;
+}
+
 }  // namespace
 
 std::vector<uint8_t> adaptiveThresholdMean(const std::vector<uint8_t>& gray, int width, int height,
@@ -64,44 +111,12 @@ std::vector<uint8_t> morphOpen(const std::vector<uint8_t>& binary, int width, in
     const int rx = std::max(0, kw / 2);
     const int ry = std::max(0, kh / 2);
 
-    // 腐蚀：窗口内全是前景才保留
-    std::vector<uint8_t> eroded(pixels, 0);
-    for (int y = 0; y < height; ++y) {
-        for (int x = 0; x < width; ++x) {
-            bool all = true;
-            for (int dy = -ry; dy <= ry && all; ++dy) {
-                for (int dx = -rx; dx <= rx; ++dx) {
-                    const int sx = std::clamp(x + dx, 0, width - 1);
-                    const int sy = std::clamp(y + dy, 0, height - 1);
-                    if (binary[static_cast<size_t>(sy) * static_cast<size_t>(width) + static_cast<size_t>(sx)] == 0) {
-                        all = false;
-                        break;
-                    }
-                }
-            }
-            eroded[static_cast<size_t>(y) * static_cast<size_t>(width) + static_cast<size_t>(x)] = all ? 255 : 0;
-        }
-    }
-
-    // 膨胀：窗口内有一个前景就算前景
-    std::vector<uint8_t> dilated(pixels, 0);
-    for (int y = 0; y < height; ++y) {
-        for (int x = 0; x < width; ++x) {
-            bool any = false;
-            for (int dy = -ry; dy <= ry && !any; ++dy) {
-                for (int dx = -rx; dx <= rx; ++dx) {
-                    const int sx = std::clamp(x + dx, 0, width - 1);
-                    const int sy = std::clamp(y + dy, 0, height - 1);
-                    if (eroded[static_cast<size_t>(sy) * static_cast<size_t>(width) + static_cast<size_t>(sx)] != 0) {
-                        any = true;
-                        break;
-                    }
-                }
-            }
-            dilated[static_cast<size_t>(y) * static_cast<size_t>(width) + static_cast<size_t>(x)] = any ? 255 : 0;
-        }
-    }
-    return dilated;
+    // 矩形结构元可分离：先横后竖等于一次二维运算，每像素 O(1)。
+    std::vector<uint8_t> out = morphLine(binary, width, height, rx, true, true);
+    out = morphLine(out, width, height, ry, false, true);
+    out = morphLine(out, width, height, rx, true, false);
+    out = morphLine(out, width, height, ry, false, false);
+    return out;
 }
 
 }  // namespace ocr

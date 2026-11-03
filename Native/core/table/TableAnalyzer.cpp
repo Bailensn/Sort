@@ -5,6 +5,7 @@
 #include <chrono>
 #include <cmath>
 #include <cstddef>
+#include <thread>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -230,12 +231,31 @@ std::vector<Rect> insetRects(const std::vector<CellRect>& cells, int borderInset
     return rects;
 }
 
+void report(const TableProgress& progress, TableStage stage, float fraction) {
+    if (progress) progress(stage, fraction);
+}
+
 PassOutput recognizeDeep(OcrEngine& engine, const Image8& work, const Image8& enhanced,
-                         const std::vector<Rect>& rects) {
+                         const std::vector<Rect>& rects, const TableProgress& progress) {
     PassOutput pass;
     const auto cellStart = Clock::now();
 
     pass.readings = engine.recognizeCells(work, rects);
+    report(progress, TableStage::Recognize, 0.45f);
+
+    // 回读和逐格识别互不依赖：线程安全的后端就让整图识别在后面同时跑。
+    OcrResult readback;
+    std::thread worker;
+    const auto readbackStart = Clock::now();
+    if (engine.threadSafe()) {
+        worker = std::thread([&engine, &work, &readback] {
+            try {
+                readback = engine.recognize(work);
+            } catch (...) {
+                readback = OcrResult{};
+            }
+        });
+    }
 
     // 二遍：增强图 2 倍。主模型 + 复核模型一起上，加上第一遍共三路投票。
     std::vector<size_t> strict;
@@ -243,6 +263,7 @@ PassOutput recognizeDeep(OcrEngine& engine, const Image8& work, const Image8& en
         const CellReading& reading = pass.readings[i];
         if (reading.hasInk && reading.confidence < kTrustedConfidence) strict.push_back(i);
     }
+    report(progress, TableStage::Recognize, 0.55f);
     if (!strict.empty() && !enhanced.empty()) {
         std::vector<Rect> strictRects;
         strictRects.reserve(strict.size());
@@ -288,6 +309,7 @@ PassOutput recognizeDeep(OcrEngine& engine, const Image8& work, const Image8& en
         const CellReading& reading = pass.readings[i];
         if (reading.hasInk && reading.confidence < kThirdConfidence) third.push_back(i);
     }
+    report(progress, TableStage::Recognize, 0.7f);
     if (!third.empty()) {
         std::vector<Rect> thirdRects;
         thirdRects.reserve(third.size());
@@ -316,6 +338,7 @@ PassOutput recognizeDeep(OcrEngine& engine, const Image8& work, const Image8& en
         const CellReading& reading = pass.readings[i];
         if (reading.hasInk && reading.confidence < kHopelessConfidence) hopeless.push_back(i);
     }
+    report(progress, TableStage::Recognize, 0.8f);
     if (!hopeless.empty()) {
         std::vector<uint8_t> binaryGray = toGray(work);
         if (!binaryGray.empty()) {
@@ -340,11 +363,22 @@ PassOutput recognizeDeep(OcrEngine& engine, const Image8& work, const Image8& en
     pass.cellMs = elapsedMs(cellStart);
 
     // 回读：整图再检测一遍，用它的结果和逐格结果互相校对。
-    const auto detectStart = Clock::now();
-    const OcrResult result = engine.recognize(work);
-    pass.detectMs = elapsedMs(detectStart);
+    // 并行时记的是「等它」的耗时，串行时才是它自己的耗时。
+    report(progress, TableStage::Verify, 0.85f);
+    if (worker.joinable()) {
+        const auto joinStart = Clock::now();
+        worker.join();
+        pass.detectMs = elapsedMs(joinStart);
+    } else {
+        try {
+            readback = engine.recognize(work);
+        } catch (...) {
+            readback = OcrResult{};
+        }
+        pass.detectMs = elapsedMs(readbackStart);
+    }
 
-    for (const auto& item : result.items) {
+    for (const auto& item : readback.items) {
         const float area = boxArea(item);
         if (area <= 4.0f) continue;
 
@@ -398,10 +432,12 @@ bool gridFromClusters(OcrEngine& engine, const Image8& work, TableRows& rows) {
 
 }  // namespace
 
-TableAnalysis analyzeTable(OcrEngine& engine, const Image8& image) {
+TableAnalysis analyzeTable(OcrEngine& engine, const Image8& image,
+                           const TableProgress& progress) {
     const auto startAll = Clock::now();
     TableAnalysis analysis;
     if (image.empty()) return analysis;
+    report(progress, TableStage::Prepare, 0.02f);
 
     // 第一步就把画面裁到有内容的那块：桌面、黑边、灰底不会带偏后面的检测
     Image8 work = image;
@@ -410,10 +446,12 @@ TableAnalysis analyzeTable(OcrEngine& engine, const Image8& image) {
         if (!cropped.empty()) work = std::move(cropped);
     }
 
+    report(progress, TableStage::Prepare, 0.1f);
     const SkewResult skew = deskewImage(work);
     if (!skew.image.empty()) work = skew.image;
     analysis.stats.deskewDegrees = skew.degrees;
 
+    report(progress, TableStage::Prepare, 0.2f);
     LineDetection detection = detectLines(work);
     if (detection.usable()) {
         if (const auto quad = fitTableQuad(work, detection)) {
@@ -431,6 +469,7 @@ TableAnalysis analyzeTable(OcrEngine& engine, const Image8& image) {
         }
     }
 
+    report(progress, TableStage::Prepare, 0.32f);
     // 二遍识别的输入：压平光照 + 拉对比度。CLIP 比线检测那档更强，这里要的是看清字。
     std::vector<uint8_t> enhancedGray = toGray(work);
     Image8 enhanced;
@@ -444,6 +483,7 @@ TableAnalysis analyzeTable(OcrEngine& engine, const Image8& image) {
     analysis.stats.horizontalLines = static_cast<int>(detection.horizontal.size());
     analysis.stats.verticalLines = static_cast<int>(detection.vertical.size());
 
+    report(progress, TableStage::Segment, 0.38f);
     const GridLines lines = detection.toGridLines();
     const CellLayout layout = buildCells(lines, work.width, work.height);
     analysis.stats.cellCount = static_cast<int>(layout.cells.size());
@@ -453,9 +493,10 @@ TableAnalysis analyzeTable(OcrEngine& engine, const Image8& image) {
     int corrected = 0;
 
     if (!layout.cells.empty()) {
+        report(progress, TableStage::Recognize, 0.4f);
         const int borderInset = estimateLineWidth(work, lines) + 1;
         const std::vector<Rect> rects = insetRects(layout.cells, borderInset);
-        const PassOutput pass = recognizeDeep(engine, work, enhanced, rects);
+        const PassOutput pass = recognizeDeep(engine, work, enhanced, rects, progress);
 
         TableRows matrix(layout.rows, std::vector<std::string>(layout.columns));
         TableConfidence confidenceGrid(layout.rows, std::vector<float>(layout.columns, 0.0f));
@@ -594,10 +635,12 @@ TableAnalysis analyzeTable(OcrEngine& engine, const Image8& image) {
     }
     analysis.stats.lowConfidenceCells = low;
 
+    report(progress, TableStage::Verify, 0.95f);
     analysis.working = work;
     analysis.overlay = drawGridOverlay(work, detection);
     analysis.enhanced = enhanced;
     analysis.stats.elapsedMs = elapsedMs(startAll);
+    report(progress, TableStage::Verify, 1.0f);
     return analysis;
 }
 

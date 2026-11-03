@@ -17,6 +17,11 @@ data class CellReading(
     val hasInk: Boolean,
 )
 
+/** 流水线阶段回调：stage 对应 C ABI 的 engine_table_stage，fraction 是 0..1。 */
+fun interface TableProgress {
+    fun onStage(stage: Int, fraction: Float)
+}
+
 /** 一条自检明细，对应 C ABI 的 engine_table_note_kind。 */
 data class TableNote(val kind: Int, val a: Int, val b: Int)
 
@@ -92,10 +97,11 @@ class OcrBridge(
     }
 
     /** 整表分析：裁切、纠偏、找线、切格、多遍识别投票、清洗、表头、自检，一次调用全拿到。 */
-    fun analyzeTable(bitmap: Bitmap): TableAnalysis? {
+    fun analyzeTable(bitmap: Bitmap, progress: TableProgress? = null): TableAnalysis? {
         if (handle == 0L) return null
         val pixels = toBgr(bitmap)
-        val parts = nativeTableAnalyze(handle, pixels, bitmap.width, bitmap.height, 1) ?: return null
+        val parts = nativeTableAnalyze(handle, pixels, bitmap.width, bitmap.height, 1, progress)
+            ?: return null
 
         @Suppress("UNCHECKED_CAST")
         val rows = (parts[0] as? Array<Array<String>>)?.map { it.toList() } ?: return null
@@ -216,6 +222,7 @@ class OcrBridge(
         width: Int,
         height: Int,
         isBgr: Int,
+        progress: TableProgress?,
     ): Array<Any?>?
 
     private external fun nativeOcrLastError(): Int

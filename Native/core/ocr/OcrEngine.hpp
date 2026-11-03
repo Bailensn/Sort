@@ -44,6 +44,9 @@ public:
     bool setReferee(std::unique_ptr<InferenceBackend> backend, std::vector<std::string> charset);
     bool hasReferee() const { return refereeBackend_ != nullptr && !refereeCharset_.empty(); }
 
+    /// 主后端是否允许并发调用；不允许就只能串行跑。
+    bool threadSafe() const { return backend_ != nullptr && backend_->threadSafe(); }
+
     /// 按外部给定的格子逐个识别；空白格直接跳过，不送模型。
     /// referee = true 时走复核模型，没有配置复核模型就返回全空。
     std::vector<CellReading> recognizeCells(const Image8& image, const std::vector<Rect>& cells,

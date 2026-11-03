@@ -5,6 +5,7 @@ import android.graphics.Rect
 import android.os.SystemClock
 import com.bailensn.sort.CellReading
 import com.bailensn.sort.OcrBridge
+import com.bailensn.sort.TableProgress
 import java.io.File
 
 /**
@@ -19,8 +20,11 @@ class NativeOcr private constructor(
 ) {
 
     /** 整表分析：全部表格逻辑都在 Native 里跑，这里只负责把失败变成异常。 */
-    fun analyzeTable(bitmap: Bitmap): com.bailensn.sort.TableAnalysis =
-        bridge.analyzeTable(bitmap)
+    fun analyzeTable(
+        bitmap: Bitmap,
+        progress: TableProgress? = null,
+    ): com.bailensn.sort.TableAnalysis =
+        bridge.analyzeTable(bitmap, progress)
             ?: throw IllegalStateException("表格分析失败，错误码 ${bridge.lastError}")
 
     fun recognize(bitmap: Bitmap): OcrRun =

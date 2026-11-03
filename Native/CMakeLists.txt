@@ -59,6 +59,10 @@ if (SORT_WITH_OCR)
 
     target_include_directories(${OCR_TARGET} PUBLIC core core/ocr adapters adapters/onnx capi)
 
+    # 整图回读和逐格识别并行跑，需要线程支持
+    find_package(Threads REQUIRED)
+    target_link_libraries(${OCR_TARGET} PUBLIC Threads::Threads)
+
     option(SORT_BUILD_TESTS "Build native smoke tests" ON)
     if (SORT_BUILD_TESTS)
         enable_testing()

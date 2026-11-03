@@ -14,6 +14,9 @@ public:
 
     /// 输入 [N,3,48,W] 的 rec 张量，输出 [N,T,C] 的 logits。
     virtual bool runRec(const Tensor& input, Tensor& output) = 0;
+
+    /// 同一个后端能否被两个线程同时调用；只有确认过的后端才允许并行。
+    virtual bool threadSafe() const { return false; }
 };
 
 }  // namespace ocr

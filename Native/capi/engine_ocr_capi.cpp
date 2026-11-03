@@ -119,7 +119,8 @@ int32_t noteKind(ocr::Note::Kind kind) {
 int32_t engine_table_analyze(OcrHandle *h, const uint8_t *pixels, int32_t width, int32_t height,
                              int32_t stride, int32_t isBgr, engine_table_row_cb onRow,
                              engine_table_header_cb onHeader, engine_table_note_cb onNote,
-                             engine_table_index_cb onSuspiciousRow, engine_table_stats *outStats,
+                             engine_table_index_cb onSuspiciousRow, engine_table_stage_cb onStage,
+                             void *userData, engine_table_stats *outStats,
                              engine_table_image *outImage, engine_table_image *outOverlay,
                              engine_table_image *outEnhanced) {
     if (h == nullptr) return ENGINE_ERR_NULL;
@@ -135,12 +136,18 @@ int32_t engine_table_analyze(OcrHandle *h, const uint8_t *pixels, int32_t width,
             return ENGINE_ERR_BAD_INPUT;
         }
 
-        ocr::TableAnalysis analysis = ocr::analyzeTable(h->engine, image);
+        ocr::TableProgress progress;
+        if (onStage != nullptr) {
+            progress = [onStage, userData](ocr::TableStage stage, float fraction) {
+                onStage(static_cast<int32_t>(stage), fraction, userData);
+            };
+        }
+        ocr::TableAnalysis analysis = ocr::analyzeTable(h->engine, image, progress);
 
         if (onHeader != nullptr) {
             for (const auto& column : analysis.header.columns) {
                 const int32_t role = static_cast<int32_t>(column.role);
-                onHeader(column.index, column.name.c_str(), role, nullptr);
+                onHeader(column.index, column.name.c_str(), role, userData);
             }
         }
         if (onRow != nullptr) {
@@ -153,14 +160,14 @@ int32_t engine_table_analyze(OcrHandle *h, const uint8_t *pixels, int32_t width,
                 payload.index = static_cast<int32_t>(r);
                 payload.columnCount = static_cast<int32_t>(cells.size());
                 payload.cells = cells.empty() ? nullptr : cells.data();
-                onRow(&payload, nullptr);
+                onRow(&payload, userData);
             }
         }
         if (onNote != nullptr) {
-            for (const auto& note : analysis.report.notes) onNote(noteKind(note.kind), note.a, note.b, nullptr);
+            for (const auto& note : analysis.report.notes) onNote(noteKind(note.kind), note.a, note.b, userData);
         }
         if (onSuspiciousRow != nullptr) {
-            for (int row : analysis.report.suspiciousRows) onSuspiciousRow(row, nullptr);
+            for (int row : analysis.report.suspiciousRows) onSuspiciousRow(row, userData);
         }
         if (outStats != nullptr) {
             const ocr::TableStats& stats = analysis.stats;
@@ -211,7 +218,7 @@ void toRows(const engine_table_matrix *matrix, ocr::TableRows &rows) {
     }
 }
 
-void emitRows(const ocr::TableRows &rows, engine_table_row_cb onRow) {
+void emitRows(const ocr::TableRows &rows, engine_table_row_cb onRow, void *userData) {
     if (onRow == nullptr) return;
     for (size_t r = 0; r < rows.size(); ++r) {
         std::vector<const char *> cells;
@@ -221,14 +228,15 @@ void emitRows(const ocr::TableRows &rows, engine_table_row_cb onRow) {
         payload.index = static_cast<int32_t>(r);
         payload.columnCount = static_cast<int32_t>(cells.size());
         payload.cells = cells.empty() ? nullptr : cells.data();
-        onRow(&payload, nullptr);
+        onRow(&payload, userData);
     }
 }
 
 }  // namespace
 
 int32_t engine_table_detect_header(const engine_table_matrix *rows,
-                                   engine_table_header_cb onHeader, int32_t *outFromImage) {
+                                   engine_table_header_cb onHeader, void *userData,
+                                   int32_t *outFromImage) {
     if (outFromImage != nullptr) *outFromImage = 0;
     try {
         ocr::TableRows input;
@@ -238,7 +246,8 @@ int32_t engine_table_detect_header(const engine_table_matrix *rows,
         const ocr::TableHeader header = ocr::detectHeader(input);
         if (onHeader != nullptr) {
             for (const auto &column : header.columns) {
-                onHeader(column.index, column.name.c_str(), static_cast<int32_t>(column.role), nullptr);
+                onHeader(column.index, column.name.c_str(), static_cast<int32_t>(column.role),
+                         userData);
             }
         }
         if (outFromImage != nullptr) *outFromImage = header.fromImage ? 1 : 0;
@@ -252,7 +261,7 @@ int32_t engine_table_self_check(const engine_table_matrix *rows, const float *co
                                 int32_t totalColumn, const int32_t *subjectColumns,
                                 int32_t subjectCount, engine_table_row_cb onRow,
                                 engine_table_note_cb onNote, engine_table_index_cb onSuspiciousRow,
-                                int32_t *outCorrected, int32_t *outSuspicious) {
+                                void *userData, int32_t *outCorrected, int32_t *outSuspicious) {
     if (outCorrected != nullptr) *outCorrected = 0;
     if (outSuspicious != nullptr) *outSuspicious = 0;
     try {
@@ -286,14 +295,14 @@ int32_t engine_table_self_check(const engine_table_matrix *rows, const float *co
         const ocr::CheckResult checked =
             ocr::selfCheck(input, confidenceRows.empty() ? nullptr : &confidenceRows,
                            header.columns.empty() ? nullptr : &header);
-        emitRows(checked.rows, onRow);
+        emitRows(checked.rows, onRow, userData);
         if (onNote != nullptr) {
             for (const auto &note : checked.report.notes) {
-                onNote(noteKind(note.kind), note.a, note.b, nullptr);
+                onNote(noteKind(note.kind), note.a, note.b, userData);
             }
         }
         if (onSuspiciousRow != nullptr) {
-            for (int row : checked.report.suspiciousRows) onSuspiciousRow(row, nullptr);
+            for (int row : checked.report.suspiciousRows) onSuspiciousRow(row, userData);
         }
         if (outCorrected != nullptr) *outCorrected = checked.report.correctedCells;
         if (outSuspicious != nullptr) {

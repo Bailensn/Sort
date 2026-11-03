@@ -77,6 +77,16 @@ typedef void (*engine_table_note_cb)(int32_t kind, int32_t a, int32_t b, void *u
 /* 仍然对不上的行号（0 基），逐条回调。 */
 typedef void (*engine_table_index_cb)(int32_t index, void *userData);
 
+/* 流水线阶段；fraction 是 0..1 的完成度。整条链路要跑好几秒，界面靠它换文案。 */
+typedef enum engine_table_stage {
+    ENGINE_STAGE_PREPARE = 0,   /* 裁内容、纠偏、找线、透视 */
+    ENGINE_STAGE_SEGMENT = 1,   /* 切格、估线宽 */
+    ENGINE_STAGE_RECOGNIZE = 2, /* 逐格识别与多遍投票 */
+    ENGINE_STAGE_VERIFY = 3     /* 整图回读、自检、收尾 */
+} engine_table_stage;
+
+typedef void (*engine_table_stage_cb)(int32_t stage, float fraction, void *userData);
+
 /* 处理后的工作图或叠加了表格线的预览图，RGB 三通道、行优先无填充。
  * data 由库分配，调用方用 engine_table_image_free 释放。 */
 typedef struct engine_table_image {
@@ -109,7 +119,8 @@ typedef struct engine_table_stats {
 int32_t engine_table_analyze(OcrHandle *h, const uint8_t *pixels, int32_t width, int32_t height,
                              int32_t stride, int32_t isBgr, engine_table_row_cb onRow,
                              engine_table_header_cb onHeader, engine_table_note_cb onNote,
-                             engine_table_index_cb onSuspiciousRow, engine_table_stats *outStats,
+                             engine_table_index_cb onSuspiciousRow, engine_table_stage_cb onStage,
+                             void *userData, engine_table_stats *outStats,
                              engine_table_image *outImage, engine_table_image *outOverlay,
                              engine_table_image *outEnhanced);
 
@@ -126,7 +137,8 @@ typedef struct engine_table_matrix {
 
 /* 认表头：逐列回调名字与角色，fromImage 写回。 */
 int32_t engine_table_detect_header(const engine_table_matrix *rows,
-                                   engine_table_header_cb onHeader, int32_t *outFromImage);
+                                   engine_table_header_cb onHeader, void *userData,
+                                   int32_t *outFromImage);
 
 /* 算术自检：纠正后的行逐行回调，明细逐条回调。
  * confidences 可为 NULL；totalColumn < 0 表示没有确认过表头结构。 */
@@ -134,7 +146,7 @@ int32_t engine_table_self_check(const engine_table_matrix *rows, const float *co
                                 int32_t totalColumn, const int32_t *subjectColumns,
                                 int32_t subjectCount, engine_table_row_cb onRow,
                                 engine_table_note_cb onNote, engine_table_index_cb onSuspiciousRow,
-                                int32_t *outCorrected, int32_t *outSuspicious);
+                                void *userData, int32_t *outCorrected, int32_t *outSuspicious);
 
 /* ---- 生命周期 ---- */
 OcrHandle *engine_ocr_create(const char *detModelPath, const char *recModelPath,

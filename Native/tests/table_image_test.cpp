@@ -3,6 +3,7 @@
 #include <cstdio>
 #include <vector>
 
+#include "imgproc/Binary.hpp"
 #include "imgproc/Gray.hpp"
 #include "imgproc/Warp.hpp"
 #include "table/Cropper.hpp"
@@ -147,6 +148,72 @@ void testEdgeLinesAndOverlay() {
     expect(changed > 0, "叠线图应当真的画上了线");
 }
 
+/// 逐点扫描版，用来证明可分离实现没改行为。
+std::vector<uint8_t> naiveMorphOpen(const std::vector<uint8_t>& binary, int width, int height, int kw,
+                                    int kh) {
+    const int rx = std::max(0, kw / 2);
+    const int ry = std::max(0, kh / 2);
+    const size_t pixels = static_cast<size_t>(width) * static_cast<size_t>(height);
+    std::vector<uint8_t> eroded(pixels, 0);
+    for (int y = 0; y < height; ++y) {
+        for (int x = 0; x < width; ++x) {
+            bool all = true;
+            for (int dy = -ry; dy <= ry && all; ++dy) {
+                for (int dx = -rx; dx <= rx; ++dx) {
+                    const int sx = std::clamp(x + dx, 0, width - 1);
+                    const int sy = std::clamp(y + dy, 0, height - 1);
+                    if (binary[static_cast<size_t>(sy) * width + static_cast<size_t>(sx)] == 0) {
+                        all = false;
+                        break;
+                    }
+                }
+            }
+            eroded[static_cast<size_t>(y) * width + static_cast<size_t>(x)] = all ? 255 : 0;
+        }
+    }
+    std::vector<uint8_t> dilated(pixels, 0);
+    for (int y = 0; y < height; ++y) {
+        for (int x = 0; x < width; ++x) {
+            bool any = false;
+            for (int dy = -ry; dy <= ry && !any; ++dy) {
+                for (int dx = -rx; dx <= rx; ++dx) {
+                    const int sx = std::clamp(x + dx, 0, width - 1);
+                    const int sy = std::clamp(y + dy, 0, height - 1);
+                    if (eroded[static_cast<size_t>(sy) * width + static_cast<size_t>(sx)] != 0) {
+                        any = true;
+                        break;
+                    }
+                }
+            }
+            dilated[static_cast<size_t>(y) * width + static_cast<size_t>(x)] = any ? 255 : 0;
+        }
+    }
+    return dilated;
+}
+
+void testMorphology() {
+    const int width = 41;
+    const int height = 29;
+    std::vector<uint8_t> binary(static_cast<size_t>(width) * height, 0);
+    unsigned state = 7u;
+    for (auto& value : binary) {
+        // xorshift32：随便造点噪声，别用看起来像学号的常数
+        state ^= state << 13;
+        state ^= state >> 17;
+        state ^= state << 5;
+        value = ((state >> 11) & 1u) != 0 ? 255 : 0;
+    }
+    for (int x = 0; x < width; ++x) binary[static_cast<size_t>(10) * width + static_cast<size_t>(x)] = 255;
+    for (int y = 0; y < height; ++y) binary[static_cast<size_t>(y) * width + 7] = 255;
+
+    const int kernels[][2] = {{1, 1}, {3, 1}, {9, 1}, {1, 3}, {1, 9}, {7, 5}, {21, 1}, {1, 21}};
+    for (const auto& kernel : kernels) {
+        const std::vector<uint8_t> fast = ocr::morphOpen(binary, width, height, kernel[0], kernel[1]);
+        const std::vector<uint8_t> slow = naiveMorphOpen(binary, width, height, kernel[0], kernel[1]);
+        expect(fast == slow, "可分离形态学必须和逐点扫描等价");
+    }
+}
+
 /// 安卓传进来的是 BGR：通道顺序读错会让彩色字迹的灰度整体偏掉。
 void testGrayOrder() {
     ocr::Image8 rgb;
@@ -188,6 +255,7 @@ int main() {
     testLineDetectionAndQuad();
     testSkew();
     testEdgeLinesAndOverlay();
+    testMorphology();
     testGrayOrder();
     testAnalyzeWithoutBackend();
     if (g_failed == 0) {

@@ -2,6 +2,7 @@ package com.bailensn.sort.table
 
 import android.graphics.Bitmap
 import com.bailensn.sort.TableNote
+import com.bailensn.sort.TableProgress
 import com.bailensn.sort.ocr.NativeOcr
 
 /**
@@ -53,14 +54,24 @@ object TablePipeline {
         onStage: (Stage) -> Unit = {},
         onProgress: (Float) -> Unit = {},
     ): Analysis {
-        // Native 一次调用跑完整条链路，中途切不出真实进度，只报首尾两档。
+        // Native 一边跑一边报阶段，界面不会一直停在「校正」上。
         onStage(Stage.RECTIFY)
-        onProgress(0.05f)
+        onProgress(0f)
 
-        val result = ocr.analyzeTable(source)
-
-        onStage(Stage.VERIFY)
-        onProgress(1f)
+        val result = ocr.analyzeTable(
+            source,
+            TableProgress { stage, fraction ->
+                onStage(
+                    when (stage) {
+                        0 -> Stage.RECTIFY
+                        1 -> Stage.SEGMENT
+                        2 -> Stage.RECOGNIZE
+                        else -> Stage.VERIFY
+                    },
+                )
+                onProgress(fraction)
+            },
+        )
 
         val header = TableHeader(
             columns = result.headerNames.mapIndexed { index, name ->

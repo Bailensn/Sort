@@ -20,6 +20,9 @@ public:
     bool runDet(const Tensor& input, Tensor& output) override;
     bool runRec(const Tensor& input, Tensor& output) override;
 
+    /// ORT 的 Session::Run 是线程安全的，整图回读因此可以和逐格识别并行。
+    bool threadSafe() const override { return true; }
+
     OnnxBackend(const OnnxBackend&) = delete;
     OnnxBackend& operator=(const OnnxBackend&) = delete;
 

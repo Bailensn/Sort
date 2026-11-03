@@ -224,31 +224,50 @@ struct TableCollector {
     std::vector<int32_t> suspicious;
 };
 
+/// 回调上下文：把收集器和进度回调绑在一起，userData 传它。
+struct TableContext {
+    TableCollector collected;
+    JNIEnv *env = nullptr;
+    jobject listener = nullptr;
+    jmethodID onStage = nullptr;
+};
+
 void collectHeader(int32_t, const char *name, int32_t role, void *userData) {
-    auto *out = static_cast<TableCollector *>(userData);
-    out->names.emplace_back(name != nullptr ? name : "");
-    out->roles.push_back(role);
+    auto *context = static_cast<TableContext *>(userData);
+    if (context == nullptr) return;
+    context->collected.names.emplace_back(name != nullptr ? name : "");
+    context->collected.roles.push_back(role);
 }
 
 void collectRow(const engine_table_row *row, void *userData) {
-    auto *out = static_cast<TableCollector *>(userData);
-    if (row == nullptr) return;
+    auto *context = static_cast<TableContext *>(userData);
+    if (row == nullptr || context == nullptr) return;
     std::vector<std::string> cells;
     for (int32_t i = 0; i < row->columnCount; ++i) {
         cells.emplace_back(row->cells != nullptr ? row->cells[i] : "");
     }
-    out->rows.push_back(std::move(cells));
+    context->collected.rows.push_back(std::move(cells));
 }
 
 void collectIndex(int32_t index, void *userData) {
-    static_cast<TableCollector *>(userData)->suspicious.push_back(index);
+    // userData 曾经是空指针，这里必须挡住，别让 native crash 再走一遍
+    auto *context = static_cast<TableContext *>(userData);
+    if (context == nullptr) return;
+    context->collected.suspicious.push_back(index);
 }
 
 void collectNote(int32_t kind, int32_t a, int32_t b, void *userData) {
-    auto *out = static_cast<TableCollector *>(userData);
-    out->notes.push_back(kind);
-    out->notes.push_back(a);
-    out->notes.push_back(b);
+    auto *context = static_cast<TableContext *>(userData);
+    if (context == nullptr) return;
+    context->collected.notes.push_back(kind);
+    context->collected.notes.push_back(a);
+    context->collected.notes.push_back(b);
+}
+
+void forwardStage(int32_t stage, float fraction, void *userData) {
+    auto *context = static_cast<TableContext *>(userData);
+    if (context == nullptr || context->listener == nullptr || context->onStage == nullptr) return;
+    context->env->CallVoidMethod(context->listener, context->onStage, stage, fraction);
 }
 
 jobjectArray makeStringRow(JNIEnv *env, jclass stringClass, const std::vector<std::string> &cells) {
@@ -365,19 +384,31 @@ bool readMatrix(JNIEnv *env, jobjectArray rows, MatrixBuffer &out) {
 extern "C" JNIEXPORT jobject JNICALL
 Java_com_bailensn_sort_OcrBridge_nativeTableAnalyze(JNIEnv *env, jclass, jlong handle,
                                                     jbyteArray pixels, jint width, jint height,
-                                                    jint isBgr) {
+                                                    jint isBgr, jobject listener) {
     if (pixels == nullptr) return nullptr;
     jbyte *buffer = env->GetByteArrayElements(pixels, nullptr);
     if (buffer == nullptr) return nullptr;
 
-    TableCollector collected;
+    TableContext context;
+    context.env = env;
+    if (listener != nullptr) {
+        // 从接口取方法：lambda 的生成类名每次都不同，不能拿对象类去找
+        jclass listenerClass = env->FindClass("com/bailensn/sort/TableProgress");
+        if (listenerClass != nullptr) {
+            context.listener = listener;
+            context.onStage = env->GetMethodID(listenerClass, "onStage", "(IF)V");
+            env->DeleteLocalRef(listenerClass);
+        }
+    }
+
     engine_table_stats stats{};
     engine_table_image overlay{};
     engine_table_image enhanced{};
     // 工作图不往回传：界面用的是叠线图，多拷一份只会白占内存。
     const int32_t rc = engine_table_analyze(
         asOcrHandle(handle), reinterpret_cast<const uint8_t *>(buffer), width, height, 0, isBgr,
-        collectRow, collectHeader, collectNote, collectIndex, &stats, nullptr, &overlay, &enhanced);
+        collectRow, collectHeader, collectNote, collectIndex, forwardStage, &context, &stats, nullptr,
+        &overlay, &enhanced);
     env->ReleaseByteArrayElements(pixels, buffer, JNI_ABORT);
     if (rc != ENGINE_OK) {
         engine_table_image_free(&overlay);
@@ -393,6 +424,7 @@ Java_com_bailensn_sort_OcrBridge_nativeTableAnalyze(JNIEnv *env, jclass, jlong h
         return nullptr;
     }
 
+    const TableCollector &collected = context.collected;
     jobjectArray rows = makeStringRows(env, collected.rows);
     jobjectArray names = env->NewObjectArray(static_cast<jsize>(collected.names.size()), stringClass,
                                              nullptr);
@@ -455,18 +487,19 @@ Java_com_bailensn_sort_NativeTable_nativeDetectHeader(JNIEnv *env, jclass, jobje
     MatrixBuffer buffer;
     if (!readMatrix(env, rows, buffer)) return nullptr;
 
-    TableCollector collected;
+    TableContext context;
     int32_t fromImage = 0;
     const std::vector<const char *> pointers = buffer.pointers();
     const engine_table_matrix matrix{static_cast<int32_t>(buffer.columnCounts.size()),
                                      buffer.columnCounts.data(), pointers.data()};
-    const int32_t rc = engine_table_detect_header(&matrix, collectHeader, &fromImage);
+    const int32_t rc = engine_table_detect_header(&matrix, collectHeader, &context, &fromImage);
     if (rc != ENGINE_OK) return nullptr;
 
     jclass objectClass = env->FindClass("java/lang/Object");
     jclass stringClass = env->FindClass("java/lang/String");
     if (objectClass == nullptr || stringClass == nullptr) return nullptr;
 
+    const TableCollector &collected = context.collected;
     jobjectArray names = env->NewObjectArray(static_cast<jsize>(collected.names.size()), stringClass,
                                              nullptr);
     if (names != nullptr) {
@@ -507,7 +540,7 @@ Java_com_bailensn_sort_NativeTable_nativeSelfCheck(JNIEnv *env, jclass, jobjectA
         if (count > 0) env->GetIntArrayRegion(subjectColumns, 0, count, subjects.data());
     }
 
-    TableCollector collected;
+    TableContext context;
     int32_t corrected = 0;
     int32_t suspicious = 0;
     const std::vector<const char *> pointers = buffer.pointers();
@@ -515,13 +548,14 @@ Java_com_bailensn_sort_NativeTable_nativeSelfCheck(JNIEnv *env, jclass, jobjectA
                                      buffer.columnCounts.data(), pointers.data()};
     const int32_t rc = engine_table_self_check(
         &matrix, nullptr, totalColumn, subjects.empty() ? nullptr : subjects.data(),
-        static_cast<int32_t>(subjects.size()), collectRow, collectNote, collectIndex, &corrected,
-        &suspicious);
+        static_cast<int32_t>(subjects.size()), collectRow, collectNote, collectIndex, &context,
+        &corrected, &suspicious);
     if (rc != ENGINE_OK) return nullptr;
 
     jclass objectClass = env->FindClass("java/lang/Object");
     if (objectClass == nullptr) return nullptr;
 
+    const TableCollector &collected = context.collected;
     jobjectArray outRows = makeStringRows(env, collected.rows);
     jintArray notes = makeIntArray(env, collected.notes);
     jintArray suspiciousRows = makeIntArray(env, collected.suspicious);
