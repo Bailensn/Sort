@@ -1,5 +1,7 @@
 # 鸿蒙 / 安卓用的 MNN 模型：由 mnnconvert 3.6.2 从对应 onnx 转出。
-# 转换产物不像原始 onnx 那样有官方哈希，这里的值只对「同一版转换器」成立。
+# 注意：mnnconvert 的输出**不可复现** —— 同样的输入和版本，两次转换字节也不同
+# （大小完全一样，但 sha256 不同）。所以这些哈希只是「某一次产物」的记录，
+# 客户端只按大小校验；.yml 字符表是原文件，哈希仍然有效。
 # 校验：grep -v '^#' tools/models.mnn.lock | awk '{print $2"  "$3}' | sha256sum -c -
 61993116 25b63452e40842c65df963c67bbd0e8714cf51a4d0b3b1966b4c6a92e7249131 det.mnn
 76498560 c5dfb3d7cd2af443c213bc050fc394cb2a40b66f0619b8228d44d9878c77d78b rec.mnn

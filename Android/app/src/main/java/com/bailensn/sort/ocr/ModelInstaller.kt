@@ -37,6 +37,7 @@ object ModelInstaller {
         val backup: String,
         val local: String,
         val size: Long,
+        /** 空串表示只校验大小：.mnn 是转换产物，两次转换不可能逐字节一致。 */
         val sha256: String,
         val required: Boolean,
     )
@@ -45,19 +46,19 @@ object ModelInstaller {
     private val FILES = listOf(
         // 主模型 v6（det + rec + 字符表）
         Spec("det.mnn.pak", "det.mnn", "det.mnn", 61993116L,
-            "25b63452e40842c65df963c67bbd0e8714cf51a4d0b3b1966b4c6a92e7249131", true),
+            "", true),
         Spec("rec.mnn.pak", "rec.mnn", "rec.mnn", 76498560L,
-            "c5dfb3d7cd2af443c213bc050fc394cb2a40b66f0619b8228d44d9878c77d78b", true),
+            "", true),
         Spec("rec.yml.pak", "rec.yml", "rec.yml", 150580L,
             "991b700facf5b50a7de193468207d5f4255b538dde0d312ae3b7c7a9b6873129", true),
         // 第二遍换一代模型：只要 rec 和它的字符表
         Spec("v4-rec.mnn.pak", "v4-rec.mnn", "alt-rec.mnn", 10814472L,
-            "99b8e8b19133aec4ebfab25cb67b3ec3a1ac97513727a882f3574f22cd4492fd", false),
+            "", false),
         Spec("v4-rec.yml.pak", "v4-rec.yml", "alt.yml", 53543L,
             "1207e8ba3d3dad6b99115f7febf515f5ffc0d87ed77366d7a4b4b3f1709c005d", false),
         // 复核模型：PP-OCRv5 server rec
         Spec("referee.mnn.pak", "referee.mnn", "referee.mnn", 84115172L,
-            "204c57f63fd61a0fec771799c3cf0d00e009a858e3b87524c0d1398935ecb81c", false),
+            "", false),
         Spec("referee.yml.pak", "referee.yml", "referee.yml", 148345L,
             "2c719dba044c4e2228aef8ff92f5f575394d75d24c16de096a33b7cfd902f66d", false),
     )
@@ -139,8 +140,12 @@ object ModelInstaller {
     ): Boolean {
         repeat(2) {
             val done = temp.takeIf { it.isFile }?.length() ?: 0L
-            if (done == spec.size && sha256(temp) == spec.sha256) return true
-            if (done > spec.size) temp.delete()
+            if (done == spec.size) {
+                if (spec.sha256.isEmpty() || sha256(temp) == spec.sha256) return true
+                temp.delete()
+            } else if (done > spec.size) {
+                temp.delete()
+            }
 
             val signed = signUrl(spec.remote, reasons)
             val sources = mutableListOf("$BACKUP_BASE/${spec.backup}")
@@ -149,8 +154,13 @@ object ModelInstaller {
                 val host = if (source == signed) "share" else "backup"
                 // 传输失败保留 .part：换个源接着下，一样是 Range 续传
                 if (!get(source, temp, spec.size, reasons, onProgress)) continue
-                if (temp.length() == spec.size && sha256(temp) == spec.sha256) return true
-                // 下满了却对不上哈希，说明这份内容不对，只能重来
+                val length = temp.length()
+                if (length != spec.size) {
+                    reasons.add("$host:size$length/${spec.size}")
+                    temp.delete()
+                    continue
+                }
+                if (spec.sha256.isEmpty() || sha256(temp) == spec.sha256) return true
                 reasons.add("$host:sha256")
                 temp.delete()
             }

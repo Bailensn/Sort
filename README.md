@@ -84,8 +84,8 @@
   每个文件先试主源、不通再吃备用源；
 - 下载流程：换签名 → `GET`（带 `Range` 断点续传）→ 比字节数 → 校验 sha256 → 落盘；
   签名过期就重新换，最多重试两轮；传输失败保留 `.part`，换源也能接着下；
-- 每个文件的字节数与 sha256 钉在 `ModelInstaller` 里，和 `tools/models.lock` 一致；
-  校验不过宁可报错，也不拿半截模型去识别；
+- `.mnn` 只按**字节数**校验：mnnconvert 的输出不可复现，两次转换大小一样、sha256 不同，
+  钉哈希会把合法模型判成坏文件；字符表 `.yml` 是原文件，哈希照旧校验；
 - 首启需要联网约 220 MB；
 - GitHub 备用源由 `.github/workflows/models.yml` 发布：手动跑一次（或推 `models-*` 标签），
   它从官方仓库下载、按 `tools/models.lock` 校验，再现场用 mnnconvert 转出 `.mnn`；
