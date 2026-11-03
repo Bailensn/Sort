@@ -83,7 +83,10 @@ android {
         }
     }
 
-    sourceSets.getByName("main").jniLibs.srcDir(layout.buildDirectory.dir("mnn/jniLibs"))
+    // 不能传 Provider：Android 的 SourceSet API 只收字符串或 File
+    sourceSets.getByName("main").jniLibs.srcDir(
+        "${layout.buildDirectory.get().asFile.absolutePath}/mnn/jniLibs",
+    )
 
     androidResources {
     }
