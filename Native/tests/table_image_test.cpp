@@ -256,6 +256,29 @@ void testGrayOrder() {
     expect(bgrGray[0] == rgbGray[1] && bgrGray[1] == rgbGray[0], "同一个缓冲换个顺序，红蓝应互换");
 }
 
+/// 一列对齐的竖笔画不能被当成表格线：那会把「7.1」劈成 7 和 1 两格。
+void testStemsAreNotLines() {
+    const int columns = 4;
+    const int rows = 5;
+    const int cellWidth = 150;
+    const int cellHeight = 100;
+    ocr::Image8 table = makeTable(columns, rows, cellWidth, cellHeight);
+
+    // 在第 0 列里竖着摆一串又细又高的笔画，整体够高、但中间全是断口
+    const int stemX = 75;
+    for (int row = 0; row < rows; ++row) {
+        const int top = row * cellHeight + 8;
+        fillRect(table, stemX, top, stemX + 2, top + 74, 40);
+    }
+
+    const ocr::LineDetection detection = ocr::detectLines(table);
+    expect(detection.usable(), "加了竖笔画也要能检测到真正的表格线");
+    for (const auto& line : detection.vertical) {
+        const float x = line.valueAt(static_cast<float>(table.height) / 2.0f);
+        expect(std::abs(x - stemX) > 12.0f, "竖笔画那一列不该被当成表格线");
+    }
+}
+
 /// 去线：线上的像素变白，格子里的字还在。
 void testEraseLines() {
     const ocr::Image8 table = makeTable(4, 3, 150, 100);
@@ -312,6 +335,7 @@ int main() {
     testBinaryPolarity();
     testMorphology();
     testGrayOrder();
+    testStemsAreNotLines();
     testEraseLines();
     testAnalyzeWithoutBackend();
     if (g_failed == 0) {

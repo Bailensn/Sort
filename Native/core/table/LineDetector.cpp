@@ -95,6 +95,44 @@ std::optional<FittedLine> fitBand(const std::vector<uint8_t>& mask, int width, i
     const double slope = sxy / sxx;
     if (std::abs(slope) > kMaxSlope) return std::nullopt;
 
+    // 一列对齐的数字也能凑够 30% 的暗像素，但中间全是断口；真表格线是连续的。
+    // 断口太多说明这不是线，落进格子会把「7.1」劈成 7 和 1。
+    const double maskIntercept = meanY - slope * meanX;
+    std::vector<uint8_t> dark(width, 0);
+    int first = -1;
+    int last = -1;
+    for (int x = 0; x < width; ++x) {
+        const int y = static_cast<int>(std::lround(slope * x + maskIntercept));
+        for (int d = -1; d <= 1 && !dark[static_cast<size_t>(x)]; ++d) {
+            const int yy = y + d;
+            if (yy < 0 || yy >= height) continue;
+            dark[static_cast<size_t>(x)] =
+                mask[static_cast<size_t>(yy) * static_cast<size_t>(width) + static_cast<size_t>(x)] != 0;
+        }
+        if (dark[static_cast<size_t>(x)]) {
+            if (first < 0) first = x;
+            last = x;
+        }
+    }
+    if (first < 0) return std::nullopt;
+
+    // 只量暗像素覆盖到的那一段：纸张边缘的白边不算断口
+    int hits = 0;
+    int gap = 0;
+    int maxGap = 0;
+    for (int x = first; x <= last; ++x) {
+        if (dark[static_cast<size_t>(x)]) {
+            ++hits;
+            gap = 0;
+        } else {
+            ++gap;
+            maxGap = std::max(maxGap, gap);
+        }
+    }
+    const int span = last - first + 1;
+    const int allowedGap = std::max(3, span / 40);
+    if (static_cast<double>(hits) / span < 0.85 || maxGap > allowedGap) return std::nullopt;
+
     FittedLine line;
     line.slope = static_cast<float>(slope);
     line.intercept = static_cast<float>((meanY - slope * meanX) / scale);
