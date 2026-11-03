@@ -99,6 +99,19 @@ jobs:
             echo "::error::Harmony/ 不在工作区，检查 checkout 是否完整"
             exit 1
           fi
+      # 模型由 models job 转好，这里取回来放进 rawfile；
+      # 少了这一步 HAP 只有几 MB，包内校验会直接判失败。
+      - name: Download converted models
+        uses: actions/download-artifact@v8
+        with:
+          name: harmony-models
+          path: Harmony/main/src/main/resources/rawfile/models
+      - name: Check models present
+        run: |
+          ls -lh main/src/main/resources/rawfile/models/models.zip || {
+            echo "::error::没有取到 models.zip"
+            exit 1
+          }
       - name: Fetch MNN
         run: |
           # 官方预编译包：只有 lib，没有头（头文件已 vendored 在 Native/adapters/mnn/include）
