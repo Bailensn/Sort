@@ -134,7 +134,8 @@ hvigorw assembleHap -p buildMode=release   # 单模块 hap
 hvigorw assembleApp -p buildMode=release   # 整包 app
 ```
 
-模型在 `rawfile/models/models.zip`（三个文件压成一个，约 40 MB），首启由 ArkTS 解到沙箱。
+模型**不随 HAP 发**：首启由 ArkTS 从同一套源拉 `.mnn`（网盘为主、GitHub prerelease 兜底），
+流式写盘后校验 sha256 再交给 native；`rawfile` 里不再有 `models.zip`，HAP 因此只有十几 MB。
 
 ## CI
 

@@ -14,73 +14,8 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  models:
-    name: Convert to .mnn
-    # 容器里没有 cmake、pip 也装不上，转换放到普通 ubuntu 上做
-    runs-on: ubuntu-24.04
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v7
-      # 方案一：pip 的 MNN 包如果带 mnnconvert 就直接用
-      - name: Try pip mnnconvert
-        id: pip
-        run: |
-          # 钉死版本：转换器和运行时（fetch_mnn.sh 里的 3.6.2）必须对得上
-          if pip3 install --quiet --break-system-packages "MNN==3.6.2" && command -v mnnconvert > /dev/null; then
-            echo "ok=true" >> "$GITHUB_OUTPUT"
-            echo "[mnn] 用 pip 的 mnnconvert：$(command -v mnnconvert)"
-          else
-            echo "ok=false" >> "$GITHUB_OUTPUT"
-            echo "[mnn] pip 里没有 mnnconvert，改源码编译"
-          fi
-      - name: Cache MNNConverter
-        id: converter
-        if: steps.pip.outputs.ok != 'true'
-        uses: actions/cache@v6
-        with:
-          path: mnn-build/MNNConvert
-          key: mnnconvert-3.6.2-v1
-      # PyPI 的 MNN 包里没有 mnnconvert，只能自己编一个
-      - name: Build MNNConverter
-        if: steps.pip.outputs.ok != 'true' && steps.converter.outputs.cache-hit != 'true'
-        run: |
-          set -o pipefail
-          git clone --depth 1 --branch 3.6.2 https://github.com/alibaba/MNN.git mnn-src
-          cmake -S mnn-src -B mnn-build -DMNN_BUILD_CONVERTER=ON \
-            -DMNN_BUILD_SHARED_LIBS=OFF -DMNN_BUILD_TEST=OFF -DMNN_BUILD_BENCHMARK=OFF \
-            -DMNN_AVX512=OFF 2>&1 | tail -5
-          cmake --build mnn-build --target MNNConvert -j"$(nproc)" 2>&1 | tail -5
-          ls -lh mnn-build/MNNConvert
-      - name: Convert
-        run: |
-          set -o pipefail
-          hf=https://huggingface.co/PaddlePaddle
-          mkdir -p out
-          curl -fsSL -o out/det.onnx "$hf/PP-OCRv6_medium_det_onnx/resolve/main/inference.onnx"
-          curl -fsSL -o out/rec.onnx "$hf/PP-OCRv6_medium_rec_onnx/resolve/main/inference.onnx"
-          curl -fsSL -o out/rec.yml  "$hf/PP-OCRv6_medium_rec_onnx/resolve/main/inference.yml"
-          # 转之前先验货：下坏了会转出一个同样坏掉的 .mnn，运行时才炸
-          grep -v '^#' tools/models.lock \
-            | awk '$3=="det.onnx"||$3=="rec.onnx"||$3=="rec.yml"{print $2"  out/"$3}' \
-            | sha256sum -c -
-
-          conv=$(command -v mnnconvert || echo ./mnn-build/MNNConvert)
-          echo "[mnn] 用 $conv"
-          "$conv" -f ONNX --modelFile out/det.onnx --MNNModel out/det.mnn --bizCode sort 2>&1 | tail -5
-          "$conv" -f ONNX --modelFile out/rec.onnx --MNNModel out/rec.mnn --bizCode sort 2>&1 | tail -5
-          cd out && zip -q models.zip det.mnn rec.mnn rec.yml && rm -f det.mnn rec.mnn rec.yml det.onnx rec.onnx
-          ls -lh models.zip
-      - name: Upload models
-        uses: actions/upload-artifact@v7
-        with:
-          name: harmony-models
-          path: out/models.zip
-          if-no-files-found: error
-          retention-days: 7
-
   build:
     name: Build HAP
-    needs: models
     # Ubuntu 也能跑：镜像里带着 DevEco 命令行工具（hvigorw + HarmonyOS SDK）。
     runs-on: ubuntu-24.04
     timeout-minutes: 45
@@ -99,19 +34,6 @@ jobs:
             echo "::error::Harmony/ 不在工作区，检查 checkout 是否完整"
             exit 1
           fi
-      # 模型由 models job 转好，这里取回来放进 rawfile；
-      # 少了这一步 HAP 只有几 MB，包内校验会直接判失败。
-      - name: Download converted models
-        uses: actions/download-artifact@v8
-        with:
-          name: harmony-models
-          path: Harmony/main/src/main/resources/rawfile/models
-      - name: Check models present
-        run: |
-          ls -lh main/src/main/resources/rawfile/models/models.zip || {
-            echo "::error::没有取到 models.zip"
-            exit 1
-          }
       - name: Fetch MNN
         run: |
           # 官方预编译包：只有 lib，没有头（头文件已 vendored 在 Native/adapters/mnn/include）
@@ -152,10 +74,10 @@ jobs:
           hap=$(find "$GITHUB_WORKSPACE/Harmony" -path '*outputs*' -name '*.hap' | head -1)
           [ -n "$hap" ] || { echo "::error::没有产出 .hap"; exit 1; }
 
-          # 模型是二进制，HAP 必须有几十 MB 以上；不到就是 rawfile 没打进去（曾经的 Harmony/Harmony 路径 bug）。
+          # 模型改成首启联网下载，HAP 里不该再有它们；变回几十 MB 就是又塞回去了。
           size=$(stat -c%s "$hap")
           echo "HAP 大小: $((size / 1024 / 1024)) MB" | tee -a build.log
-          [ "$size" -gt 30000000 ] || { echo "::error::HAP 只有 $((size/1024)) KB，模型没打进去"; exit 1; }
+          [ "$size" -lt 60000000 ] || { echo "::error::HAP 有 $((size/1024/1024)) MB，模型又被塞回去了"; exit 1; }
 
           list=
           if command -v unzip > /dev/null; then
@@ -171,11 +93,8 @@ jobs:
 
           printf '%s\n' "$list" > entries.txt
           grep -E 'libs/.*/libmain\.so' entries.txt || { echo "::error::HAP 里没有 libmain.so"; exit 1; }
-          grep -E 'rawfile/models/models\.zip' entries.txt || { echo "::error::HAP 里没有 models.zip"; exit 1; }
-          # 包里那份 zip 必须装的是 .mnn，不能是旧的 .ms
-          hap_zip=$(unzip -p "$hap" 'resources/rawfile/models/models.zip' 2>/dev/null | head -c 2000000)
-          if printf '%s' "$hap_zip" | grep -q 'h\.ms'; then
-            echo "::error::HAP 里的 models.zip 还是 .ms"
+          if grep -E 'rawfile/models/models\.zip' entries.txt; then
+            echo "::error::HAP 里还有 models.zip，模型不该再随包发"
             exit 1
           fi
           echo "包内校验通过" | tee -a build.log
