@@ -578,11 +578,12 @@ TableAnalysis analyzeTable(OcrEngine& engine, const Image8& image,
 
             // 表头要在自检之前认：表头那行全是文字，会让「数字列」「求和」全判错
             analysis.header = detectHeader(trimmed.rows);
-            const TableRows body = analysis.header.fromImage
-                                       ? TableRows(trimmed.rows.begin() + 1, trimmed.rows.end())
-                                       : trimmed.rows;
+            // 表头行就是第一行数据，自检时跳过它，但不从表里摘出去
+            const size_t headerRows = analysis.header.fromImage ? 1 : 0;
+            const TableRows body(trimmed.rows.begin() + static_cast<long>(headerRows),
+                                 trimmed.rows.end());
             const TableConfidence bodyConfidence =
-                analysis.header.fromImage && !alignedConfidence.empty()
+                headerRows == 1 && !alignedConfidence.empty()
                     ? TableConfidence(alignedConfidence.begin() + 1, alignedConfidence.end())
                     : alignedConfidence;
 
@@ -590,10 +591,10 @@ TableAnalysis analyzeTable(OcrEngine& engine, const Image8& image,
             analysis.report = checked.report;
             // 分数列里 5→S、0→O 这类错字按列纠正：整列大多是数字时才动手
             const TableRows repaired = repairNumbers(checked.rows);
-            if (analysis.header.fromImage && !trimmed.rows.empty()) {
-                rows.push_back(trimmed.rows.front());
+            rows = trimmed.rows;
+            for (size_t i = 0; i < repaired.size() && headerRows + i < rows.size(); ++i) {
+                rows[headerRows + i] = repaired[i];
             }
-            for (const auto& row : repaired) rows.push_back(row);
             corrected += checked.report.correctedCells;
         }
     }
