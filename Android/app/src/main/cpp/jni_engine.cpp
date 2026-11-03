@@ -139,9 +139,11 @@ Java_com_bailensn_sort_OcrBridge_nativeOcrRecognize(JNIEnv *env, jclass, jlong h
     return makeTriple(env, texts, boxArray, confidenceArray);
 }
 
+enum class CellModel { Primary, Alternate, Referee };
+
 static jobject recognizeCellsCommon(JNIEnv *env, jlong handle, jbyteArray pixels, jint width,
                                    jint height, jint isBgr, jintArray cells, jfloat scale,
-                                   bool referee) {
+                                   CellModel model) {
     if (pixels == nullptr || cells == nullptr) return nullptr;
     const jsize cellValues = env->GetArrayLength(cells);
     if (cellValues <= 0 || cellValues % 4 != 0) return nullptr;
@@ -161,7 +163,9 @@ static jobject recognizeCellsCommon(JNIEnv *env, jlong handle, jbyteArray pixels
     if (buffer == nullptr) return nullptr;
 
     std::vector<CellResult> readings;
-    auto recognize = referee ? engine_ocr_recognize_cells_ref : engine_ocr_recognize_cells;
+    auto recognize = engine_ocr_recognize_cells;
+    if (model == CellModel::Referee) recognize = engine_ocr_recognize_cells_ref;
+    if (model == CellModel::Alternate) recognize = engine_ocr_recognize_cells_alt;
     const int32_t rc = recognize(asOcrHandle(handle),
                                  reinterpret_cast<const uint8_t *>(buffer), width, height, 0, isBgr,
                                  rects.data(), cellCount, scale, collectCell, &readings);
@@ -203,7 +207,8 @@ Java_com_bailensn_sort_OcrBridge_nativeOcrRecognizeCells(JNIEnv *env, jclass, jl
                                                          jbyteArray pixels, jint width, jint height,
                                                          jint isBgr, jintArray cells,
                                                          jfloat scale) {
-    return recognizeCellsCommon(env, handle, pixels, width, height, isBgr, cells, scale, false);
+    return recognizeCellsCommon(env, handle, pixels, width, height, isBgr, cells, scale,
+                                CellModel::Primary);
 }
 
 extern "C" JNIEXPORT jobject JNICALL
@@ -211,7 +216,34 @@ Java_com_bailensn_sort_OcrBridge_nativeOcrRecognizeCellsRef(JNIEnv *env, jclass,
                                                            jbyteArray pixels, jint width,
                                                            jint height, jint isBgr, jintArray cells,
                                                            jfloat scale) {
-    return recognizeCellsCommon(env, handle, pixels, width, height, isBgr, cells, scale, true);
+    return recognizeCellsCommon(env, handle, pixels, width, height, isBgr, cells, scale,
+                                CellModel::Referee);
+}
+
+extern "C" JNIEXPORT jobject JNICALL
+Java_com_bailensn_sort_OcrBridge_nativeOcrRecognizeCellsAlt(JNIEnv *env, jclass, jlong handle,
+                                                           jbyteArray pixels, jint width,
+                                                           jint height, jint isBgr, jintArray cells,
+                                                           jfloat scale) {
+    return recognizeCellsCommon(env, handle, pixels, width, height, isBgr, cells, scale,
+                                CellModel::Alternate);
+}
+
+extern "C" JNIEXPORT jint JNICALL
+Java_com_bailensn_sort_OcrBridge_nativeOcrSetAlternate(JNIEnv *env, jclass, jlong handle,
+                                                       jstring recPath, jstring charsetPath) {
+    if (recPath == nullptr || charsetPath == nullptr) return ENGINE_ERR_NULL;
+    const char *rec = env->GetStringUTFChars(recPath, nullptr);
+    const char *charset = env->GetStringUTFChars(charsetPath, nullptr);
+    if (rec == nullptr || charset == nullptr) {
+        if (rec != nullptr) env->ReleaseStringUTFChars(recPath, rec);
+        if (charset != nullptr) env->ReleaseStringUTFChars(charsetPath, charset);
+        return ENGINE_ERR_NULL;
+    }
+    const int32_t rc = engine_ocr_set_alternate(asOcrHandle(handle), rec, charset);
+    env->ReleaseStringUTFChars(recPath, rec);
+    env->ReleaseStringUTFChars(charsetPath, charset);
+    return rc;
 }
 
 namespace {

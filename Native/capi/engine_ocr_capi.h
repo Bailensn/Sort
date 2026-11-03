@@ -181,6 +181,14 @@ int32_t engine_ocr_recognize_cells_ref(OcrHandle *h, const uint8_t *pixels, int3
                                        const engine_ocr_cell *cells, int32_t cellCount, float scale,
                                        engine_ocr_cell_cb cb, void *userData);
 
+/* ---- 第二主模型：换一代模型当另一路投票（主 v6、第二遍 v4）----
+ * 和复核模型一样只有 rec。 */
+int32_t engine_ocr_set_alternate(OcrHandle *h, const char *recModelPath, const char *charsetPath);
+int32_t engine_ocr_recognize_cells_alt(OcrHandle *h, const uint8_t *pixels, int32_t width,
+                                       int32_t height, int32_t stride, int32_t isBgr,
+                                       const engine_ocr_cell *cells, int32_t cellCount, float scale,
+                                       engine_ocr_cell_cb cb, void *userData);
+
 #ifdef __cplusplus
 }
 #endif

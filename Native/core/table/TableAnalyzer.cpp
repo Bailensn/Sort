@@ -270,7 +270,11 @@ PassOutput recognizeDeep(OcrEngine& engine, const Image8& work, const Image8& en
         std::vector<Rect> strictRects;
         strictRects.reserve(strict.size());
         for (size_t index : strict) strictRects.push_back(rects[index]);
-        const std::vector<CellReading> second = engine.recognizeCells(enhanced, strictRects, kStrictScale);
+        // 二遍换一代模型（主 v6、第二遍 v4）：两个模型错的方式不一样，投票才有意义
+        const OcrEngine::CellModel secondModel = engine.hasAlternate() ? OcrEngine::CellModel::Alternate
+                                                                      : OcrEngine::CellModel::Primary;
+        const std::vector<CellReading> second =
+            engine.recognizeCells(enhanced, strictRects, kStrictScale, secondModel);
 
         // 复核模型只跑有争议的格子：认得完全一致的多一路投票不会改变结果
         std::vector<size_t> positions;
@@ -289,7 +293,8 @@ PassOutput recognizeDeep(OcrEngine& engine, const Image8& work, const Image8& en
             refereeRects.reserve(positions.size());
             for (size_t position : positions) refereeRects.push_back(strictRects[position]);
             const std::vector<CellReading> readings =
-                engine.recognizeCells(enhanced, refereeRects, kRefereeScale, true);
+                engine.recognizeCells(enhanced, refereeRects, kRefereeScale,
+                                      OcrEngine::CellModel::Referee);
             for (size_t offset = 0; offset < positions.size() && offset < readings.size(); ++offset) {
                 referee[positions[offset]] = readings[offset];
             }
@@ -321,7 +326,8 @@ PassOutput recognizeDeep(OcrEngine& engine, const Image8& work, const Image8& en
         std::vector<CellReading> fromReferee;
         if (engine.hasReferee() && !enhanced.empty()) {
             const std::vector<CellReading> readings =
-                engine.recognizeCells(enhanced, thirdRects, kRefereeScale, true);
+                engine.recognizeCells(enhanced, thirdRects, kRefereeScale,
+                                      OcrEngine::CellModel::Referee);
             if (readings.size() == thirdRects.size()) fromReferee = readings;
         }
 

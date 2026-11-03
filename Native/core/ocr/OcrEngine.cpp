@@ -228,12 +228,28 @@ bool OcrEngine::setReferee(std::unique_ptr<InferenceBackend> backend,
     return true;
 }
 
+bool OcrEngine::setAlternate(std::unique_ptr<InferenceBackend> backend,
+                             std::vector<std::string> charset) {
+    if (!backend || charset.empty()) return false;
+    altBackend_ = std::move(backend);
+    altCharset_ = std::move(charset);
+    return true;
+}
+
 std::vector<CellReading> OcrEngine::recognizeCells(const Image8& image,
                                                    const std::vector<Rect>& cells, float scale,
-                                                   bool referee) {
+                                                   CellModel model) {
     std::vector<CellReading> output(cells.size(), CellReading{"", 0.0f, false});
-    InferenceBackend* backend = referee ? refereeBackend_.get() : backend_.get();
-    const std::vector<std::string>& charset = referee ? refereeCharset_ : charset_;
+    InferenceBackend* backend = backend_.get();
+    const std::vector<std::string>* charsetPtr = &charset_;
+    if (model == CellModel::Referee) {
+        backend = refereeBackend_.get();
+        charsetPtr = &refereeCharset_;
+    } else if (model == CellModel::Alternate) {
+        backend = altBackend_.get();
+        charsetPtr = &altCharset_;
+    }
+    const std::vector<std::string>& charset = *charsetPtr;
     if (image.empty() || cells.empty() || backend == nullptr || charset.empty()) return output;
 
     std::vector<int> pendingIndices;

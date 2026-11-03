@@ -75,9 +75,9 @@
 模型**不随包发**，首启从分享盘拉，装到 `files/ocr-models/`：
 
 - 推理用 MNN，模型是 `mnnconvert` 从 onnx 转出来的 `.mnn`（det 59 MB + rec 73 MB + 字符表 147 KB）；
-- 主模型三代可选：v6 medium（59+73 MB）、v5 mobile（4.5+16 MB）、v4 mobile（4.5+10 MB），
-  App 里 `ModelInstaller.FLAVOR` 一行切换，默认 v6；
-- 复核模型 PP-OCRv5 server rec（80 MB）也转成 `.mnn`，和主模型一起下；缺了只是少一路投票；
+- **三套模型一起上**：第一遍 v6 medium（det 59 + rec 73 MB），第二遍换 v4 mobile rec
+  （10 MB）——两个模型错的地方不一样，投票才有意义；复核用 v5 server rec（80 MB）；
+- 复核模型和 v4 那套都属于「可选」：下不下来只影响投票路数，不影响主流程；
 - v4/v5 官方只发 Paddle 权重，onnx 用社区镜像、哈希钉死；字符表都用官方的 `inference.yml`；
 - 两个源：国内走分享盘（`PUT` 换签名直链，约 1 小时过期），备用是
   GitHub **prerelease** `models-v1`（不进「最新版本」，也不占正式发布的位子）；

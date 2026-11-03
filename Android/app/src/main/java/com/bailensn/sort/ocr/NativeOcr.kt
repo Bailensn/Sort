@@ -17,15 +17,20 @@ class NativeOcr private constructor(
     val coldLoadTimeMs: Long,
     private val refereeRec: File?,
     private val refereeCharset: File?,
+    private val altRec: File?,
+    private val altCharset: File?,
 ) {
 
     /** 整表分析：全部表格逻辑都在 Native 里跑，这里只负责把失败变成异常。 */
     fun analyzeTable(
         bitmap: Bitmap,
         progress: TableProgress? = null,
-    ): com.bailensn.sort.TableAnalysis =
-        bridge.analyzeTable(bitmap, progress)
+    ): com.bailensn.sort.TableAnalysis {
+        // 复核模型是懒加载的，但流水线一跑就要用；这里先催一下，别让第一张表少一路投票
+        refereeReady
+        return bridge.analyzeTable(bitmap, progress)
             ?: throw IllegalStateException("表格分析失败，错误码 ${bridge.lastError}")
+    }
 
     fun recognize(bitmap: Bitmap): OcrRun =
         OcrRun(bridge.recognize(bitmap).map { OcrLine(OcrBox(it.points), it.text, it.confidence) })
@@ -70,7 +75,7 @@ class NativeOcr private constructor(
         return readings
     }
 
-    /** 复核模型 90 MB 上下，第一次要用时才加载，别拖慢冷启动。 */
+    /** 复核模型 80 MB 上下，第一次要用时才加载，别拖慢冷启动。 */
     private val refereeReady: Boolean by lazy {
         val rec = refereeRec ?: return@lazy false
         val charset = refereeCharset ?: return@lazy false
@@ -97,11 +102,19 @@ class NativeOcr private constructor(
             // MNN 这边还没有复核模型（.mnn 没转），缺了就按两路投票走
             val refereeRec = File(modelDir, "referee.mnn").takeIf { it.isFile }
             val refereeCharset = File(modelDir, "referee.yml").takeIf { it.isFile }
+            val altRec = File(modelDir, "alt-rec.mnn").takeIf { it.isFile }
+            val altCharset = File(modelDir, "alt.yml").takeIf { it.isFile }
+            // 第二主模型只有 10 MB，建的时候顺手挂上，不用懒加载
+            if (altRec != null && altCharset != null) {
+                bridge.setAlternate(altRec.absolutePath, altCharset.absolutePath)
+            }
             return NativeOcr(
                 bridge = bridge,
                 coldLoadTimeMs = SystemClock.elapsedRealtime() - started,
                 refereeRec = refereeRec,
                 refereeCharset = refereeCharset,
+                altRec = altRec,
+                altCharset = altCharset,
             )
         }
     }

@@ -381,10 +381,15 @@ namespace {
 int32_t recognizeCellsImpl(OcrHandle *h, const uint8_t *pixels, int32_t width, int32_t height,
                            int32_t stride, int32_t isBgr, const engine_ocr_cell *cells,
                            int32_t cellCount, float scale, engine_ocr_cell_cb cb, void *userData,
-                           bool referee) {
+                           ocr::OcrEngine::CellModel model) {
     if (h == nullptr) return ENGINE_ERR_NULL;
     if (cells == nullptr || cellCount <= 0) return ENGINE_ERR_BAD_INPUT;
-    if (referee && !h->engine.hasReferee()) return ENGINE_ERR_NO_BACKEND;
+    if (model == ocr::OcrEngine::CellModel::Referee && !h->engine.hasReferee()) {
+        return ENGINE_ERR_NO_BACKEND;
+    }
+    if (model == ocr::OcrEngine::CellModel::Alternate && !h->engine.hasAlternate()) {
+        return ENGINE_ERR_NO_BACKEND;
+    }
 
     try {
         ocr::Image8 image;
@@ -397,7 +402,7 @@ int32_t recognizeCellsImpl(OcrHandle *h, const uint8_t *pixels, int32_t width, i
         }
 
         const std::vector<ocr::CellReading> readings =
-            h->engine.recognizeCells(image, rects, scale, referee);
+            h->engine.recognizeCells(image, rects, scale, model);
         if (cb != nullptr) {
             for (size_t i = 0; i < readings.size(); ++i) {
                 cb(static_cast<int32_t>(i), readings[i].text.c_str(), readings[i].confidence,
@@ -417,7 +422,7 @@ int32_t engine_ocr_recognize_cells(OcrHandle *h, const uint8_t *pixels, int32_t 
                                    const engine_ocr_cell *cells, int32_t cellCount, float scale,
                                    engine_ocr_cell_cb cb, void *userData) {
     return recognizeCellsImpl(h, pixels, width, height, stride, isBgr, cells, cellCount, scale, cb,
-                              userData, false);
+                              userData, ocr::OcrEngine::CellModel::Primary);
 }
 
 int32_t engine_ocr_recognize_cells_ref(OcrHandle *h, const uint8_t *pixels, int32_t width,
@@ -425,7 +430,33 @@ int32_t engine_ocr_recognize_cells_ref(OcrHandle *h, const uint8_t *pixels, int3
                                        const engine_ocr_cell *cells, int32_t cellCount, float scale,
                                        engine_ocr_cell_cb cb, void *userData) {
     return recognizeCellsImpl(h, pixels, width, height, stride, isBgr, cells, cellCount, scale, cb,
-                              userData, true);
+                              userData, ocr::OcrEngine::CellModel::Referee);
+}
+
+int32_t engine_ocr_set_alternate(OcrHandle *h, const char *recModelPath, const char *charsetPath) {
+    if (h == nullptr || recModelPath == nullptr || charsetPath == nullptr) return ENGINE_ERR_NULL;
+
+    try {
+        std::vector<std::string> charset;
+        if (!ocr::loadCharset(charsetPath, charset) || charset.empty()) return ENGINE_ERR_NO_MODEL;
+
+        auto backend = ocr::createRefereeBackend(recModelPath, 2);
+        if (!backend) return ENGINE_ERR_NO_BACKEND;
+        if (!h->engine.setAlternate(std::move(backend), std::move(charset))) {
+            return ENGINE_ERR_NO_BACKEND;
+        }
+        return ENGINE_OK;
+    } catch (...) {
+        return ENGINE_ERR_EXCEPTION;
+    }
+}
+
+int32_t engine_ocr_recognize_cells_alt(OcrHandle *h, const uint8_t *pixels, int32_t width,
+                                       int32_t height, int32_t stride, int32_t isBgr,
+                                       const engine_ocr_cell *cells, int32_t cellCount, float scale,
+                                       engine_ocr_cell_cb cb, void *userData) {
+    return recognizeCellsImpl(h, pixels, width, height, stride, isBgr, cells, cellCount, scale, cb,
+                              userData, ocr::OcrEngine::CellModel::Alternate);
 }
 
 }  // extern "C"

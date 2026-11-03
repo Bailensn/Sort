@@ -162,11 +162,31 @@ class OcrBridge(
     fun setReferee(recModelPath: String, charsetPath: String): Boolean =
         nativeOcrSetReferee(handle, recModelPath, charsetPath) == 0
 
+    /** 挂上第二个主模型（换一代模型当另一路投票）；同样只有 rec。 */
+    fun setAlternate(recModelPath: String, charsetPath: String): Boolean =
+        nativeOcrSetAlternate(handle, recModelPath, charsetPath) == 0
+
     /** 用复核模型跑同一批格子，给有争议的格子投票。 */
     fun recognizeCellsReferee(bitmap: Bitmap, cells: IntArray, scale: Float = 1f): List<CellReading> {
         if (handle == 0L || cells.isEmpty()) return emptyList()
         val pixels = toBgr(bitmap)
         val triple = nativeOcrRecognizeCellsRef(
+            handle, pixels, bitmap.width, bitmap.height, 1, cells, scale,
+        ) ?: return emptyList()
+        @Suppress("UNCHECKED_CAST")
+        val texts = triple[0] as Array<String>
+        val confidences = triple[1] as FloatArray
+        val inks = triple[2] as ByteArray
+        return texts.indices.map { i ->
+            CellReading(texts[i], confidences[i], inks[i].toInt() != 0)
+        }
+    }
+
+    /** 第二主模型跑同一批格子。 */
+    fun recognizeCellsAlt(bitmap: Bitmap, cells: IntArray, scale: Float = 1f): List<CellReading> {
+        if (handle == 0L || cells.isEmpty()) return emptyList()
+        val pixels = toBgr(bitmap)
+        val triple = nativeOcrRecognizeCellsAlt(
             handle, pixels, bitmap.width, bitmap.height, 1, cells, scale,
         ) ?: return emptyList()
         @Suppress("UNCHECKED_CAST")
@@ -228,6 +248,18 @@ class OcrBridge(
     private external fun nativeOcrLastError(): Int
 
     private external fun nativeOcrSetReferee(handle: Long, rec: String, charset: String): Int
+
+    private external fun nativeOcrSetAlternate(handle: Long, rec: String, charset: String): Int
+
+    private external fun nativeOcrRecognizeCellsAlt(
+        handle: Long,
+        pixels: ByteArray,
+        width: Int,
+        height: Int,
+        isBgr: Int,
+        cells: IntArray,
+        scale: Float,
+    ): Array<Any>?
 
     private external fun nativeOcrRecognizeCellsRef(
         handle: Long,
