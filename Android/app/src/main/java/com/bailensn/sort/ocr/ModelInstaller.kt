@@ -22,12 +22,18 @@ object ModelInstaller {
     private const val VERSION = "net-1"
     private const val DIR = "ocr-models"
 
-    /** 分享目录：先 PUT 换签名直链，再 GET 下载（直链约 1 小时过期）。 */
+    /** 主源：分享目录，先 PUT 换签名直链，再 GET 下载（直链约 1 小时过期）。 */
     private const val SHARE_KEY = "Qdws1"
     private const val SHARE_API = "https://pan.fuwushang.net/api/v3/share/download"
 
+    /** 备用源：GitHub Release，国内慢但链接稳定，主源挂了还能装得上。 */
+    private const val BACKUP_BASE = "https://github.com/Bailensn/Sort/releases/download/models-v1"
+
     private data class Spec(
+        /** 主源文件名（网盘上多加了 .pak 后缀）。 */
         val remote: String,
+        /** 备用源文件名（GitHub Release 上用原名）。 */
+        val backup: String,
         val local: String,
         val size: Long,
         val sha256: String,
@@ -37,23 +43,23 @@ object ModelInstaller {
     // 哈希来自 tools/models.lock，和仓库里那份逐字节一致。
     private val FILES = listOf(
         Spec(
-            "det.onnx.pak", "det/inference.onnx", 62032837L,
+            "det.onnx.pak", "det.onnx", "det/inference.onnx", 62032837L,
             "eb13b44b25bb36f89528b68720af8a61d9cf381176107f465db1757b65d086e1", true,
         ),
         Spec(
-            "rec.onnx.pak", "rec/inference.onnx", 76554979L,
+            "rec.onnx.pak", "rec.onnx", "rec/inference.onnx", 76554979L,
             "9c09abf0957f7968c7586464b7397b84ad2387a0497a351af40e9acc71b673ba", true,
         ),
         Spec(
-            "rec.yml.pak", "rec/inference.yml", 150580L,
+            "rec.yml.pak", "rec.yml", "rec/inference.yml", 150580L,
             "991b700facf5b50a7de193468207d5f4255b538dde0d312ae3b7c7a9b6873129", true,
         ),
         Spec(
-            "referee.onnx.pak", "referee/inference.onnx", 84503027L,
+            "referee.onnx.pak", "referee.onnx", "referee/inference.onnx", 84503027L,
             "d9dc333c9c7b042c6dffb8e33d72b6f65c9c1d463d0a3c2f78174fea55e94752", false,
         ),
         Spec(
-            "referee.yml.pak", "referee/inference.yml", 148345L,
+            "referee.yml.pak", "referee.yml", "referee/inference.yml", 148345L,
             "2c719dba044c4e2228aef8ff92f5f575394d75d24c16de096a33b7cfd902f66d", false,
         ),
     )
@@ -108,17 +114,24 @@ object ModelInstaller {
         return temp.renameTo(target)
     }
 
-    /** 两次机会：第一次失败可能是签名过期或断流，重来时会重新换签名。 */
+    /**
+     * 两次机会，每次都先试主源、再试备用源：
+     * 签名过期和断流都靠重来一遍解决，主源彻底不通时直接吃备用源。
+     */
     private fun fetchVerified(spec: Spec, temp: File, onProgress: (Float) -> Unit): Boolean {
         repeat(2) {
             val done = temp.takeIf { it.isFile }?.length() ?: 0L
             if (done == spec.size && sha256(temp) == spec.sha256) return true
             if (done > spec.size) temp.delete()
 
-            val url = signUrl(spec.remote) ?: return@repeat
-            if (!get(url, temp, spec.size, onProgress)) return@repeat
-            if (temp.length() == spec.size && sha256(temp) == spec.sha256) return true
-            temp.delete()
+            val sources = listOfNotNull(signUrl(spec.remote), "$BACKUP_BASE/${spec.backup}")
+            for (source in sources) {
+                // 传输失败保留 .part：换个源接着下，一样是 Range 续传
+                if (!get(source, temp, spec.size, onProgress)) continue
+                if (temp.length() == spec.size && sha256(temp) == spec.sha256) return true
+                // 下满了却对不上哈希，说明这份内容不对，只能重来
+                temp.delete()
+            }
         }
         return false
     }

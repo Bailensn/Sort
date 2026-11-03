@@ -76,11 +76,19 @@
 
 - 主模型 PP-OCRv6 medium（det 62 MB + rec 76.5 MB + 字符表 150 KB）；
 - 复核模型 PP-OCRv5 server rec，只在有争议的格子上投票，**下载失败不影响主流程**；
-- 下载流程：`PUT` 分享接口换签名直链（约 1 小时过期）→ `GET`（带 `Range` 断点续传）
-  → 比字节数 → 校验 sha256 → 落盘；签名过期就重新换，最多重试两轮；
+- 两个源：国内走分享盘（`PUT` 换签名直链，约 1 小时过期），备用是
+  GitHub **prerelease** `models-v1`（不进「最新版本」，也不占正式发布的位子）；
+  每个文件先试主源、不通再吃备用源；
+- 下载流程：换签名 → `GET`（带 `Range` 断点续传）→ 比字节数 → 校验 sha256 → 落盘；
+  签名过期就重新换，最多重试两轮；传输失败保留 `.part`，换源也能接着下；
 - 每个文件的字节数与 sha256 钉在 `ModelInstaller` 里，和 `tools/models.lock` 一致；
   校验不过宁可报错，也不拿半截模型去识别；
-- 首启需要联网约 220 MB。
+- 首启需要联网约 220 MB；
+- GitHub 备用源由 `.github/workflows/models.yml` 发布：手动跑一次（或推 `models-*` 标签），
+  它从官方仓库下载、按 `tools/models.lock` 校验后挂到固定的 prerelease
+  「tag `models-v1` / 名称 `OCR Models`」上；触发方式怎么变都只更新这一个 release。
+  用 prerelease 而不是普通 release，是为了不顶掉正式版本的「最新」标记；
+  也不能用 draft，草稿的资源匿名下不到。
 
 ## 构建
 

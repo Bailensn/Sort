@@ -1,0 +1,58 @@
+name: Release models
+
+# 给国内主源兜底：把 5 个模型挂到 GitHub Release 上，App 里当备用源。
+# 手动跑一次即可，产物地址是 releases/download/<tag>/<文件名>。
+# 注意 App 里钉的是 models-v1；换标签要同时改 ModelInstaller.BACKUP_BASE。
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "models-*"
+
+permissions:
+  contents: write
+
+env:
+  # 独立的 tag 与标题：和 App 的版本发布完全分开，不受触发方式影响，
+  # 推任何 models-* 标签都只会更新这一个 release。
+  RELEASE_TAG: models-v1
+  RELEASE_NAME: OCR Models
+
+jobs:
+  publish:
+    name: Publish model assets
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - name: Download official models
+        run: |
+          set -euo pipefail
+          mkdir -p out
+          hf=https://huggingface.co/PaddlePaddle
+          curl -fsSL -o out/det.onnx "$hf/PP-OCRv6_medium_det_onnx/resolve/main/inference.onnx"
+          curl -fsSL -o out/rec.onnx "$hf/PP-OCRv6_medium_rec_onnx/resolve/main/inference.onnx"
+          curl -fsSL -o out/rec.yml "$hf/PP-OCRv6_medium_rec_onnx/resolve/main/inference.yml"
+          curl -fsSL -o out/referee.onnx "$hf/PP-OCRv5_server_rec_onnx/resolve/main/inference.onnx"
+          curl -fsSL -o out/referee.yml "$hf/PP-OCRv5_server_rec_onnx/resolve/main/inference.yml"
+          ls -l out
+      - name: Verify against models.lock
+        run: |
+          set -euo pipefail
+          grep -v '^#' tools/models.lock \
+            | awk '{print $2"  out/"$3}' \
+            | sha256sum -c -
+      - name: Upload release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          # 发成 prerelease：不进「Latest release」，也不会顶掉正式版本，
+          # 但资源照样能匿名下载（draft 就不行了）。
+          gh release view "$RELEASE_TAG" >/dev/null 2>&1 \
+            || gh release create "$RELEASE_TAG" --target "$GITHUB_SHA" --prerelease \
+                 --title "$RELEASE_NAME" \
+                 --notes "PaddleOCR 官方模型（Apache-2.0）。App 从这里取备用下载源，删了会导致主源失效时装不上。"
+          gh release upload "$RELEASE_TAG" out/det.onnx out/rec.onnx out/rec.yml \
+            out/referee.onnx out/referee.yml --clobber
+          echo "已发布：https://github.com/${{ github.repository }}/releases/tag/$RELEASE_TAG"
