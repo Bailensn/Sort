@@ -71,11 +71,16 @@ ORT 的头文件和 `.so` 由 Gradle 的 `prepareOrt` 从 AAR 解到 `build/ort`
 Swift 通过 bridging header 调 C 函数（`OcrBridge.swift`）；ORT 用 `onnxruntime.xcframework`，
 放进 `ios-app/Vendor/` 后在 `project.yml` 里取消注释。
 
-**HarmonyOS** —— 还没接。
+**HarmonyOS** —— `Harmony/main/src/main/cpp/CMakeLists.txt` 同样 `add_subdirectory` 到本目录，
+NAPI 胶水在 `napi_init.cpp`；走 MNN（`SORT_WITH_MNN`），`libMNN.so` 由 `tools/fetch_mnn.sh` 拉。
+
+> 改了 `Native/CMakeLists.txt` 要当心：`ORT_ROOT` 那段只有安卓会走，主机上的 CI 配置不到，
+> 只改一处就可能在安卓上 configure 失败。另外同一个目标的所有 `target_link_libraries`
+> 必须用同一种签名（全带 `PUBLIC/PRIVATE` 或全不带）。
 
 ## 已知限制
 
-- 推理后端二选一：`SORT_WITH_PADDLE_LITE` 优先，其次 `SORT_WITH_ONNXRUNTIME`，都没开就返回空；
+- 推理后端优先级 `SORT_WITH_MNN` > `SORT_WITH_PADDLE_LITE` > `SORT_WITH_ONNXRUNTIME`，都没开就返回空；
 - Paddle-Lite 用的是 `.nb` 模型（`paddle_lite_opt` 转换），ONNX 用的是 `.onnx`，两者文件名不同；
 - DB 后处理只追踪外轮廓，孔洞单独用洪泛补轮廓，不做 OpenCV 的完整 `RETR_LIST`；
 - `ocr_dump` 只认 PPM/PGM，不做 JPEG/PNG 解码。
