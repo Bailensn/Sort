@@ -239,6 +239,31 @@ void derivesTotalFromSubjects() {
     check(result.rows[2][2] == "130", "derived: 第三行本来就对，不该动");
 }
 
+/// 某一科读飞了（712 而不是 71.2），和会变成几千分；这种和不能写进总分。
+void keepsPrintedTotalWhenSumExplodes() {
+    ocr::TableRows rows = {
+        {"张三", "712", "170", "85"},
+        {"李四", "80", "150", "70"},
+    };
+    ocr::TableHeader header;
+    header.columns = {
+        {0, "姓名", ocr::ColumnRole::Other},
+        {1, "语文", ocr::ColumnRole::Subject},
+        {2, "总分", ocr::ColumnRole::Total},
+        {3, "数学", ocr::ColumnRole::Subject},
+    };
+    const ocr::TableConfidence conf = confidences(rows);
+
+    const ocr::CheckResult result = ocr::selfCheck(rows, &conf, &header);
+
+    check(result.rows[0][2] == "170", "outlier: 和炸了就该保留卷面总分");
+    bool flagged = false;
+    for (int row : result.report.suspiciousRows) {
+        if (row == 0) flagged = true;
+    }
+    check(flagged, "outlier: 这一行要进存疑");
+}
+
 void repairsLookalikeDigits() {
     ocr::TableRows rows = {
         {"张三", "95"},
@@ -380,6 +405,7 @@ int main() {
     usesExplicitTotalColumnInTheMiddle();
     fixesWrongTotalWhenExplicit();
     derivesTotalFromSubjects();
+    keepsPrintedTotalWhenSumExplodes();
     repairsLookalikeDigits();
     repairsFullWidthDigits();
     leavesTextColumnAlone();

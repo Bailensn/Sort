@@ -19,6 +19,9 @@ constexpr double kMinSubjectFill = 0.75;
 constexpr double kMinTotalNumericRatio = 0.6;
 constexpr float kRecomputeTotalConfidence = 0.9f;
 
+/// 算出来的和跟 OCR 出来的总分差到这个倍数，就是某一科读错了，别再写进去。
+constexpr double kSumOutlierRatio = 2.5;
+
 /// 越界写会把整张表写坏：列号来自表头，行可能比它短。
 void setCell(std::vector<std::string>& row, int column, const std::string& value) {
     if (column < 0) return;
@@ -741,6 +744,12 @@ CheckResult selfCheck(const TableRows& input, const TableConfidence* confidences
                         ++corrected;
                         sum = sumSubjects(row, taken);
                     }
+                }
+                // 某一科读成了 712，和就会飙到几千分；这种明显不靠谱的和不写进去，
+                // 保留卷面上那个总分，把行标成存疑更诚实。
+                if (hasValue && value > 0 && sum > value * kSumOutlierRatio) {
+                    suspicious.insert(index);
+                    continue;
                 }
                 if (!hasValue || std::abs(value - sum) > kSumEpsilon) ++corrected;
                 setCell(row, totalColumn, formatNumber(sum));
