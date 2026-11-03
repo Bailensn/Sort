@@ -1,0 +1,91 @@
+[mnn] /__w/Sort/Sort/Harmony/main/src/main/cpp/third_party/mnn/mnn_3.6.2_harmony_arm64_cpu/arm64-v8a/libMNN.so
+> hvigor [32mFinished :main:default@PreBuild... after 301 ms [39m
+> hvigor [32mFinished :main:default@CreateModuleInfo... after 1 ms [39m
+> hvigor [32mFinished :main:default@GenerateMetadata... after 5 ms [39m
+> hvigor [32mFinished :main:default@ConfigureCmake... after 55 ms [39m
+> hvigor [32mFinished :main:default@MergeProfile... after 8 ms [39m
+> hvigor [32mFinished :main:default@CreateBuildProfile... after 2 ms [39m
+> hvigor [32mFinished :main:default@PreCheckSyscap... after 1 ms [39m
+> hvigor [32mFinished :main:default@GeneratePkgContextInfo... after 9 ms [39m
+> hvigor [32mFinished :main:default@ProcessIntegratedHsp... after 1 ms [39m
+> hvigor [32mFinished :main:default@MakePackInfo... after 4 ms [39m
+> hvigor [32mFinished :main:default@SyscapTransform... after 2 ms [39m
+> hvigor [32mFinished :main:default@ProcessProfile... after 81 ms [39m
+> hvigor [32mFinished :main:default@ProcessRouterMap... after 3 ms [39m
+> hvigor [32mFinished :main:default@ProcessShareConfig... after 2 ms [39m
+> hvigor [32mFinished :main:default@ProcessStartupConfig... after 1 ms [39m
+> hvigor [32mFinished :main:default@ProcessResource... after 2 ms [39m
+> hvigor [32mFinished :main:default@GenerateLoaderJson... after 5 ms [39m
+> hvigor [32mFinished :main:default@CompileResource... after 140 ms [39m
+> hvigor [32mFinished :main:default@BuildJS... after 2 ms [39m
+> hvigor [32mFinished :main:default@BuildNativeWithCmake... after 670 ms [39m
+> hvigor [32mFinished :main:default@CompileArkTS... after 12 s 251 ms [39m
+> hvigor [32mFinished :main:default@BuildNativeWithNinja... after 15 s 976 ms [39m
+> hvigor [32mFinished :main:default@ProcessLibs... after 39 ms [39m
+> hvigor [32mFinished :main:default@DoNativeStrip... after 59 ms [39m
+> hvigor [32mFinished :main:default@CacheNativeLibs... after 3 ms [39m
+> hvigor [32mFinished :main:default@GeneratePkgModuleJson... after 2 ms [39m
+> hvigor [32mFinished :main:default@ProcessCompiledResources... after 1 ms [39m
+> hvigor [33mWARN: If obfuscation is needed, enable obfuscation settings in this build process; failing to do so may prevent future obfuscation. 
+               Properly configure obfuscation rules to avoid runtime issues.[39m
+> hvigor [32mFinished :main:default@PackageHap... after 366 ms [39m
+> hvigor [32mFinished :main:default@PackingCheck... after 4 ms [39m
+> hvigor [33mWARN: Will skip sign 'hos_hap'. No signingConfigs profile is configured in current project.
+             If needed, configure the signingConfigs in /__w/Sort/Sort/Harmony/build-profile.json5.[39m
+> hvigor [32mFinished :main:default@SignHap... after 2 ms [39m
+> hvigor [32mFinished :main:default@CollectDebugSymbol... after 2 ms [39m
+> hvigor [32mFinished :main:assembleHap... after 1 ms [39m
+> hvigor [32mBUILD SUCCESSFUL in 20 s 261 ms [39m
+> hvigor [32mFinished ::PreBuildApp... after 1 ms [39m
+> hvigor [32mUP-TO-DATE :main:default@PreBuild...  [39m
+> hvigor [32mFinished ::DuplicateDependencyCheck... after 1 ms [39m
+> hvigor [32mFinished :main:default@CreateModuleInfo... after 2 ms [39m
+> hvigor [32mUP-TO-DATE :main:default@GenerateMetadata...  [39m
+> hvigor [32mFinished :main:default@ConfigureCmake... after 45 ms [39m
+> hvigor [32mUP-TO-DATE :main:default@MergeProfile...  [39m
+> hvigor [32mUP-TO-DATE :main:default@CreateBuildProfile...  [39m
+> hvigor [32mFinished :main:default@PreCheckSyscap... after 1 ms [39m
+> hvigor [32mFinished :main:default@GeneratePkgContextInfo... after 9 ms [39m
+> hvigor [32mFinished :main:default@ProcessIntegratedHsp... after 1 ms [39m
+> hvigor [32mFinished :main:default@BuildNativeWithCmake... after 18 ms [39m
+> hvigor [32mUP-TO-DATE :main:default@MakePackInfo...  [39m
+> hvigor [32mFinished :main:default@SyscapTransform... after 14 ms [39m
+> hvigor [32mUP-TO-DATE :main:default@ProcessProfile...  [39m
+> hvigor [32mUP-TO-DATE :main:default@ProcessRouterMap...  [39m
+> hvigor [32mUP-TO-DATE :main:default@ProcessShareConfig...  [39m
+> hvigor [32mFinished :main:default@ProcessStartupConfig... after 2 ms [39m
+> hvigor [32mUP-TO-DATE :main:default@ProcessResource...  [39m
+> hvigor [32mUP-TO-DATE :main:default@GenerateLoaderJson...  [39m
+> hvigor [32mUP-TO-DATE :main:default@CompileResource...  [39m
+> hvigor [32mUP-TO-DATE :main:default@CompileArkTS...  [39m
+> hvigor [32mFinished :main:default@BuildJS... after 2 ms [39m
+> hvigor [32mFinished :main:default@BuildNativeWithNinja... after 61 ms [39m
+> hvigor [32mUP-TO-DATE :main:default@ProcessLibs...  [39m
+> hvigor [32mUP-TO-DATE :main:default@DoNativeStrip...  [39m
+> hvigor [32mUP-TO-DATE :main:default@CacheNativeLibs...  [39m
+> hvigor [32mUP-TO-DATE :main:default@GeneratePkgModuleJson...  [39m
+> hvigor [32mFinished :main:default@ProcessCompiledResources... after 1 ms [39m
+> hvigor [33mWARN: If obfuscation is needed, enable obfuscation settings in this build process; failing to do so may prevent future obfuscation. 
+               Properly configure obfuscation rules to avoid runtime issues.[39m
+> hvigor [32mUP-TO-DATE :main:default@PackageHap...  [39m
+> hvigor [32mFinished :main:default@PackingCheck... after 4 ms [39m
+> hvigor [33mWARN: Will skip sign 'hos_hap'. No signingConfigs profile is configured in current project.
+             If needed, configure the signingConfigs in /__w/Sort/Sort/Harmony/build-profile.json5.[39m
+> hvigor [32mFinished :main:default@SignHap... after 2 ms [39m
+> hvigor [32mUP-TO-DATE :main:default@CollectDebugSymbol...  [39m
+> hvigor [32mFinished :main:assembleHap... after 1 ms [39m
+> hvigor [32mFinished ::MakeProjectPackInfo... after 3 ms [39m
+> hvigor [32mFinished ::ProcessProjectPrivacyProfile... after 4 ms [39m
+> hvigor [32mFinished ::GeneratePackRes... after 1 ms [39m
+> hvigor [32mFinished ::PackageApp... after 672 ms [39m
+> hvigor [32mFinished ::SignPackagesFromApp... after 1 ms [39m
+> hvigor [33mWARN: Will skip sign 'app'. No signingConfigs profile is configured in current project.
+             If needed, configure the signingConfigs in /__w/Sort/Sort/Harmony/build-profile.json5.[39m
+> hvigor [32mFinished ::SignApp... after 2 ms [39m
+> hvigor [32mFinished ::assembleApp... after 1 ms [39m
+> hvigor [32mBUILD SUCCESSFUL in 3 s 281 ms [39m
+--- 产物 ---
+6050766 /__w/Sort/Sort/Harmony/main/build/default/outputs/default/app/main-default.hap
+6050766 /__w/Sort/Sort/Harmony/main/build/default/outputs/default/main-default-unsigned.hap
+2630813 /__w/Sort/Sort/Harmony/build/outputs/default/Harmony-default-unsigned.app
+HAP 大小: 5 MB
