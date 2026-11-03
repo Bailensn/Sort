@@ -40,7 +40,7 @@
 
     <string name="model_failed_title">모델 로드 실패</string>
     <string name="model_loading">인식 모델 불러오는 중</string>
-    <string name="model_extracting">모델 내려받는 중 %1$d/%2$d</string>
+    <string name="model_extracting">모델 내려받는 중 %1$d/%2$d · %3$d%%</string>
     <string name="model_extract_failed">모델 다운로드 실패, 네트워크를 확인하세요: %1$s</string>
     <string name="error_model_load">인식 모델 로드 실패</string>
     <string name="error_image_read">이미지를 읽을 수 없습니다</string>

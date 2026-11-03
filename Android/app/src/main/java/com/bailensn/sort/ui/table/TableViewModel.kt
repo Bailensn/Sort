@@ -123,11 +123,16 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             val app = getApplication<Application>()
             try {
-                val modelDir = ModelInstaller.ensure(app) { index, total ->
+                val modelDir = ModelInstaller.ensure(app) { index, total, fraction ->
                     _state.update {
                         it.copy(
                             engine = EngineState.Loading(
-                                app.getString(R.string.model_extracting, index + 1, total),
+                                app.getString(
+                                    R.string.model_extracting,
+                                    index + 1,
+                                    total,
+                                    (fraction * 100f).toInt(),
+                                ),
                             ),
                         )
                     }

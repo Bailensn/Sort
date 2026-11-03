@@ -41,7 +41,7 @@
 
     <string name="model_failed_title">模型加载失败</string>
     <string name="model_loading">正在加载识别模型</string>
-    <string name="model_extracting">正在下载模型 %1$d/%2$d</string>
+    <string name="model_extracting">正在下载模型 %1$d/%2$d · %3$d%%</string>
     <string name="model_extract_failed">模型下载失败，检查网络后重试：%1$s</string>
     <string name="error_model_load">识别模型加载失败</string>
     <string name="error_image_read">无法读取图片</string>

@@ -69,7 +69,10 @@ object ModelInstaller {
         }
     }
 
-    suspend fun ensure(context: Context, onStage: (index: Int, total: Int) -> Unit = { _, _ -> }): File =
+    suspend fun ensure(
+        context: Context,
+        onProgress: (index: Int, total: Int, fraction: Float) -> Unit = { _, _, _ -> },
+    ): File =
         withContext(Dispatchers.IO) {
             val dir = modelDir(context)
             if (isReady(context)) return@withContext dir
@@ -80,10 +83,12 @@ object ModelInstaller {
             dir.mkdirs()
 
             FILES.forEachIndexed { index, spec ->
-                onStage(index, FILES.size)
+                onProgress(index, FILES.size, 0f)
                 val target = File(dir, spec.local)
                 target.parentFile?.mkdirs()
-                val ok = runCatching { download(spec, target) }.getOrDefault(false)
+                val ok = runCatching {
+                    download(spec, target) { fraction -> onProgress(index, FILES.size, fraction) }
+                }.getOrDefault(false)
                 // 复核模型缺了只是少一遍投票，主模型缺一个就没法识别
                 if (!ok && spec.required) {
                     throw IOException(context.getString(R.string.model_extract_failed, spec.remote))
@@ -93,9 +98,9 @@ object ModelInstaller {
             dir
         }
 
-    private fun download(spec: Spec, target: File): Boolean {
+    private fun download(spec: Spec, target: File, onProgress: (Float) -> Unit): Boolean {
         val temp = File(target.parentFile, "${target.name}.part")
-        if (!fetchVerified(spec, temp)) {
+        if (!fetchVerified(spec, temp, onProgress)) {
             temp.delete()
             return false
         }
@@ -104,14 +109,14 @@ object ModelInstaller {
     }
 
     /** 两次机会：第一次失败可能是签名过期或断流，重来时会重新换签名。 */
-    private fun fetchVerified(spec: Spec, temp: File): Boolean {
+    private fun fetchVerified(spec: Spec, temp: File, onProgress: (Float) -> Unit): Boolean {
         repeat(2) {
             val done = temp.takeIf { it.isFile }?.length() ?: 0L
             if (done == spec.size && sha256(temp) == spec.sha256) return true
             if (done > spec.size) temp.delete()
 
             val url = signUrl(spec.remote) ?: return@repeat
-            if (!get(url, temp)) return@repeat
+            if (!get(url, temp, spec.size, onProgress)) return@repeat
             if (temp.length() == spec.size && sha256(temp) == spec.sha256) return true
             temp.delete()
         }
@@ -142,7 +147,7 @@ object ModelInstaller {
     }
 
     /** 断点续传：已经下了半截就带 Range，服务器不认（回 200）就从头来。 */
-    private fun get(url: String, temp: File): Boolean {
+    private fun get(url: String, temp: File, total: Long, onProgress: (Float) -> Unit): Boolean {
         val have = temp.takeIf { it.isFile }?.length() ?: 0L
         val connection = URL(url).openConnection() as HttpURLConnection
         return try {
@@ -153,9 +158,25 @@ object ModelInstaller {
             val code = connection.responseCode
             if (code != 200 && code != 206) return false
             val append = code == 206 && have > 0
+            var written = if (append) have else 0L
+            var reported = written
             connection.inputStream.use { input ->
-                FileOutputStream(temp, append).use { output -> input.copyTo(output) }
+                FileOutputStream(temp, append).use { output ->
+                    val buffer = ByteArray(1 shl 16)
+                    while (true) {
+                        val read = input.read(buffer)
+                        if (read <= 0) break
+                        output.write(buffer, 0, read)
+                        written += read
+                        // 每 2 MB 报一次就够，报太密只是白刷界面
+                        if (total > 0 && written - reported >= 2L * 1024 * 1024) {
+                            reported = written
+                            onProgress((written.toFloat() / total).coerceIn(0f, 1f))
+                        }
+                    }
+                }
             }
+            if (total > 0) onProgress((written.toFloat() / total).coerceIn(0f, 1f))
             true
         } catch (t: Throwable) {
             false
