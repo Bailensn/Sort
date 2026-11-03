@@ -202,3 +202,7 @@ val prepareMnn = tasks.register<PrepareMnnTask>("prepareMnn") {
 
 // CMake 配置阶段就要读 MNN_LIB，所以得排在 configureCMake* 之前。
 tasks.matching { it.name.startsWith("configureCMake") }.configureEach { dependsOn(prepareMnn) }
+
+// jniLibs 指向 build/mnn，属于任务的产物：合并 native 库前必须先跑下载，
+// 否则 Gradle 9 会判「隐式依赖」直接失败。
+tasks.matching { it.name.contains("JniLibFolders") }.configureEach { dependsOn(prepareMnn) }
