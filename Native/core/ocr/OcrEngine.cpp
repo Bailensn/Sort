@@ -36,7 +36,8 @@ int estimatedWidth(const Image8& crop) {
 Image8 cropCell(const Image8& src, const Rect& cell, float scale) {
     if (cell.width() <= 2 || cell.height() <= 2) return Image8{};
 
-    const int inset = std::max(2, std::min(cell.width(), cell.height()) / 40);
+    // 调用方已经把线宽缩掉了，这里只再让 1px，缩多了会把首尾的字切掉
+    const int inset = 1;
     const int left = std::min(std::max(cell.left + inset, 0), src.width - 1);
     const int top = std::min(std::max(cell.top + inset, 0), src.height - 1);
     const int right = std::min(std::max(cell.right - inset, left + 1), src.width);

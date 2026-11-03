@@ -46,7 +46,9 @@ constexpr float kRefereeScale = 2.0f;
 constexpr float kVoteBonus = 0.12f;
 constexpr float kMinCellTextConfidence = 0.25f;
 constexpr float kDetectorOverlap = 0.75f;
-constexpr int kMinCellGap = 6;
+// 两条线离得比这还近，多半是同一条线被切成了两次，或者是表格外面的一条毛刺；
+// 合掉它，免得最右边多出一列装不下字的垃圾列。
+constexpr int kMinCellGap = 12;
 
 struct CellRect {
     Rect rect;

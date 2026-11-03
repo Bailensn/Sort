@@ -24,11 +24,11 @@ object HistoryStore {
     private const val MAX_SIDE = 1600
     private const val QUALITY = 88
 
-    /** 界面上三种视图各自的图。 */
-    enum class Shot(val fileName: String, val bit: Int) {
+    /** 界面上三种视图各自的图；黑白图是无损 PNG，缩了就没法逐像素看。 */
+    enum class Shot(val fileName: String, val bit: Int, val lossless: Boolean = false, val legacyName: String? = null) {
         ORIGINAL("original.jpg", 1),
         GRID("grid.jpg", 2),
-        ENHANCED("enhanced.jpg", 4),
+        ENHANCED("enhanced.png", 4, lossless = true, legacyName = "enhanced.jpg"),
     }
 
     data class Entry(
@@ -112,9 +112,12 @@ object HistoryStore {
 
     /** 读某一种视图的图；那条记录没存这张就返回 null。 */
     fun shot(context: Context, entry: Entry, shot: Shot): Bitmap? = runCatching {
-        File(folder(context, entry.id), shot.fileName)
-            .takeIf { it.isFile }
-            ?.let { BitmapFactory.decodeFile(it.absolutePath) }
+        val folder = folder(context, entry.id)
+        // 老记录存的是 enhanced.jpg，改名后要能接着读
+        val file = listOfNotNull(shot.fileName, shot.legacyName)
+            .map { File(folder, it) }
+            .firstOrNull { it.isFile }
+        file?.let { BitmapFactory.decodeFile(it.absolutePath) }
     }.getOrNull()
 
     /** 读过程数据；没有这条记录就返回 null。 */
@@ -267,9 +270,12 @@ object HistoryStore {
     private fun writeShot(folder: File, shot: Shot, bitmap: Bitmap?): Shot? {
         if (bitmap == null || bitmap.isRecycled) return null
         return runCatching {
-            val scaled = scaleDown(bitmap)
+            // 黑白图按原像素存 PNG：JPEG 会把纯黑纯白的边界糊成一圈灰
+            val scaled = if (shot.lossless) bitmap else scaleDown(bitmap)
+            val format = if (shot.lossless) Bitmap.CompressFormat.PNG else Bitmap.CompressFormat.JPEG
+            val quality = if (shot.lossless) 100 else QUALITY
             File(folder, shot.fileName).outputStream().use { out ->
-                if (!scaled.compress(Bitmap.CompressFormat.JPEG, QUALITY, out)) {
+                if (!scaled.compress(format, quality, out)) {
                     throw IllegalStateException("compress failed")
                 }
             }
