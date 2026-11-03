@@ -97,7 +97,7 @@ if (SORT_WITH_OCR)
         add_library(onnxruntime SHARED IMPORTED)
         set_target_properties(onnxruntime PROPERTIES
                 IMPORTED_LOCATION ${ORT_ROOT}/jni/${ANDROID_ABI}/libonnxruntime.so)
-        target_link_libraries(${OCR_TARGET} onnxruntime)
+        target_link_libraries(${OCR_TARGET} PUBLIC onnxruntime)
     endif ()
 
     if (SORT_WITH_ONNXRUNTIME)
