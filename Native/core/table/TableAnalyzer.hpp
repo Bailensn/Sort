@@ -33,7 +33,7 @@ struct TableAnalysis {
     Image8 working;
     /// 工作图上叠了表格线，和 working 同尺寸。
     Image8 overlay;
-    /// 压平光照 + 拉对比度后的灰度图（三通道），历史里存的那张「增强图」。
+    /// 二值图（白纸黑字，三通道）：历史里存的那张预览，也用来一眼看出哪块没认出来。
     Image8 enhanced;
     TableRows rows;
     TableHeader header;
