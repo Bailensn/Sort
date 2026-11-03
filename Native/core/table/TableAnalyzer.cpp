@@ -19,6 +19,7 @@
 #include "table/Cropper.hpp"
 #include "table/EdgeLines.hpp"
 #include "table/LineDetector.hpp"
+#include "table/LineErase.hpp"
 #include "table/LineWidth.hpp"
 #include "table/Overlay.hpp"
 #include "table/Perspective.hpp"
@@ -38,7 +39,6 @@ double elapsedMs(Clock::time_point start) {
 constexpr float kTrustedConfidence = 0.95f;
 constexpr float kThirdConfidence = 0.98f;
 constexpr float kHopelessConfidence = 0.6f;
-constexpr float kMinFillConfidence = 0.6f;
 constexpr float kDisplayTrustedConfidence = 0.98f;
 constexpr float kStrictScale = 2.0f;
 constexpr float kThirdScale = 3.0f;
@@ -343,7 +343,8 @@ PassOutput recognizeDeep(OcrEngine& engine, const Image8& work, const Image8& en
         std::vector<uint8_t> binaryGray = toGray(work);
         if (!binaryGray.empty()) {
             flattenLighting(binaryGray, work.width, work.height);
-            const std::vector<uint8_t> binary = thresholdBinary(binaryGray, otsuThreshold(binaryGray));
+            // 白纸黑字：纸 255、笔画 0，直接喂 rec
+            const std::vector<uint8_t> binary = binarizeForText(binaryGray);
             const Image8 binaryImage = grayToImage(binary, work.width, work.height);
             std::vector<Rect> hopelessRects;
             hopelessRects.reserve(hopeless.size());
@@ -469,9 +470,16 @@ TableAnalysis analyzeTable(OcrEngine& engine, const Image8& image,
         }
     }
 
+    detection = extendEdgeLines(work, detection);
+    analysis.stats.horizontalLines = static_cast<int>(detection.horizontal.size());
+    analysis.stats.verticalLines = static_cast<int>(detection.vertical.size());
+    const GridLines lines = detection.toGridLines();
+    const int lineWidth = estimateLineWidth(work, lines);
+
     report(progress, TableStage::Prepare, 0.32f);
-    // 二遍识别的输入：压平光照 + 拉对比度。CLIP 比线检测那档更强，这里要的是看清字。
-    std::vector<uint8_t> enhancedGray = toGray(work);
+    // 识别用的底图：先把表格线抹成纸白，线头残留会被认成「1」「|」。
+    const Image8 clean = eraseLines(work, detection, lineWidth + 1);
+    std::vector<uint8_t> enhancedGray = toGray(clean);
     Image8 enhanced;
     if (!enhancedGray.empty()) {
         flattenLighting(enhancedGray, work.width, work.height);
@@ -479,12 +487,7 @@ TableAnalysis analyzeTable(OcrEngine& engine, const Image8& image,
         enhanced = grayToImage(enhancedGray, work.width, work.height);
     }
 
-    detection = extendEdgeLines(work, detection);
-    analysis.stats.horizontalLines = static_cast<int>(detection.horizontal.size());
-    analysis.stats.verticalLines = static_cast<int>(detection.vertical.size());
-
     report(progress, TableStage::Segment, 0.38f);
-    const GridLines lines = detection.toGridLines();
     const CellLayout layout = buildCells(lines, work.width, work.height);
     analysis.stats.cellCount = static_cast<int>(layout.cells.size());
 
@@ -494,9 +497,8 @@ TableAnalysis analyzeTable(OcrEngine& engine, const Image8& image,
 
     if (!layout.cells.empty()) {
         report(progress, TableStage::Recognize, 0.4f);
-        const int borderInset = estimateLineWidth(work, lines) + 1;
-        const std::vector<Rect> rects = insetRects(layout.cells, borderInset);
-        const PassOutput pass = recognizeDeep(engine, work, enhanced, rects, progress);
+        const std::vector<Rect> rects = insetRects(layout.cells, lineWidth + 1);
+        const PassOutput pass = recognizeDeep(engine, clean, enhanced, rects, progress);
 
         TableRows matrix(layout.rows, std::vector<std::string>(layout.columns));
         TableConfidence confidenceGrid(layout.rows, std::vector<float>(layout.columns, 0.0f));
@@ -517,11 +519,8 @@ TableAnalysis analyzeTable(OcrEngine& engine, const Image8& image,
                 // 格子里没墨迹 = 真空白格：用检测去补会把邻格文字填进来
                 chosen = cellText;
             } else if (cellText.empty()) {
-                // 逐格没认出来时宁可留空：空白格被填上 1 比漏一格更难查
-                if (detector->second.confidence >= kMinFillConfidence) {
-                    ++corrected;
-                    chosen = detector->second.text;
-                }
+                // 逐格没认出来就留空。以前拿整图回读去补，补进来的多半是线头
+                chosen = cellText;
             } else if (cellText == detector->second.text) {
                 chosen = cellText;
             } else if (contains(cellText, detector->second.text) ||

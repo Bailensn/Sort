@@ -56,6 +56,10 @@ std::vector<uint8_t> thresholdInverse(const std::vector<uint8_t>& gray, int thre
     return out;
 }
 
+std::vector<uint8_t> binarizeForText(const std::vector<uint8_t>& gray) {
+    return thresholdBinary(gray, otsuThreshold(gray));
+}
+
 std::vector<uint8_t> thresholdBinary(const std::vector<uint8_t>& gray, int threshold) {
     std::vector<uint8_t> out(gray.size(), 0);
     for (size_t i = 0; i < gray.size(); ++i) {

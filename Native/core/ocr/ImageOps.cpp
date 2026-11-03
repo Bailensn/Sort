@@ -231,6 +231,78 @@ Image8 swapRedBlue(const Image8& src) {
     return dst;
 }
 
+Image8 tightenToInk(const Image8& src) {
+    if (src.empty() || src.width < 8 || src.height < 8) return src;
+
+    // 先落到灰度再找暗像素的外框，彩色笔画也不会漏掉
+    std::vector<uint8_t> gray(static_cast<size_t>(src.width) * src.height);
+    const bool isRgb = src.order == ColorOrder::RGB;
+    for (int y = 0; y < src.height; ++y) {
+        const uint8_t* row = src.row(y);
+        for (int x = 0; x < src.width; ++x) {
+            const uint8_t c0 = row[x * 3];
+            const uint8_t g = row[x * 3 + 1];
+            const uint8_t c2 = row[x * 3 + 2];
+            const uint8_t r = isRgb ? c0 : c2;
+            const uint8_t b = isRgb ? c2 : c0;
+            gray[static_cast<size_t>(y) * src.width + x] = toByte(0.299 * r + 0.587 * g + 0.114 * b);
+        }
+    }
+
+    int histogram[256] = {0};
+    for (uint8_t value : gray) ++histogram[value];
+    double sum = 0.0;
+    for (int t = 0; t < 256; ++t) sum += static_cast<double>(t) * histogram[t];
+    const double total = static_cast<double>(gray.size());
+    double sumB = 0.0;
+    double weightB = 0.0;
+    double best = -1.0;
+    int threshold = 127;
+    for (int t = 0; t < 256; ++t) {
+        weightB += histogram[t];
+        if (weightB == 0.0) continue;
+        const double weightF = total - weightB;
+        if (weightF == 0.0) break;
+        sumB += static_cast<double>(t) * histogram[t];
+        const double meanB = sumB / weightB;
+        const double meanF = (sum - sumB) / weightF;
+        const double delta = meanB - meanF;
+        const double variance = weightB * weightF * delta * delta;
+        if (variance > best) {
+            best = variance;
+            threshold = t;
+        }
+    }
+
+    int left = src.width;
+    int top = src.height;
+    int right = -1;
+    int bottom = -1;
+    for (int y = 0; y < src.height; ++y) {
+        for (int x = 0; x < src.width; ++x) {
+            if (gray[static_cast<size_t>(y) * src.width + x] > threshold) continue;
+            left = std::min(left, x);
+            right = std::max(right, x);
+            top = std::min(top, y);
+            bottom = std::max(bottom, y);
+        }
+    }
+    if (right < left || bottom < top) return src;
+
+    const int margin = 2;
+    left = std::max(0, left - margin);
+    top = std::max(0, top - margin);
+    right = std::min(src.width - 1, right + margin);
+    bottom = std::min(src.height - 1, bottom + margin);
+
+    // 收紧不到 3% 就别动，省得白裁一次
+    const int width = right - left + 1;
+    const int height = bottom - top + 1;
+    if (width >= src.width - 2 && height >= src.height - 2) return src;
+    if (width * 10 < src.width || height * 10 < src.height) return src;
+    return crop(src, Rect{left, top, right + 1, bottom + 1});
+}
+
 bool hasInk(const Image8& src, double minRatio) {
     if (src.empty()) return false;
 

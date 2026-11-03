@@ -5,10 +5,12 @@
 
 #include "imgproc/Binary.hpp"
 #include "imgproc/Gray.hpp"
+#include "imgproc/Threshold.hpp"
 #include "imgproc/Warp.hpp"
 #include "table/Cropper.hpp"
 #include "table/EdgeLines.hpp"
 #include "table/LineDetector.hpp"
+#include "table/LineErase.hpp"
 #include "table/LineWidth.hpp"
 #include "table/Overlay.hpp"
 #include "table/QuadFit.hpp"
@@ -59,11 +61,15 @@ ocr::Image8 makeTable(int columns, int rows, int cellWidth, int cellHeight) {
         const int x = std::min(width - 2, column * cellWidth);
         fillRect(image, x, 0, x + 2, height, 40);
     }
+    // 用带间隙的小字块，别画成实心长条：长条会被当成表格线
     for (int row = 0; row < rows; ++row) {
         for (int column = 0; column < columns; ++column) {
-            const int x = column * cellWidth + cellWidth / 5;
+            const int baseX = column * cellWidth + cellWidth / 6;
             const int y = row * cellHeight + cellHeight / 2;
-            fillRect(image, x, y, x + cellWidth / 3, y + 6, 60);
+            for (int glyph = 0; glyph < 4; ++glyph) {
+                const int x = baseX + glyph * 14;
+                fillRect(image, x, y, x + 8, y + 18, 60);
+            }
         }
     }
     return image;
@@ -214,6 +220,21 @@ void testMorphology() {
     }
 }
 
+/// 识别用的黑白图必须是「白纸黑字」，不能跟线检测的反相掩膜搞反。
+void testBinaryPolarity() {
+    std::vector<uint8_t> gray(100, 240);
+    for (int i = 30; i < 40; ++i) gray[static_cast<size_t>(i)] = 30;
+
+    const std::vector<uint8_t> binary = ocr::binarizeForText(gray);
+    expect(binary.size() == gray.size(), "二值图尺寸应不变");
+    if (binary.size() != gray.size()) return;
+    expect(binary[0] == 255, "纸面应是白的");
+    expect(binary[35] == 0, "笔画应是黑的");
+
+    const std::vector<uint8_t> inverted = ocr::thresholdInverse(gray, 128);
+    expect(inverted[0] == 0 && inverted[35] == 255, "线检测那套是反相掩膜，两者不能混用");
+}
+
 /// 安卓传进来的是 BGR：通道顺序读错会让彩色字迹的灰度整体偏掉。
 void testGrayOrder() {
     ocr::Image8 rgb;
@@ -233,6 +254,39 @@ void testGrayOrder() {
     expect(bgrGray.size() == 2, "BGR 灰度图尺寸应等于像素数");
     if (bgrGray.size() != 2) return;
     expect(bgrGray[0] == rgbGray[1] && bgrGray[1] == rgbGray[0], "同一个缓冲换个顺序，红蓝应互换");
+}
+
+/// 去线：线上的像素变白，格子里的字还在。
+void testEraseLines() {
+    const ocr::Image8 table = makeTable(4, 3, 150, 100);
+    const ocr::LineDetection detection = ocr::detectLines(table);
+    expect(detection.usable(), "去线前应先检测到线");
+    if (!detection.usable()) return;
+
+    const ocr::Image8 clean = ocr::eraseLines(table, detection, 3);
+    expect(clean.width == table.width && clean.height == table.height, "去线后尺寸不变");
+
+    // 第一条横线正中取几个点，都应该是纸白
+    const float y = detection.horizontal.front().valueAt(static_cast<float>(table.width) / 2);
+    const int lineY = static_cast<int>(std::lround(y));
+    int white = 0;
+    for (int x = 10; x < table.width - 10; x += 25) {
+        const uint8_t* pixel = clean.row(lineY) + static_cast<size_t>(x) * 3u;
+        if (pixel[0] > 240 && pixel[1] > 240 && pixel[2] > 240) ++white;
+    }
+    expect(white > 0, "横线上的像素应被抹白");
+
+    // 格子中间的字不能跟着一起没
+    int ink = 0;
+    for (int row = 0; row < 3; ++row) {
+        for (int column = 0; column < 4; ++column) {
+            const int x = column * 150 + 150 / 6 + 2;
+            const int yy = row * 100 + 100 / 2 + 9;
+            const uint8_t* pixel = clean.row(yy) + static_cast<size_t>(x) * 3u;
+            if (pixel[0] < 200) ++ink;
+        }
+    }
+    expect(ink > 0, "格子里的字不该被去线抹掉");
 }
 
 /// 没有推理后端时整条链路也要能跑通：不崩、给出工作图和叠线图、行留空。
@@ -255,8 +309,10 @@ int main() {
     testLineDetectionAndQuad();
     testSkew();
     testEdgeLinesAndOverlay();
+    testBinaryPolarity();
     testMorphology();
     testGrayOrder();
+    testEraseLines();
     testAnalyzeWithoutBackend();
     if (g_failed == 0) {
         std::printf("table image: 全部通过\n");

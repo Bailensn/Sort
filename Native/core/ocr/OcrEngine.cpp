@@ -46,19 +46,21 @@ Image8 cropCell(const Image8& src, const Rect& cell, float scale) {
     const Image8 roi = crop(src, Rect{left, top, right, bottom});
     if (roi.empty()) return Image8{};
 
+    // 先贴住墨迹再缩放：整格缩到 48 高时字只占一半，小数点会薄到认不出。
+    Image8 source = tightenToInk(roi);
+    if (source.empty()) source = roi;
+
     // 低置信度格子会用 scale > 1 再认一次，这时不看高度一律放大。
     double factor = 1.0;
     if (scale > 1.0f) {
         factor = scale;
-    } else if (roi.height < kSmallTextHeight) {
-        factor = std::min(std::max(static_cast<double>(kSmallTextHeight) / roi.height, 1.5), 3.0);
+    } else if (source.height < kSmallTextHeight) {
+        factor = std::min(std::max(static_cast<double>(kSmallTextHeight) / source.height, 1.5), 3.0);
     }
-
-    Image8 source = std::move(roi);
     if (factor > 1.0) {
         const double bounded = std::min(factor, 4.0);
-        source = resize(roi, static_cast<int>(roi.width * bounded),
-                        static_cast<int>(roi.height * bounded), Interp::Cubic);
+        source = resize(source, static_cast<int>(source.width * bounded),
+                        static_cast<int>(source.height * bounded), Interp::Cubic);
     }
     if (source.empty()) return source;
 

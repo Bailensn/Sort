@@ -268,8 +268,20 @@ std::string cleanCellText(const std::string& raw) {
     size_t end = runes.size();
     while (begin < end && isSpace(runes[begin])) ++begin;
     while (end > begin && isSpace(runes[end - 1])) --end;
-    while (begin < end && isEdgeNoise(runes[begin])) ++begin;
-    while (end > begin && isEdgeNoise(runes[end - 1])) --end;
+    // 「84.5」里的点是数字的一部分，不能当两端的线头噪声去掉
+    auto strippable = [&runes](size_t index, bool leftSide) {
+        const char32_t ch = runes[index];
+        if (ch == '.' || ch == ',') {
+            const size_t neighbour = leftSide ? index + 1 : index - 1;
+            if (neighbour < runes.size()) {
+                const char32_t next = runes[neighbour];
+                if (next >= '0' && next <= '9') return false;
+            }
+        }
+        return isEdgeNoise(ch);
+    };
+    while (begin < end && strippable(begin, true)) ++begin;
+    while (end > begin && strippable(end - 1, false)) --end;
     if (begin >= end) return "";
 
     // 汉字之间的空格是识别噪声，英文单词之间的要留。
@@ -278,7 +290,14 @@ std::string cleanCellText(const std::string& raw) {
         if (runes[i] == ' ') {
             const bool hasPrev = !builder.empty();
             const bool hasNext = i + 1 < end;
-            if (hasPrev && hasNext && isCjk(builder.back()) && isCjk(runes[i + 1])) continue;
+            if (hasPrev && hasNext) {
+                const char32_t previous = builder.back();
+                const char32_t next = runes[i + 1];
+                if (isCjk(previous) && isCjk(next)) continue;
+                // 「84. 5」：小数点后多出的空格会把数字拆散
+                if ((previous == '.' || previous == ',') && next >= '0' && next <= '9') continue;
+                if (previous >= '0' && previous <= '9' && (next == '.' || next == ',')) continue;
+            }
         }
         builder.push_back(runes[i]);
     }

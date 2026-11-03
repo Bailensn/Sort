@@ -686,6 +686,8 @@ CheckResult selfCheck(const TableRows& input, const TableConfidence* confidences
     }
 
     ColumnPair pair = resolveExplicit(header);
+    // 表头明确给了总分列和科目列时，总分就按各科相加算出来，不采信 OCR 的结果
+    const bool derivedTotal = pair.total >= 0 && !pair.subjects.empty();
     if (pair.total < 0) {
         pair = findTotalColumn(rows, columns, numeric, constant, sequences, identifiers);
     }
@@ -695,27 +697,56 @@ CheckResult selfCheck(const TableRows& input, const TableConfidence* confidences
     if (pair.total >= 0 && !pair.subjects.empty()) {
         const int totalColumn = pair.total;
         const std::vector<int>& subjects = pair.subjects;
-        for (int index = 0; index < static_cast<int>(rows.size()); ++index) {
-            auto& row = rows[static_cast<size_t>(index)];
-            std::vector<int> taken;
+
+        auto sumSubjects = [&subjects](const std::vector<std::string>& row, size_t& taken) {
             double sum = 0;
+            taken = 0;
             for (int column : subjects) {
                 double value = 0;
-                if (index < static_cast<int>(row.size()) && column < static_cast<int>(row.size()) &&
-                    parseNumber(trim(row[static_cast<size_t>(column)]), value)) {
-                    taken.push_back(column);
+                if (column < static_cast<int>(row.size()) && parseNumber(trim(row[static_cast<size_t>(column)]), value)) {
+                    ++taken;
                     sum += value;
                 }
             }
-            const bool allPresent = taken.size() == subjects.size();
+            return sum;
+        };
+
+        for (int index = 0; index < static_cast<int>(rows.size()); ++index) {
+            auto& row = rows[static_cast<size_t>(index)];
+            size_t taken = 0;
+            double sum = sumSubjects(row, taken);
             const std::string raw = trim(
                 totalColumn < static_cast<int>(row.size()) ? row[static_cast<size_t>(totalColumn)] : "");
             double value = 0;
             const bool hasValue = parseNumber(raw, value);
+            const bool allPresent = taken == subjects.size();
+
+            if (derivedTotal) {
+                if (static_cast<int>(taken) < kMinSubjectsForSum) {
+                    suspicious.insert(index);
+                    continue;
+                }
+                // 先拿 OCR 的总分试一次「把某一科改对」，再按改完的科目重算
+                if (hasValue && allPresent && std::abs(sum - value) > kSumEpsilon) {
+                    const auto fixed = fixSingleCell(row, index, subjects, totalColumn, sum, value, confidences);
+                    if (fixed.has_value()) {
+                        row[static_cast<size_t>(fixed->column)] = fixed->value;
+                        ++corrected;
+                        sum = sumSubjects(row, taken);
+                    }
+                }
+                if (!hasValue || std::abs(value - sum) > kSumEpsilon) ++corrected;
+                row[static_cast<size_t>(totalColumn)] = formatNumber(sum);
+                if (!allPresent) {
+                    ++partialTotals;
+                    suspicious.insert(index);
+                }
+                continue;
+            }
 
             if (!hasValue) {
                 if (!raw.empty()) continue;
-                if (static_cast<int>(taken.size()) >= kMinSubjectsForSum) {
+                if (static_cast<int>(taken) >= kMinSubjectsForSum) {
                     row[static_cast<size_t>(totalColumn)] = formatNumber(sum);
                     ++corrected;
                     if (!allPresent) ++partialTotals;
@@ -738,7 +769,7 @@ CheckResult selfCheck(const TableRows& input, const TableConfidence* confidences
                 continue;
             }
             const float totalConfidence = confidenceAt(confidences, index, totalColumn);
-            if (allPresent && totalConfidence < kRecomputeTotalConfidence) {
+            if (totalConfidence < kRecomputeTotalConfidence) {
                 row[static_cast<size_t>(totalColumn)] = formatNumber(sum);
                 ++corrected;
             } else {

@@ -217,6 +217,28 @@ void fixesWrongTotalWhenExplicit() {
     check(fixed || flagged, "explicit: 总分算错的行要么改对、要么进存疑");
 }
 
+void derivesTotalFromSubjects() {
+    ocr::TableRows rows = {
+        {"张三", "90", "150", "85"},
+        {"李四", "80", "150", "70"},
+        {"王五", "70", "130", "60"},
+    };
+    ocr::TableHeader header;
+    header.columns = {
+        {0, "姓名", ocr::ColumnRole::Other},
+        {1, "语文", ocr::ColumnRole::Subject},
+        {2, "总分", ocr::ColumnRole::Total},
+        {3, "数学", ocr::ColumnRole::Subject},
+    };
+    const ocr::TableConfidence conf = confidences(rows);
+
+    const ocr::CheckResult result = ocr::selfCheck(rows, &conf, &header);
+
+    // 表里写的 150 置信度再高也不采信：总分就是各科之和
+    check(result.rows[0][2] == "175", "derived: 第一行总分应为 175");
+    check(result.rows[2][2] == "130", "derived: 第三行本来就对，不该动");
+}
+
 void repairsLookalikeDigits() {
     ocr::TableRows rows = {
         {"张三", "95"},
@@ -357,6 +379,7 @@ int main() {
     ignoresHeaderWhenFirstRowIsData();
     usesExplicitTotalColumnInTheMiddle();
     fixesWrongTotalWhenExplicit();
+    derivesTotalFromSubjects();
     repairsLookalikeDigits();
     repairsFullWidthDigits();
     leavesTextColumnAlone();

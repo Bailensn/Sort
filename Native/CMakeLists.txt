@@ -34,6 +34,7 @@ if (SORT_WITH_OCR)
             core/table/EdgeLines.cpp
             core/table/GridBuilder.cpp
             core/table/LineDetector.cpp
+            core/table/LineErase.cpp
             core/table/LineWidth.cpp
             core/table/Overlay.cpp
             core/table/Perspective.cpp
