@@ -48,12 +48,12 @@
 | Kotlin | **2.4.21** | 用 buildscript classpath 覆盖 AGP 自带的 KGP 2.2.10 |
 | JDK | **21** | `compileOptions` 与 Kotlin `jvmTarget` 都是 21 |
 | compileSdk / targetSdk | **37** | Android 17 |
-| minSdk | **26** | 由 ONNX Runtime 决定 |
+| minSdk | **26** | 由系统 WebView/Compose 的底线决定 |
 | Compose BOM | 2026.09.00 | |
 | Miuix | **0.9.4** | `miuix-ui` / `miuix-icons` / `miuix-nav` |
 | Backdrop | **2.0.1** | 液态玻璃（Android 12 起真模糊，更低的系统退化成半透明） |
-| ONNX Runtime | **1.31.1** | OCR 推理 |
-| OCR 模型 | PP-OCRv6 medium + PP-OCRv5 server 复核 | det 62 MB、rec 76.5 MB、字符表 150 KB |
+| MNN | **3.6.2** | OCR 推理（Android / 鸿蒙同一套 `.mnn`，`libMNN.so` 2.4 MB） |
+| OCR 模型 | PP-OCRv6 medium（MNN） | det 59 MB、rec 73 MB、字符表 147 KB |
 | NDK / CMake | **30.0.16248370** / **3.22.1** | C++ 核心编译进 `libmain.so` |
 | ABI | arm64-v8a | 模拟器的 x86_64 默认不打 |
 
@@ -74,8 +74,9 @@
 
 模型**不随包发**，首启从分享盘拉，装到 `files/ocr-models/`：
 
-- 主模型 PP-OCRv6 medium（det 62 MB + rec 76.5 MB + 字符表 150 KB）；
-- 复核模型 PP-OCRv5 server rec，只在有争议的格子上投票，**下载失败不影响主流程**；
+- 推理用 MNN，模型是 `mnnconvert` 从 onnx 转出来的 `.mnn`（det 59 MB + rec 73 MB + 字符表 147 KB）；
+- 主模型 PP-OCRv6 medium；
+- 复核模型（PP-OCRv5 server rec）还没转 `.mnn`，当前只有两路投票；转好会补上；
 - 两个源：国内走分享盘（`PUT` 换签名直链，约 1 小时过期），备用是
   GitHub **prerelease** `models-v1`（不进「最新版本」，也不占正式发布的位子）；
   每个文件先试主源、不通再吃备用源；
@@ -93,7 +94,7 @@
 
 ## 构建
 
-**Android**（Gradle 根在 `Android/`）：
+**Android**（Gradle 根在 `Android/`；首次构建会下 6 MB 的 MNN 预编译包）：
 
 ```bash
 cd Android

@@ -19,7 +19,7 @@ import java.security.MessageDigest
  */
 object ModelInstaller {
 
-    private const val VERSION = "net-1"
+    private const val VERSION = "mnn-1"
     private const val DIR = "ocr-models"
 
     /** 主源：分享目录，先 PUT 换签名直链，再 GET 下载（直链约 1 小时过期）。 */
@@ -40,27 +40,19 @@ object ModelInstaller {
         val required: Boolean,
     )
 
-    // 哈希来自 tools/models.lock，和仓库里那份逐字节一致。
+    // 哈希来自 tools/models.mnn.lock；MNN 的 .mnn 是转换产物，只对 3.6.2 成立。
     private val FILES = listOf(
         Spec(
-            "det.onnx.pak", "det.onnx", "det/inference.onnx", 62032837L,
-            "eb13b44b25bb36f89528b68720af8a61d9cf381176107f465db1757b65d086e1", true,
+            "det.mnn.pak", "det.mnn", "det.mnn", 61993116L,
+            "25b63452e40842c65df963c67bbd0e8714cf51a4d0b3b1966b4c6a92e7249131", true,
         ),
         Spec(
-            "rec.onnx.pak", "rec.onnx", "rec/inference.onnx", 76554979L,
-            "9c09abf0957f7968c7586464b7397b84ad2387a0497a351af40e9acc71b673ba", true,
+            "rec.mnn.pak", "rec.mnn", "rec.mnn", 76498560L,
+            "c5dfb3d7cd2af443c213bc050fc394cb2a40b66f0619b8228d44d9878c77d78b", true,
         ),
         Spec(
-            "rec.yml.pak", "rec.yml", "rec/inference.yml", 150580L,
+            "rec.yml.pak", "rec.yml", "rec.yml", 150580L,
             "991b700facf5b50a7de193468207d5f4255b538dde0d312ae3b7c7a9b6873129", true,
-        ),
-        Spec(
-            "referee.onnx.pak", "referee.onnx", "referee/inference.onnx", 84503027L,
-            "d9dc333c9c7b042c6dffb8e33d72b6f65c9c1d463d0a3c2f78174fea55e94752", false,
-        ),
-        Spec(
-            "referee.yml.pak", "referee.yml", "referee/inference.yml", 148345L,
-            "2c719dba044c4e2228aef8ff92f5f575394d75d24c16de096a33b7cfd902f66d", false,
         ),
     )
 

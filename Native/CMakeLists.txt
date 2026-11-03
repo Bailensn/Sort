@@ -106,6 +106,21 @@ if (SORT_WITH_OCR)
     endif ()
 
 
+    # MNN：三端共用一套 .mnn 模型。库用官方预编译包（Android 2.4 MB / 鸿蒙 2 MB），
+    # 头文件是仓库里 vendored 的 adapters/mnn/include。
+    option(SORT_WITH_MNN "Link against MNN" OFF)
+    if (SORT_WITH_MNN)
+        target_compile_definitions(${OCR_TARGET} PUBLIC SORT_WITH_MNN=1)
+        target_include_directories(${OCR_TARGET} PUBLIC adapters/mnn/include)
+        set(mnn_lib "${MNN_LIB}")
+        if (NOT mnn_lib AND DEFINED ENV{MNN_LIB})
+            set(mnn_lib "$ENV{MNN_LIB}")
+        endif ()
+        if (mnn_lib)
+            target_link_libraries(${OCR_TARGET} PUBLIC ${mnn_lib})
+        endif ()
+    endif ()
+
     # Paddle-Lite：模型是 .nb；三端各有自己的库，用法和 ORT 那套一样。
     option(SORT_WITH_PADDLE_LITE "Link against Paddle-Lite" OFF)
     if (SORT_WITH_PADDLE_LITE)

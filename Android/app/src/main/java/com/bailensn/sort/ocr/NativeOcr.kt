@@ -85,17 +85,18 @@ class NativeOcr private constructor(
         fun create(modelDir: File): NativeOcr {
             val started = SystemClock.elapsedRealtime()
             val bridge = OcrBridge(
-                detModelPath = File(modelDir, "det/inference.onnx").absolutePath,
-                recModelPath = File(modelDir, "rec/inference.onnx").absolutePath,
-                charsetPath = File(modelDir, "rec/inference.yml").absolutePath,
+                detModelPath = File(modelDir, "det.mnn").absolutePath,
+                recModelPath = File(modelDir, "rec.mnn").absolutePath,
+                charsetPath = File(modelDir, "rec.yml").absolutePath,
             )
             // 句柄为 0 说明模型或推理后端没起来，宁可报错也别让界面拿到空表格。
             if (!bridge.isReady) {
                 bridge.close()
                 throw IllegalStateException("OCR 后端初始化失败，错误码 ${bridge.lastError}")
             }
-            val refereeRec = File(modelDir, "referee/inference.onnx").takeIf { it.isFile }
-            val refereeCharset = File(modelDir, "referee/inference.yml").takeIf { it.isFile }
+            // MNN 这边还没有复核模型（.mnn 没转），缺了就按两路投票走
+            val refereeRec = File(modelDir, "referee.mnn").takeIf { it.isFile }
+            val refereeCharset = File(modelDir, "referee.yml").takeIf { it.isFile }
             return NativeOcr(
                 bridge = bridge,
                 coldLoadTimeMs = SystemClock.elapsedRealtime() - started,

@@ -12,6 +12,8 @@ import java.net.URI
 import java.util.zip.ZipFile
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.DirectoryProperty
+import org.gradle.api.provider.Property
+import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
@@ -48,8 +50,10 @@ android {
 
         externalNativeBuild {
             cmake {
-                // CMake 看不到 AAR 内部，ORT 的头文件和 .so 由 prepareOrt 解到 build/ort。
-                arguments += "-DORT_ROOT=${layout.buildDirectory.get().asFile.absolutePath}/ort"
+                // MNN 的预编译 .so 由 prepareMnn 下到 build/mnn，这里把它交给 CMake；
+                // 预编译包是拿 shared libc++ 编的，必须跟着换，否则加载时报符号缺失。
+                arguments += "-DMNN_LIB=${layout.buildDirectory.get().asFile.absolutePath}/mnn/jniLibs/arm64-v8a/libMNN.so"
+                arguments += "-DANDROID_STL=c++_shared"
             }
         }
     }
@@ -79,6 +83,8 @@ android {
         }
     }
 
+    sourceSets.getByName("main").jniLibs.srcDir(layout.buildDirectory.dir("mnn/jniLibs"))
+
     androidResources {
     }
 
@@ -106,9 +112,6 @@ android {
 }
 
 dependencies {
-    // 只为打包 libonnxruntime.so；Kotlin 侧不再直接用 ORT
-    implementation(libs.onnxruntime.android)
-
     implementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(platform(libs.androidx.compose.bom))
 
@@ -139,46 +142,60 @@ dependencies {
 }
 
 /**
- * 把 onnxruntime-android 的 C++ 头和 libonnxruntime.so 解到 build/ort，供 CMake 链接。
+ * 下载 MNN 的 Android 预编译包，只解出 arm64 的 libMNN.so 到 build/mnn/jniLibs。
  *
- * 用 java.util.zip 自己解包，而不是 project.copy：任务动作里碰 Project 和配置缓存冲突
- * （报 `$$implicitReceiver_Project ... $this is null`）。
+ * 顺带把 c++_shared 也放进去？不用——AGP 在 ANDROID_STL=c++_shared 时会自己带。
  */
-abstract class PrepareOrtTask : DefaultTask() {
-
-    @get:InputFiles
-    abstract val aar: ConfigurableFileCollection
+abstract class PrepareMnnTask : DefaultTask() {
 
     @get:OutputDirectory
     abstract val outputDir: DirectoryProperty
 
+    @get:Input
+    abstract val url: Property<String>
+
+    @get:Input
+    abstract val abi: Property<String>
+
     @TaskAction
-    fun extract() {
-        val out = outputDir.get().asFile
-        out.deleteRecursively()
-        ZipFile(aar.singleFile).use { zip ->
+    fun fetch() {
+        val root = outputDir.get().asFile
+        val target = File(root, "jniLibs/${abi.get()}/libMNN.so")
+        if (target.isFile && target.length() > 1_000_000L) return
+
+        val zipFile = File(root, "mnn.zip")
+        if (!zipFile.isFile || zipFile.length() < 1_000_000L) {
+            root.mkdirs()
+            val connection = URI(url.get()).toURL().openConnection()
+            connection.connectTimeout = 20000
+            connection.readTimeout = 120000
+            connection.getInputStream().use { input ->
+                zipFile.outputStream().use { output -> input.copyTo(output) }
+            }
+        }
+
+        ZipFile(zipFile).use { zip ->
             for (entry in zip.entries()) {
-                val name = entry.name
-                val wanted = name.startsWith("headers/") ||
-                    (name.startsWith("jni/") && name.endsWith("/libonnxruntime.so"))
-                if (entry.isDirectory || !wanted) continue
-                val target = File(out, name)
+                if (!entry.name.endsWith("/${abi.get()}/libMNN.so")) continue
                 target.parentFile?.mkdirs()
                 zip.getInputStream(entry).use { input ->
                     target.outputStream().use { output -> input.copyTo(output) }
                 }
+                return
             }
         }
+        throw IllegalStateException("MNN 包里没有 ${abi.get()}/libMNN.so")
     }
 }
 
-val ortCoordinates =
-    "com.microsoft.onnxruntime:onnxruntime-android:${libs.versions.onnxruntime.get()}"
-
-val prepareOrt = tasks.register<PrepareOrtTask>("prepareOrt") {
-    aar.from(configurations.detachedConfiguration(dependencies.create(ortCoordinates)))
-    outputDir.set(layout.buildDirectory.dir("ort"))
+val prepareMnn = tasks.register<PrepareMnnTask>("prepareMnn") {
+    outputDir.set(layout.buildDirectory.dir("mnn"))
+    url.set(
+        "https://github.com/alibaba/MNN/releases/download/" +
+            "${libs.versions.mnn.get()}/mnn_${libs.versions.mnn.get()}_android_armv7_armv8_cpu_opencl_vulkan.zip",
+    )
+    abi.set("arm64-v8a")
 }
 
-// CMake 配置阶段就要读 ORT_ROOT，所以得排在 configureCMake* 之前。
-tasks.matching { it.name.startsWith("configureCMake") }.configureEach { dependsOn(prepareOrt) }
+// CMake 配置阶段就要读 MNN_LIB，所以得排在 configureCMake* 之前。
+tasks.matching { it.name.startsWith("configureCMake") }.configureEach { dependsOn(prepareMnn) }
