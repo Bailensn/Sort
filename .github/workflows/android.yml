@@ -57,47 +57,8 @@ jobs:
           printf '#include "engine_errors.h"\n#include "engine_ocr_capi.h"\nint main(void){return 0;}\n' > /tmp/abi_check.c
           gcc -std=c11 -Wall -Wextra -INative/capi -c /tmp/abi_check.c -o /tmp/abi_check.o
 
-  # 模型下载 + 压缩只做一次，产物进 actions/cache，后面的 job 直接复用。
-  ocr-models:
-    name: Bundle OCR models
-    runs-on: ubuntu-24.04
-    timeout-minutes: 30
-    defaults:
-      run:
-        working-directory: Android
-    steps:
-      - uses: actions/checkout@v7
-      - name: Set up JDK 21
-        uses: actions/setup-java@v6
-        with:
-          distribution: temurin
-          java-version: "21"
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v6
-        with:
-          cache-cleanup: on-success
-      - name: Cache bundled OCR models
-        id: ocr-cache
-        uses: actions/cache@v6
-        with:
-          path: Android/app/build/generated/ocrModels
-          key: ocr-models-medium-v3
-      - name: Bundle
-        if: steps.ocr-cache.outputs.cache-hit != 'true'
-        run: |
-          set -o pipefail
-          chmod +x ./gradlew
-          bash ./gradlew --stacktrace :app:bundleOcrModels 2>&1 | tee build.log \
-            || { bash "$GITHUB_WORKSPACE/.github/scripts/print-errors.sh" build.log; exit 1; }
-      - name: Publish build log
-        if: always()
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        run: bash "$GITHUB_WORKSPACE/.github/scripts/publish-log.sh" build.log "${{ github.job }}.log" "ci-log-${{ github.job }}"
-
   assemble-release:
     name: Assemble release
-    needs: ocr-models
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     defaults:
@@ -118,12 +79,6 @@ jobs:
           cache-cleanup: on-success
       - name: Install SDK components
         run: bash "$GITHUB_WORKSPACE/.github/scripts/install-sdk-components.sh" ndk
-      - name: Cache bundled OCR models
-        continue-on-error: true
-        uses: actions/cache@v6
-        with:
-          path: Android/app/build/generated/ocrModels
-          key: ocr-models-medium-v3
       - name: Check for real names
         working-directory: ${{ github.workspace }}
         env:
@@ -163,7 +118,6 @@ jobs:
 
   lint:
     name: Lint
-    needs: ocr-models
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     defaults:
@@ -184,12 +138,6 @@ jobs:
           cache-cleanup: on-success
       - name: Install SDK components
         run: bash "$GITHUB_WORKSPACE/.github/scripts/install-sdk-components.sh"
-      - name: Cache bundled OCR models
-        continue-on-error: true
-        uses: actions/cache@v6
-        with:
-          path: Android/app/build/generated/ocrModels
-          key: ocr-models-medium-v3
       - name: Make gradlew executable
         run: chmod +x ./gradlew
       - name: Lint debug
@@ -232,7 +180,6 @@ jobs:
 
   unit-test:
     name: Unit tests
-    needs: ocr-models
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     defaults:
@@ -253,12 +200,6 @@ jobs:
           cache-cleanup: on-success
       - name: Install SDK components
         run: bash "$GITHUB_WORKSPACE/.github/scripts/install-sdk-components.sh"
-      - name: Cache bundled OCR models
-        continue-on-error: true
-        uses: actions/cache@v6
-        with:
-          path: Android/app/build/generated/ocrModels
-          key: ocr-models-medium-v3
       - name: Make gradlew executable
         run: chmod +x ./gradlew
       - name: Run JVM unit tests
@@ -275,7 +216,6 @@ jobs:
 
   android-test:
     name: Instrumentation APK
-    needs: ocr-models
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     defaults:
@@ -296,12 +236,6 @@ jobs:
           cache-cleanup: on-success
       - name: Install SDK components
         run: bash "$GITHUB_WORKSPACE/.github/scripts/install-sdk-components.sh" ndk
-      - name: Cache bundled OCR models
-        continue-on-error: true
-        uses: actions/cache@v6
-        with:
-          path: Android/app/build/generated/ocrModels
-          key: ocr-models-medium-v3
       - name: Make gradlew executable
         run: chmod +x ./gradlew
       - name: Assemble instrumentation APK

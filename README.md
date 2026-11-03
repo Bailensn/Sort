@@ -72,12 +72,15 @@
 
 ## 模型从哪来
 
-模型**内置在安装包里**，运行时不再联网：
+模型**不随包发**，首启从分享盘拉，装到 `files/ocr-models/`：
 
 - 主模型 PP-OCRv6 medium（det 62 MB + rec 76.5 MB + 字符表 150 KB）；
-- 复核模型 PP-OCRv5 server rec，只在有争议的格子上投票；
-- 构建期下载原始模型，用 **XZ（LZMA2 9e）** 压成 `.xz` 放进 assets，首启解压到 `files/ocr-models/`；
-- 解压只做一次、带版本号（`medium-xz-2`）；实测 det 62→32 MB、rec 76.5→66 MB、字符表 150→8 KB。
+- 复核模型 PP-OCRv5 server rec，只在有争议的格子上投票，**下载失败不影响主流程**；
+- 下载流程：`PUT` 分享接口换签名直链（约 1 小时过期）→ `GET`（带 `Range` 断点续传）
+  → 比字节数 → 校验 sha256 → 落盘；签名过期就重新换，最多重试两轮；
+- 每个文件的字节数与 sha256 钉在 `ModelInstaller` 里，和 `tools/models.lock` 一致；
+  校验不过宁可报错，也不拿半截模型去识别；
+- 首启需要联网约 220 MB。
 
 ## 构建
 
@@ -85,7 +88,7 @@
 
 ```bash
 cd Android
-./gradlew :app:assembleDebug      # 首次会下载并压缩约 140 MB 模型
+./gradlew :app:assembleDebug
 ./gradlew :app:assembleRelease    # R8 + 资源压缩
 ./gradlew :app:bundleRelease      # 商店用 aab
 ./gradlew :app:testDebugUnitTest :app:lintDebug

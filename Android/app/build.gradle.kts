@@ -4,8 +4,6 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        // 构建期把模型压成 .xz（LZMA2），比 zip 再小一截。
-        classpath("org.tukaani:xz:1.12")
     }
 }
 
@@ -82,8 +80,6 @@ android {
     }
 
     androidResources {
-        // 已经是 xz，别让 aapt 再压一遍浪费时间。
-        noCompress += "xz"
     }
 
     buildFeatures {
@@ -109,120 +105,6 @@ android {
     }
 }
 
-// ---------------------------------------------------------------------------
-// 内置「高精度」模型（PP-OCRv6 medium）：不再运行时下载，APK 自带。
-// 下载到 build/generated/ocrModels/models/，由 AGP 当作生成的 assets 目录并入。
-// ---------------------------------------------------------------------------
-// 每个文件给国内/海外两个源：CI 在海外，本机在国内，谁通用谁。
-val bundledOcrModels = mapOf(
-    "det/inference.onnx" to listOf(
-        "https://huggingface.co/PaddlePaddle/PP-OCRv6_medium_det_onnx/resolve/main/inference.onnx",
-        "https://modelscope.cn/models/PaddlePaddle/PP-OCRv6_medium_det_onnx/resolve/main/inference.onnx",
-    ),
-    "rec/inference.onnx" to listOf(
-        "https://huggingface.co/PaddlePaddle/PP-OCRv6_medium_rec_onnx/resolve/main/inference.onnx",
-        "https://modelscope.cn/models/PaddlePaddle/PP-OCRv6_medium_rec_onnx/resolve/main/inference.onnx",
-    ),
-    // 复核模型：PP-OCRv5 server rec，比 v6 medium 更大，只在难认的格子上投票。
-    "referee/inference.onnx" to listOf(
-        "https://huggingface.co/PaddlePaddle/PP-OCRv5_server_rec_onnx/resolve/main/inference.onnx",
-        "https://hf-mirror.com/PaddlePaddle/PP-OCRv5_server_rec_onnx/resolve/main/inference.onnx",
-    ),
-    "referee/inference.yml" to listOf(
-        "https://huggingface.co/PaddlePaddle/PP-OCRv5_server_rec_onnx/resolve/main/inference.yml",
-        "https://hf-mirror.com/PaddlePaddle/PP-OCRv5_server_rec_onnx/resolve/main/inference.yml",
-    ),
-    "rec/inference.yml" to listOf(
-        "https://huggingface.co/PaddlePaddle/PP-OCRv6_medium_rec_onnx/resolve/main/inference.yml",
-        "https://modelscope.cn/models/PaddlePaddle/PP-OCRv6_medium_rec_onnx/resolve/main/inference.yml",
-    ),
-)
-
-abstract class BundleOcrModelsTask : DefaultTask() {
-
-    @get:OutputDirectory
-    abstract val outputDir: DirectoryProperty
-
-    @get:Internal
-    abstract val rawDir: DirectoryProperty
-
-    @get:Input
-    abstract val urls: MapProperty<String, List<String>>
-
-    @TaskAction
-    fun bundle() {
-        val assetsRoot = File(outputDir.get().asFile, "models")
-        val rawRoot = rawDir.get().asFile
-
-        urls.get().forEach { (relativePath, candidates) ->
-            val raw = File(rawRoot, relativePath)
-            if (!raw.isFile || raw.length() < 1024L) {
-                download(raw, candidates)
-            }
-            val packed = File(assetsRoot, "$relativePath.xz")
-            if (packed.isFile && packed.length() > 1024L) return@forEach
-            packed.parentFile?.mkdirs()
-            compress(raw, packed)
-        }
-    }
-
-    private fun download(target: File, candidates: List<String>) {
-        target.parentFile?.mkdirs()
-        val temp = File(target.parentFile, "${target.name}.part")
-        var failure: Exception? = null
-        for (url in candidates) {
-            for (attempt in 1..2) {
-                try {
-                    URI(url).toURL().openStream().use { input ->
-                        temp.outputStream().use { output -> input.copyTo(output) }
-                    }
-                    failure = null
-                    if (!temp.renameTo(target)) {
-                        throw GradleException("无法写入模型文件：${target.absolutePath}")
-                    }
-                    return
-                } catch (e: Exception) {
-                    failure = e
-                    temp.delete()
-                    Thread.sleep(1_000L * attempt)
-                }
-            }
-        }
-        throw GradleException("下载内置模型失败：${failure?.message}")
-    }
-
-    /** LZMA2 预设 6：9 要慢一倍，换来的体积差不到一成。 */
-    private fun compress(source: File, target: File) {
-        val temp = File(target.parentFile, "${target.name}.part")
-        source.inputStream().buffered().use { input ->
-            org.tukaani.xz.XZOutputStream(
-                temp.outputStream().buffered(),
-                org.tukaani.xz.LZMA2Options(6),
-            ).use { output -> input.copyTo(output) }
-        }
-        if (!temp.renameTo(target)) {
-            throw GradleException("无法写入压缩模型：${target.absolutePath}")
-        }
-    }
-}
-
-val bundleOcrModels = tasks.register<BundleOcrModelsTask>("bundleOcrModels") {
-    group = "ocr"
-    description = "下载高精度 OCR 模型并压缩成 .xz，随 APK 内置"
-    outputDir.set(layout.buildDirectory.dir("generated/ocrModels"))
-    rawDir.set(layout.buildDirectory.dir("ocrRaw"))
-    urls.set(bundledOcrModels)
-}
-
-androidComponents {
-    onVariants { variant ->
-        variant.sources.assets?.addGeneratedSourceDirectory(
-            bundleOcrModels,
-            BundleOcrModelsTask::outputDir,
-        )
-    }
-}
-
 dependencies {
     // 只为打包 libonnxruntime.so；Kotlin 侧不再直接用 ORT
     implementation(libs.onnxruntime.android)
@@ -237,7 +119,6 @@ dependencies {
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.exifinterface)
     implementation(libs.kotlinx.coroutines.android)
-    implementation("org.tukaani:xz:1.12")
 
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.graphics)
