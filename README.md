@@ -94,7 +94,7 @@
   `referee.mnn` / `referee.yml`；onnx 是转换的中间物，上游本来就有，不往 release 堆；
   同一批文件还会传一份 **Actions artifact**（保留 14 天），登录的人可以直接在
   Actions 页面下载，不用去 release 页面翻；
-  触发方式怎么变都只更新这一个 release。转换器版本与 `tools/fetch_mnn.sh` 的运行时一致（3.6.2）。
+  每次跑都**整条重建**（先删 release 再建），旧文件不会残留；触发方式怎么变都只更新这一个 release。转换器版本与 `tools/fetch_mnn.sh` 的运行时一致（3.6.2）。
   用 prerelease 而不是普通 release，是为了不顶掉正式版本的「最新」标记；
   也不能用 draft，草稿的资源匿名下不到。
 

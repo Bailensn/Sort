@@ -90,25 +90,26 @@ jobs:
           ls -l out/*.mnn
           # 转换产物的哈希要回填进 tools/models.mnn.lock 和 App，这里打出来方便抄
           echo "--- 转换产物哈希 ---"
-          sha256sum out/*.mnn out/v4-rec.yml | sed 's|  out/|  |'
+          sha256sum out/*.mnn out/v4-rec.yml out/v5-rec.yml | sed 's|  out/|  |'
+          # 中间物到此为止：后面只传 .mnn 和字符表
+          rm -f out/*.onnx
+          ls -l out
       - name: Upload release assets
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          # 只传 App 真正要下的东西：.mnn + 字符表。
-          # onnx 是转换用的中间物，上游 HuggingFace 本来就有，不往 release 里堆。
-          # 发成 prerelease：不进「Latest release」，也不会顶掉正式版本，
-          # 但资源照样能匿名下载（draft 就不行了）。
-          gh release view "$RELEASE_TAG" >/dev/null 2>&1 \
-            || gh release create "$RELEASE_TAG" --target "$GITHUB_SHA" --prerelease \
-                 --title "$RELEASE_NAME" \
-                 --notes "PaddleOCR 官方模型（Apache-2.0）。App 从这里取备用下载源，删了会导致主源失效时装不上。"
+          # 传的只有 .mnn 和字符表（onnx 在上一步已经删掉）
+          # 整条重建：--clobber 只覆盖同名文件，上次传过、这次不再产出的会一直挂着
+          gh release delete "$RELEASE_TAG" --yes --cleanup-tag 2>/dev/null || true
+          gh release create "$RELEASE_TAG" --target "$GITHUB_SHA" --prerelease \
+            --title "$RELEASE_NAME" \
+            --notes "PaddleOCR 官方模型（Apache-2.0）。App 从这里取备用下载源，删了会导致主源失效时装不上。"
           gh release upload "$RELEASE_TAG" \
             out/det.mnn out/rec.mnn out/rec.yml \
             out/v5-det.mnn out/v5-rec.mnn out/v5-rec.yml \
             out/v4-det.mnn out/v4-rec.mnn out/v4-rec.yml \
-            out/referee.mnn out/referee.yml --clobber
+            out/referee.mnn out/referee.yml
           echo "已发布：https://github.com/${{ github.repository }}/releases/tag/$RELEASE_TAG"
       # 同一批文件再传一份 artifact：release 给 App 匿名下载，artifact 给登录的人手取
       - name: Upload artifact
@@ -117,10 +118,16 @@ jobs:
         with:
           name: ocr-models
           path: |
-            out/*.mnn
+            out/det.mnn
+            out/rec.mnn
             out/rec.yml
+            out/v5-det.mnn
+            out/v5-rec.mnn
             out/v5-rec.yml
+            out/v4-det.mnn
+            out/v4-rec.mnn
             out/v4-rec.yml
+            out/referee.mnn
             out/referee.yml
           retention-days: 14
           if-no-files-found: warn
