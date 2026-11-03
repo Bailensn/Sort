@@ -273,20 +273,33 @@ std::optional<Edit> fixSingleCell(std::vector<std::string>& row, int rowIndex,
         const std::string raw = trim(row[static_cast<size_t>(column)]);
         double parsed = 0;
         if (raw.empty() || !parseNumber(raw, parsed)) continue;
+
+        std::vector<std::string> edits;
         for (size_t position = 0; position < raw.size(); ++position) {
             for (char digit = '0'; digit <= '9'; ++digit) {
                 if (digit == raw[position]) continue;
                 std::string candidate = raw;
                 candidate[position] = digit;
-                double edited = 0;
-                if (!parseNumber(candidate, edited)) continue;
-                if (column == totalColumn) {
-                    if (std::abs(sum - edited) <= kSumEpsilon) candidates.push_back({column, candidate});
-                } else {
-                    const double editedSum = sum - parsed + edited;
-                    if (std::abs(editedSum - total) <= kSumEpsilon) {
-                        candidates.push_back({column, candidate});
-                    }
+                edits.push_back(candidate);
+            }
+        }
+        // 小数点被吃掉：945 其实是 94.5。补一个点再看和能不能对上。
+        if (raw.find('.') == std::string::npos) {
+            for (size_t position = 1; position < raw.size(); ++position) {
+                if (raw[position - 1] < '0' || raw[position - 1] > '9') continue;
+                edits.push_back(raw.substr(0, position) + "." + raw.substr(position));
+            }
+        }
+
+        for (const auto& candidate : edits) {
+            double edited = 0;
+            if (!parseNumber(candidate, edited)) continue;
+            if (column == totalColumn) {
+                if (std::abs(sum - edited) <= kSumEpsilon) candidates.push_back({column, candidate});
+            } else {
+                const double editedSum = sum - parsed + edited;
+                if (std::abs(editedSum - total) <= kSumEpsilon) {
+                    candidates.push_back({column, candidate});
                 }
             }
         }

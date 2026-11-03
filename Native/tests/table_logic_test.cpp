@@ -264,6 +264,27 @@ void keepsPrintedTotalWhenSumExplodes() {
     check(flagged, "outlier: 这一行要进存疑");
 }
 
+/// 小数点被吃掉：945 应该是 94.5，靠卷面总分反推回来。
+void restoresDroppedDecimalPoint() {
+    ocr::TableRows rows = {
+        {"张三", "945", "179.5", "85"},
+        {"李四", "80", "150", "70"},
+    };
+    ocr::TableHeader header;
+    header.columns = {
+        {0, "姓名", ocr::ColumnRole::Other},
+        {1, "语文", ocr::ColumnRole::Subject},
+        {2, "总分", ocr::ColumnRole::Total},
+        {3, "数学", ocr::ColumnRole::Subject},
+    };
+    const ocr::TableConfidence conf = confidences(rows);
+
+    const ocr::CheckResult result = ocr::selfCheck(rows, &conf, &header);
+
+    check(result.rows[0][1] == "94.5", "decimal: 945 应被补成 94.5");
+    check(result.rows[0][2] == "179.5", "decimal: 总分应保持 179.5");
+}
+
 void repairsLookalikeDigits() {
     ocr::TableRows rows = {
         {"张三", "95"},
@@ -406,6 +427,7 @@ int main() {
     fixesWrongTotalWhenExplicit();
     derivesTotalFromSubjects();
     keepsPrintedTotalWhenSumExplodes();
+    restoresDroppedDecimalPoint();
     repairsLookalikeDigits();
     repairsFullWidthDigits();
     leavesTextColumnAlone();
