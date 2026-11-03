@@ -17,6 +17,8 @@ env:
   # 推任何 models-* 标签都只会更新这一个 release。
   RELEASE_TAG: models-v1
   RELEASE_NAME: OCR Models
+  # 必须和 tools/fetch_mnn.sh 的运行时版本一致，否则转出来的 .mnn 加载不了
+  MNN_VERSION: "3.6.2"
 
 jobs:
   publish:
@@ -42,6 +44,35 @@ jobs:
           grep -v '^#' tools/models.lock \
             | awk '{print $2"  out/"$3}' \
             | sha256sum -c -
+      # 鸿蒙要的是 .mnn，和 onnx 不是同一份字节，得现场转一份挂上去
+      - name: Cache MNNConverter
+        id: converter
+        uses: actions/cache@v6
+        with:
+          path: mnn-build/MNNConvert
+          key: mnnconvert-${{ env.MNN_VERSION }}-v1
+      - name: Convert to .mnn
+        run: |
+          set -euo pipefail
+          conv=$(command -v mnnconvert || true)
+          if [ -z "${conv:-}" ]; then
+            pip3 install --quiet --break-system-packages "MNN==${MNN_VERSION}" >/dev/null 2>&1 || true
+            conv=$(command -v mnnconvert || true)
+          fi
+          if [ -z "${conv:-}" ]; then
+            if [ ! -x mnn-build/MNNConvert ]; then
+              git clone --depth 1 --branch "${MNN_VERSION}" https://github.com/alibaba/MNN.git mnn-src
+              cmake -S mnn-src -B mnn-build -DMNN_BUILD_CONVERTER=ON \
+                -DMNN_BUILD_SHARED_LIBS=OFF -DMNN_BUILD_TEST=OFF -DMNN_BUILD_BENCHMARK=OFF \
+                -DMNN_AVX512=OFF > /dev/null
+              cmake --build mnn-build --target MNNConvert -j"$(nproc)" > /dev/null
+            fi
+            conv=./mnn-build/MNNConvert
+          fi
+          echo "[mnn] 用 $conv"
+          "$conv" -f ONNX --modelFile out/det.onnx --MNNModel out/det.mnn --bizCode sort 2>&1 | tail -3
+          "$conv" -f ONNX --modelFile out/rec.onnx --MNNModel out/rec.mnn --bizCode sort 2>&1 | tail -3
+          ls -l out/*.mnn
       - name: Upload release assets
         env:
           GH_TOKEN: ${{ github.token }}
@@ -53,6 +84,8 @@ jobs:
             || gh release create "$RELEASE_TAG" --target "$GITHUB_SHA" --prerelease \
                  --title "$RELEASE_NAME" \
                  --notes "PaddleOCR 官方模型（Apache-2.0）。App 从这里取备用下载源，删了会导致主源失效时装不上。"
-          gh release upload "$RELEASE_TAG" out/det.onnx out/rec.onnx out/rec.yml \
-            out/referee.onnx out/referee.yml --clobber
+          gh release upload "$RELEASE_TAG" \
+            out/det.onnx out/rec.onnx out/rec.yml \
+            out/referee.onnx out/referee.yml \
+            out/det.mnn out/rec.mnn --clobber
           echo "已发布：https://github.com/${{ github.repository }}/releases/tag/$RELEASE_TAG"
