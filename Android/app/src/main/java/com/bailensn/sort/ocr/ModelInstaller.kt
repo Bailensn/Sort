@@ -90,21 +90,36 @@ object ModelInstaller {
                 onProgress(index, FILES.size, 0f)
                 val target = File(dir, spec.local)
                 target.parentFile?.mkdirs()
+                val reasons = mutableListOf<String>()
                 val ok = runCatching {
-                    download(spec, target) { fraction -> onProgress(index, FILES.size, fraction) }
-                }.getOrDefault(false)
+                    download(spec, target, reasons) { fraction -> onProgress(index, FILES.size, fraction) }
+                }.getOrElse { error ->
+                    reasons.add(describe(error))
+                    false
+                }
                 // 复核模型缺了只是少一遍投票，主模型缺一个就没法识别
                 if (!ok && spec.required) {
-                    throw IOException(context.getString(R.string.model_extract_failed, spec.remote))
+                    val detail = reasons.distinct().take(3).joinToString("; ").ifEmpty { "unknown" }
+                    throw IOException(
+                        context.getString(R.string.model_extract_failed, spec.local, detail),
+                    )
                 }
             }
             File(dir, "version").writeText(VERSION)
             dir
         }
 
-    private fun download(spec: Spec, target: File, onProgress: (Float) -> Unit): Boolean {
+    /** 只留异常类名和状态码，够定位又不至于把界面塞满。 */
+    private fun describe(error: Throwable): String = error.javaClass.simpleName
+
+    private fun download(
+        spec: Spec,
+        target: File,
+        reasons: MutableList<String>,
+        onProgress: (Float) -> Unit,
+    ): Boolean {
         val temp = File(target.parentFile, "${target.name}.part")
-        if (!fetchVerified(spec, temp, onProgress)) {
+        if (!fetchVerified(spec, temp, reasons, onProgress)) {
             temp.delete()
             return false
         }
@@ -116,18 +131,27 @@ object ModelInstaller {
      * 两次机会，每次都先试主源、再试备用源：
      * 签名过期和断流都靠重来一遍解决，主源彻底不通时直接吃备用源。
      */
-    private fun fetchVerified(spec: Spec, temp: File, onProgress: (Float) -> Unit): Boolean {
+    private fun fetchVerified(
+        spec: Spec,
+        temp: File,
+        reasons: MutableList<String>,
+        onProgress: (Float) -> Unit,
+    ): Boolean {
         repeat(2) {
             val done = temp.takeIf { it.isFile }?.length() ?: 0L
             if (done == spec.size && sha256(temp) == spec.sha256) return true
             if (done > spec.size) temp.delete()
 
-            val sources = listOfNotNull(signUrl(spec.remote), "$BACKUP_BASE/${spec.backup}")
+            val signed = signUrl(spec.remote, reasons)
+            val sources = mutableListOf("$BACKUP_BASE/${spec.backup}")
+            if (signed != null) sources.add(0, signed)
             for (source in sources) {
+                val host = if (source == signed) "share" else "backup"
                 // 传输失败保留 .part：换个源接着下，一样是 Range 续传
-                if (!get(source, temp, spec.size, onProgress)) continue
+                if (!get(source, temp, spec.size, reasons, onProgress)) continue
                 if (temp.length() == spec.size && sha256(temp) == spec.sha256) return true
                 // 下满了却对不上哈希，说明这份内容不对，只能重来
+                reasons.add("$host:sha256")
                 temp.delete()
             }
         }
@@ -135,7 +159,7 @@ object ModelInstaller {
     }
 
     /** 换一个签名直链；失败返回 null，交给下一轮重试。 */
-    private fun signUrl(remote: String): String? {
+    private fun signUrl(remote: String, reasons: MutableList<String>): String? {
         val encoded = URLEncoder.encode("/$remote", "UTF-8")
         val connection = URL("$SHARE_API/$SHARE_KEY?path=$encoded").openConnection() as HttpURLConnection
         return try {
@@ -145,12 +169,17 @@ object ModelInstaller {
             connection.doOutput = true
             connection.setFixedLengthStreamingMode(0)
             connection.outputStream.close()
-            if (connection.responseCode != 200) return null
+            val code = connection.responseCode
+            if (code != 200) {
+                reasons.add("share:sign$code")
+                return null
+            }
             val body = connection.inputStream.bufferedReader().use { it.readText() }
             val json = JSONObject(body)
             if (json.optInt("code") != 0) return null
             json.optString("data").takeIf { it.startsWith("http") }
         } catch (t: Throwable) {
+            reasons.add("share:${describe(t)}")
             null
         } finally {
             connection.disconnect()
@@ -158,7 +187,13 @@ object ModelInstaller {
     }
 
     /** 断点续传：已经下了半截就带 Range，服务器不认（回 200）就从头来。 */
-    private fun get(url: String, temp: File, total: Long, onProgress: (Float) -> Unit): Boolean {
+    private fun get(
+        url: String,
+        temp: File,
+        total: Long,
+        reasons: MutableList<String>,
+        onProgress: (Float) -> Unit,
+    ): Boolean {
         val have = temp.takeIf { it.isFile }?.length() ?: 0L
         val connection = URL(url).openConnection() as HttpURLConnection
         return try {
@@ -167,7 +202,10 @@ object ModelInstaller {
             if (have > 0) connection.setRequestProperty("Range", "bytes=$have-")
             connection.connect()
             val code = connection.responseCode
-            if (code != 200 && code != 206) return false
+            if (code != 200 && code != 206) {
+                reasons.add("http$code")
+                return false
+            }
             val append = code == 206 && have > 0
             var written = if (append) have else 0L
             var reported = written
@@ -190,6 +228,7 @@ object ModelInstaller {
             if (total > 0) onProgress((written.toFloat() / total).coerceIn(0f, 1f))
             true
         } catch (t: Throwable) {
+            reasons.add(describe(t))
             false
         } finally {
             connection.disconnect()
