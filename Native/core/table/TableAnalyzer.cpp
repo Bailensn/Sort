@@ -477,14 +477,25 @@ TableAnalysis analyzeTable(OcrEngine& engine, const Image8& image,
     const int lineWidth = estimateLineWidth(work, lines);
 
     report(progress, TableStage::Prepare, 0.32f);
-    // 识别用的底图：先把表格线抹成纸白，线头残留会被认成「1」「|」。
-    const Image8 clean = eraseLines(work, detection, lineWidth + 1);
+    // 识别用的底图：把表格线本身抹成纸白，线头残留会被认成「1」「|」。
+    // 只抹线的粗细，不要往外扩：窄列（学号、姓名）的字离边线很近，抹宽了连字一起没了。
+    const Image8 clean = eraseLines(work, detection, std::max(1, lineWidth / 2));
+
+    // 二遍识别用：压平光照 + 拉对比度
     std::vector<uint8_t> enhancedGray = toGray(clean);
     Image8 enhanced;
     if (!enhancedGray.empty()) {
         flattenLighting(enhancedGray, work.width, work.height);
         clahe(enhancedGray, work.width, work.height, 3.0, 8);
         enhanced = grayToImage(enhancedGray, work.width, work.height);
+    }
+
+    // 给人看的那张是二值图：白纸黑字，一眼能看出哪块没认出来。
+    // 灰度的 CLAHE 图看着糊，线也被抹过，拿去当预览只会让人怀疑识别坏了。
+    std::vector<uint8_t> displayGray = toGray(work);
+    if (!displayGray.empty()) {
+        flattenLighting(displayGray, work.width, work.height);
+        analysis.enhanced = grayToImage(binarizeForText(displayGray), work.width, work.height);
     }
 
     report(progress, TableStage::Segment, 0.38f);
@@ -637,7 +648,6 @@ TableAnalysis analyzeTable(OcrEngine& engine, const Image8& image,
     report(progress, TableStage::Verify, 0.95f);
     analysis.working = work;
     analysis.overlay = drawGridOverlay(work, detection);
-    analysis.enhanced = enhanced;
     analysis.stats.elapsedMs = elapsedMs(startAll);
     report(progress, TableStage::Verify, 1.0f);
     return analysis;

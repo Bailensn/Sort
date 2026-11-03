@@ -19,6 +19,13 @@ constexpr double kMinSubjectFill = 0.75;
 constexpr double kMinTotalNumericRatio = 0.6;
 constexpr float kRecomputeTotalConfidence = 0.9f;
 
+/// 越界写会把整张表写坏：列号来自表头，行可能比它短。
+void setCell(std::vector<std::string>& row, int column, const std::string& value) {
+    if (column < 0) return;
+    if (static_cast<size_t>(column) >= row.size()) row.resize(static_cast<size_t>(column) + 1);
+    row[static_cast<size_t>(column)] = value;
+}
+
 std::string trim(const std::string& value) {
     size_t begin = 0;
     size_t end = value.size();
@@ -730,13 +737,13 @@ CheckResult selfCheck(const TableRows& input, const TableConfidence* confidences
                 if (hasValue && allPresent && std::abs(sum - value) > kSumEpsilon) {
                     const auto fixed = fixSingleCell(row, index, subjects, totalColumn, sum, value, confidences);
                     if (fixed.has_value()) {
-                        row[static_cast<size_t>(fixed->column)] = fixed->value;
+                        setCell(row, fixed->column, fixed->value);
                         ++corrected;
                         sum = sumSubjects(row, taken);
                     }
                 }
                 if (!hasValue || std::abs(value - sum) > kSumEpsilon) ++corrected;
-                row[static_cast<size_t>(totalColumn)] = formatNumber(sum);
+                setCell(row, totalColumn, formatNumber(sum));
                 if (!allPresent) {
                     ++partialTotals;
                     suspicious.insert(index);
@@ -747,7 +754,7 @@ CheckResult selfCheck(const TableRows& input, const TableConfidence* confidences
             if (!hasValue) {
                 if (!raw.empty()) continue;
                 if (static_cast<int>(taken) >= kMinSubjectsForSum) {
-                    row[static_cast<size_t>(totalColumn)] = formatNumber(sum);
+                    setCell(row, totalColumn, formatNumber(sum));
                     ++corrected;
                     if (!allPresent) ++partialTotals;
                 } else {
@@ -764,13 +771,13 @@ CheckResult selfCheck(const TableRows& input, const TableConfidence* confidences
 
             const auto fixed = fixSingleCell(row, index, subjects, totalColumn, sum, value, confidences);
             if (fixed.has_value()) {
-                row[static_cast<size_t>(fixed->column)] = fixed->value;
+                setCell(row, fixed->column, fixed->value);
                 ++corrected;
                 continue;
             }
             const float totalConfidence = confidenceAt(confidences, index, totalColumn);
             if (totalConfidence < kRecomputeTotalConfidence) {
-                row[static_cast<size_t>(totalColumn)] = formatNumber(sum);
+                setCell(row, totalColumn, formatNumber(sum));
                 ++corrected;
             } else {
                 suspicious.insert(index);

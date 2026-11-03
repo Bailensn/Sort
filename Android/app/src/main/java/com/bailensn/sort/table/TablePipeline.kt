@@ -30,7 +30,7 @@ object TablePipeline {
         val cellMs: Long = 0L,
         /** 整图回读耗时。 */
         val detectMs: Long = 0L,
-        /** 增强后的灰度图：历史里存的那张，也给用户看。 */
+        /** 二值图（白纸黑字）：历史里存的那张，也给用户看。 */
         val enhanced: Bitmap? = null,
         /** 有墨迹格子的平均置信度。 */
         val averageConfidence: Float = 0f,

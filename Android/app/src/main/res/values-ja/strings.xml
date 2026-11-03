@@ -12,9 +12,9 @@
     <string name="label_scope">認識範囲</string>
     <string name="view_grid">グリッド</string>
     <string name="view_original">元画像</string>
-    <string name="view_enhanced">補正後</string>
+    <string name="view_enhanced">白黒</string>
     <string name="content_original">元の表画像</string>
-    <string name="content_enhanced">補正後の表画像</string>
+    <string name="content_enhanced">白黒二値化した表画像</string>
     <string name="content_grid">認識グリッド</string>
 
     <string name="preview_title">プレビュー</string>

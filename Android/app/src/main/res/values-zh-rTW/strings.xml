@@ -12,9 +12,9 @@
     <string name="label_scope">辨識範圍</string>
     <string name="view_grid">看網格</string>
     <string name="view_original">看原圖</string>
-    <string name="view_enhanced">看增強</string>
+    <string name="view_enhanced">看黑白</string>
     <string name="content_original">原始表格圖片</string>
-    <string name="content_enhanced">增強後的表格圖片</string>
+    <string name="content_enhanced">黑白二值圖（白紙黑字）</string>
     <string name="content_grid">表格辨識網格</string>
 
     <string name="preview_title">表格預覽</string>

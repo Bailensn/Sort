@@ -12,9 +12,9 @@
     <string name="label_scope">Detected area</string>
     <string name="view_grid">Grid</string>
     <string name="view_original">Original</string>
-    <string name="view_enhanced">Enhanced</string>
+    <string name="view_enhanced">Black & white</string>
     <string name="content_original">Original table image</string>
-    <string name="content_enhanced">Enhanced table image</string>
+    <string name="content_enhanced">Binarized table, black on white</string>
     <string name="content_grid">Detected grid</string>
 
     <string name="preview_title">Preview</string>

@@ -15,7 +15,9 @@ constexpr double kMaxNoiseLetterRatio = 0.15;
 constexpr double kMaxEmptyRatio = 0.6;
 constexpr double kJunkValueRatio = 0.2;
 constexpr double kLetterColumnRatio = 0.5;
-constexpr double kMaxNonNumericRatio = 0.07;
+// 门槛太紧会把真列整根抹掉：一列 30 个数字里有 3 个认错就成了「垃圾列」，
+// 丢的是整列姓名或总分。宁可留下几个脏格，也不能丢列。
+constexpr double kMaxNonNumericRatio = 0.35;
 constexpr double kMinChineseRatio = 0.8;
 
 std::string trim(const std::string& value) {
