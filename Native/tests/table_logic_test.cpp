@@ -408,6 +408,21 @@ void dropsDebrisColumn() {
     check(cleaned[0][3].empty(), "debris: 中间的碎屑列应被清空");
 }
 
+/// 数字列里孤零零一个字母是线头，不是成绩；等级列要保住。
+void dropsStrayLetter() {
+    const ocr::TableRows rows = {
+        {"1", "张三", "90", "", "A"},
+        {"2", "李四", "80", "E", "B"},
+        {"3", "王五", "70", "", "A"},
+        {"4", "示例庚", "60", "", "C"},
+    };
+
+    const ocr::TableRows fixed = ocr::dropStrayLetters(rows);
+
+    check(fixed[1][3].empty(), "letter: 数字列里的孤立 E 应清掉");
+    check(fixed[0][4] == "A", "letter: 等级列不该被动");
+}
+
 void cleansNonNumericNonChineseColumn() {
     const ocr::TableRows rows = {
         {"1", "张三", "95", "Ab12"},
@@ -492,6 +507,7 @@ int main() {
     trimsGarbageEdges();
     cleansNoisyColumn();
     dropsDebrisColumn();
+    dropsStrayLetter();
     cleansNonNumericNonChineseColumn();
     buildsGridFromLines();
     buildsGridFromClusters();
