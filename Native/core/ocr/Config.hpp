@@ -12,7 +12,7 @@ struct OcrConfig {
     LimitType detLimitType = LimitType::Max;
     int detMaxSideLimit = 4000;
 
-    float detThresh = 0.3f;
+    float detThresh = 0.45f;
     float detBoxThresh = 0.6f;
     float detUnclipRatio = 1.5f;
     int detMaxCandidates = 3000;

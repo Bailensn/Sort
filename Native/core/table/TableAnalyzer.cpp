@@ -505,6 +505,12 @@ TableAnalysis analyzeTableByText(OcrEngine& engine, const Image8& image,
     }
 
     analysis.working = work;
+    if (!result.items.empty()) {
+        std::vector<Box> boxes;
+        boxes.reserve(result.items.size());
+        for (const auto& item : result.items) boxes.push_back(item.box);
+        analysis.overlay = drawBoxesOverlay(work, boxes);
+    }
     std::vector<uint8_t> preview = toGray(work);
     if (!preview.empty()) {
         flattenLighting(preview, work.width, work.height);

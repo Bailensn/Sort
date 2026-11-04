@@ -45,4 +45,31 @@ Image8 drawGridOverlay(const Image8& src, const LineDetection& detection) {
     return out;
 }
 
+
+Image8 drawBoxesOverlay(const Image8& src, const std::vector<Box>& boxes) {
+    Image8 out = src;
+    if (src.empty()) return out;
+
+    const int radius =
+        std::max(0, static_cast<int>(std::lround(std::max(1.5f, src.width / 700.0f) / 2.0f)));
+    for (const auto& box : boxes) {
+        for (int i = 0; i < 4; ++i) {
+            const PointF a = box.points[i];
+            const PointF b = box.points[(i + 1) % 4];
+            const int steps =
+                static_cast<int>(std::max(std::abs(b.x - a.x), std::abs(b.y - a.y)));
+            for (int s = 0; s <= steps; ++s) {
+                const float t = steps == 0 ? 0.0f : static_cast<float>(s) / static_cast<float>(steps);
+                const int x = static_cast<int>(std::lround(a.x + (b.x - a.x) * t));
+                const int y = static_cast<int>(std::lround(a.y + (b.y - a.y) * t));
+                for (int d = -radius; d <= radius; ++d) {
+                    blendPixel(out, x + d, y);
+                    blendPixel(out, x, y + d);
+                }
+            }
+        }
+    }
+    return out;
+}
+
 }  // namespace ocr
