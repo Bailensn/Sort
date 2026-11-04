@@ -27,6 +27,8 @@ struct CellReading {
     std::string text;
     float confidence = 0.0f;
     bool hasInk = false;
+    /// 两路以上独立认成同一串字，这种格子不必再换输入重认。
+    bool agreed = false;
 };
 
 /// 整条流水线：det → 排序 → 逐框裁图 → rec 批处理 → 解码。

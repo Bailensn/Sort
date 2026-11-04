@@ -434,6 +434,73 @@ TableRows repairNumbers(const TableRows& rows) {
     return result;
 }
 
+namespace {
+
+bool allDigits(const std::string& value) {
+    if (value.empty()) return false;
+    for (char ch : value) {
+        if (ch < '0' || ch > '9') return false;
+    }
+    return true;
+}
+
+/// 只认能一一映射成数字的字符；有一个映射不了就整格放弃。
+std::string mapToDigits(const std::string& raw) {
+    std::string builder;
+    builder.reserve(raw.size());
+    for (char ch : raw) {
+        const unsigned char code = static_cast<unsigned char>(ch);
+        if (code >= '0' && code <= '9') {
+            builder += ch;
+            continue;
+        }
+        if (code >= 0x80) return {};
+        const char mapped = lookalike(code);
+        if (mapped == 0) return {};
+        builder += mapped;
+    }
+    return builder;
+}
+
+}  // namespace
+
+TableRows repairIdentifiers(const TableRows& rows) {
+    if (rows.empty()) return rows;
+    size_t width = 0;
+    for (const auto& row : rows) width = std::max(width, row.size());
+    if (width == 0) return rows;
+
+    TableRows result = rows;
+    for (size_t column = 0; column < width; ++column) {
+        std::vector<std::string> values;
+        for (const auto& row : result) {
+            if (column >= row.size()) continue;
+            const std::string value = trim(row[column]);
+            if (!value.empty()) values.push_back(value);
+        }
+        if (static_cast<int>(values.size()) < kMinNumericCells) continue;
+
+        // 学号长度是固定的：先取纯数字格的众数长度，再只修同样长的格子
+        std::vector<size_t> lengths;
+        for (const auto& value : values) {
+            if (value.size() >= 8 && allDigits(value)) lengths.push_back(value.size());
+        }
+        if (lengths.empty()) continue;
+        if (static_cast<double>(lengths.size()) / values.size() < kMinNumericRatio) continue;
+        std::sort(lengths.begin(), lengths.end());
+        const size_t typical = lengths[lengths.size() / 2];
+
+        for (auto& row : result) {
+            if (column >= row.size()) continue;
+            const std::string value = trim(row[column]);
+            if (value.size() != typical || allDigits(value)) continue;
+            const std::string fixed = mapToDigits(value);
+            if (fixed.size() == typical) row[column] = fixed;
+        }
+    }
+    return result;
+}
+
 bool parseNumber(const std::string& raw, double& out) {
     if (raw.empty()) return false;
     size_t index = 0;

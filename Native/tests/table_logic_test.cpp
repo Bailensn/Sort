@@ -312,6 +312,21 @@ void repairsFullWidthDigits() {
     check(fixed[1][1] == "88", "repair: 全角 88 应修成 88");
 }
 
+void repairsIdentifierLookalikes() {
+    ocr::TableRows rows = {
+        {"1", "900000000001", "示例甲"},
+        {"2", "9O0000OOO0O2", "示例乙"},
+        {"3", "900000000003", "示例丙"},
+        {"4", "900000000004", "示例丁"},
+    };
+
+    const ocr::TableRows fixed = ocr::repairIdentifiers(rows);
+
+    check(fixed[1][1] == "900000000002", "repair: 学号里的 O 应补回 0");
+    check(fixed[0][1] == "900000000001", "repair: 正常学号不该被动");
+    check(fixed[1][2] == "示例乙", "repair: 姓名列不该被动");
+}
+
 void leavesTextColumnAlone() {
     ocr::TableRows rows = {
         {"张三", "优秀"},
@@ -430,6 +445,7 @@ int main() {
     restoresDroppedDecimalPoint();
     repairsLookalikeDigits();
     repairsFullWidthDigits();
+    repairsIdentifierLookalikes();
     leavesTextColumnAlone();
     trimsGarbageEdges();
     cleansNoisyColumn();

@@ -72,6 +72,9 @@ CheckResult selfCheck(const TableRows& input, const TableConfidence* confidences
 /// 分数列里 5→S、0→O、全角数字这类错字按列纠正：整列大多是数字才动手。
 TableRows repairNumbers(const TableRows& rows);
 
+/// 学号列同理：整列大多是等长纯数字时，把 O/0、l/1 这类同形字补回数字。
+TableRows repairIdentifiers(const TableRows& rows);
+
 /// 供 C ABI 与测试共用：严格匹配 ^\d+(\.\d+)?$。
 bool parseNumber(const std::string& raw, double& out);
 

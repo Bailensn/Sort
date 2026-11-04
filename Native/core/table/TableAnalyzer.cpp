@@ -43,7 +43,6 @@ constexpr float kDisplayTrustedConfidence = 0.98f;
 constexpr float kStrictScale = 2.0f;
 constexpr float kThirdScale = 3.0f;
 constexpr float kRefereeScale = 2.0f;
-constexpr float kVoteBonus = 0.12f;
 constexpr float kMinCellTextConfidence = 0.25f;
 constexpr float kDetectorOverlap = 0.75f;
 // 两条线离得比这还近，多半是同一条线被切成了两次，或者是表格外面的一条毛刺；
@@ -186,25 +185,27 @@ float boxArea(const OcrItem& item) {
     return (right - left) * (bottom - top);
 }
 
-/// 多遍投票：认成同一串字的两路互相加成，独立两次都一致基本就是对的。
+/// 多遍投票：票多的赢，同票才比分数——两路独立认成同一串字比单路高分可靠。
 CellReading pickBest(const std::vector<CellReading>& candidates) {
     if (candidates.empty()) return CellReading{};
     if (candidates.size() == 1) return candidates.front();
 
     const CellReading* best = nullptr;
-    float bestScore = -1.0f;
+    int bestVotes = 0;
+    float bestTop = -1.0f;
     for (const auto& candidate : candidates) {
-        if (trimText(candidate.text).empty()) continue;
+        const std::string text = trimText(candidate.text);
+        if (text.empty()) continue;
         int votes = 0;
         float top = 0.0f;
         for (const auto& other : candidates) {
-            if (other.text != candidate.text) continue;
+            if (trimText(other.text) != text) continue;
             ++votes;
             top = std::max(top, other.confidence);
         }
-        const float score = std::min(1.0f, top + kVoteBonus * static_cast<float>(votes - 1));
-        if (score > bestScore) {
-            bestScore = score;
+        if (votes > bestVotes || (votes == bestVotes && top > bestTop)) {
+            bestVotes = votes;
+            bestTop = top;
             best = &candidate;
         }
     }
@@ -215,6 +216,16 @@ CellReading pickBest(const std::vector<CellReading>& candidates) {
         if (candidate.confidence > fallback->confidence) fallback = &candidate;
     }
     return *fallback;
+}
+
+/// 有几路认成了同一串字；两路以上才算「一致」。
+int agreeCount(const std::vector<CellReading>& candidates, const std::string& text) {
+    if (text.empty()) return 0;
+    int count = 0;
+    for (const auto& candidate : candidates) {
+        if (trimText(candidate.text) == text) ++count;
+    }
+    return count;
 }
 
 std::vector<Rect> insetRects(const std::vector<CellRect>& cells, int borderInset) {
@@ -306,7 +317,11 @@ PassOutput recognizeDeep(OcrEngine& engine, const Image8& work, const Image8& en
             if (position < second.size()) candidates.push_back(second[position]);
             const auto found = referee.find(position);
             if (found != referee.end()) candidates.push_back(found->second);
-            if (candidates.size() > 1) pass.readings[strict[position]] = pickBest(candidates);
+            if (candidates.size() <= 1) continue;
+            CellReading chosen = pickBest(candidates);
+            // 两路一致就不再进三四遍：换输入重认只会把对的改错
+            chosen.agreed = agreeCount(candidates, trimText(chosen.text)) > 1;
+            pass.readings[strict[position]] = chosen;
         }
     }
 
@@ -314,7 +329,9 @@ PassOutput recognizeDeep(OcrEngine& engine, const Image8& work, const Image8& en
     std::vector<size_t> third;
     for (size_t i = 0; i < pass.readings.size(); ++i) {
         const CellReading& reading = pass.readings[i];
-        if (reading.hasInk && reading.confidence < kThirdConfidence) third.push_back(i);
+        if (reading.hasInk && !reading.agreed && reading.confidence < kThirdConfidence) {
+            third.push_back(i);
+        }
     }
     report(progress, TableStage::Recognize, 0.7f);
     if (!third.empty()) {
@@ -336,7 +353,9 @@ PassOutput recognizeDeep(OcrEngine& engine, const Image8& work, const Image8& en
             candidates.push_back(pass.readings[third[position]]);
             if (position < fromOriginal.size()) candidates.push_back(fromOriginal[position]);
             if (position < fromReferee.size()) candidates.push_back(fromReferee[position]);
-            pass.readings[third[position]] = pickBest(candidates);
+            CellReading chosen = pickBest(candidates);
+            chosen.agreed = agreeCount(candidates, trimText(chosen.text)) > 1;
+            pass.readings[third[position]] = chosen;
         }
     }
 
@@ -344,7 +363,9 @@ PassOutput recognizeDeep(OcrEngine& engine, const Image8& work, const Image8& en
     std::vector<size_t> hopeless;
     for (size_t i = 0; i < pass.readings.size(); ++i) {
         const CellReading& reading = pass.readings[i];
-        if (reading.hasInk && reading.confidence < kHopelessConfidence) hopeless.push_back(i);
+        if (reading.hasInk && !reading.agreed && reading.confidence < kHopelessConfidence) {
+            hopeless.push_back(i);
+        }
     }
     report(progress, TableStage::Recognize, 0.8f);
     if (!hopeless.empty()) {
@@ -363,7 +384,9 @@ PassOutput recognizeDeep(OcrEngine& engine, const Image8& work, const Image8& en
                 std::vector<CellReading> candidates;
                 candidates.push_back(pass.readings[hopeless[position]]);
                 candidates.push_back(fromBinary[position]);
-                pass.readings[hopeless[position]] = pickBest(candidates);
+                CellReading chosen = pickBest(candidates);
+                chosen.agreed = agreeCount(candidates, trimText(chosen.text)) > 1;
+                pass.readings[hopeless[position]] = chosen;
             }
         }
     }
@@ -583,12 +606,14 @@ TableAnalysis analyzeTable(OcrEngine& engine, const Image8& image,
                 alignedConfidence.push_back(sliced);
             }
 
+            // 学号列先补同形字，自检的连续性才不会被一个 O 打断
+            const TableRows identified = repairIdentifiers(trimmed.rows);
             // 表头要在自检之前认：表头那行全是文字，会让「数字列」「求和」全判错
-            analysis.header = detectHeader(trimmed.rows);
+            analysis.header = detectHeader(identified);
             // 表头行就是第一行数据，自检时跳过它，但不从表里摘出去
             const size_t headerRows = analysis.header.fromImage ? 1 : 0;
-            const TableRows body(trimmed.rows.begin() + static_cast<long>(headerRows),
-                                 trimmed.rows.end());
+            const TableRows body(identified.begin() + static_cast<long>(headerRows),
+                                 identified.end());
             const TableConfidence bodyConfidence =
                 headerRows == 1 && !alignedConfidence.empty()
                     ? TableConfidence(alignedConfidence.begin() + 1, alignedConfidence.end())
@@ -598,7 +623,7 @@ TableAnalysis analyzeTable(OcrEngine& engine, const Image8& image,
             analysis.report = checked.report;
             // 分数列里 5→S、0→O 这类错字按列纠正：整列大多是数字时才动手
             const TableRows repaired = repairNumbers(checked.rows);
-            rows = trimmed.rows;
+            rows = identified;
             for (size_t i = 0; i < repaired.size() && headerRows + i < rows.size(); ++i) {
                 rows[headerRows + i] = repaired[i];
             }
