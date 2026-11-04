@@ -35,8 +35,6 @@ double elapsedMs(Clock::time_point start) {
     return std::chrono::duration<double, std::milli>(Clock::now() - start).count();
 }
 
-/// 低于这个值才值得再认一遍；1.0 等于「二遍全跑」，时间翻三倍换一堆同样的结论。
-constexpr float kTrustedConfidence = 0.95f;
 constexpr float kThirdConfidence = 0.98f;
 constexpr float kHopelessConfidence = 0.6f;
 constexpr float kDisplayTrustedConfidence = 0.98f;
@@ -218,16 +216,6 @@ CellReading pickBest(const std::vector<CellReading>& candidates) {
     return *fallback;
 }
 
-/// 有几路认成了同一串字；两路以上才算「一致」。
-int agreeCount(const std::vector<CellReading>& candidates, const std::string& text) {
-    if (text.empty()) return 0;
-    int count = 0;
-    for (const auto& candidate : candidates) {
-        if (trimText(candidate.text) == text) ++count;
-    }
-    return count;
-}
-
 std::vector<Rect> insetRects(const std::vector<CellRect>& cells, int borderInset) {
     std::vector<Rect> rects;
     rects.reserve(cells.size());
@@ -270,11 +258,10 @@ PassOutput recognizeDeep(OcrEngine& engine, const Image8& work, const Image8& en
         });
     }
 
-    // 二遍：增强图 2 倍。主模型 + 复核模型一起上，加上第一遍共三路投票。
+    // 二遍：所有有墨迹的格子都换一代模型（增强图 2 倍）再认一次，两路独立才投得出票。
     std::vector<size_t> strict;
     for (size_t i = 0; i < pass.readings.size(); ++i) {
-        const CellReading& reading = pass.readings[i];
-        if (reading.hasInk && reading.confidence < kTrustedConfidence) strict.push_back(i);
+        if (pass.readings[i].hasInk) strict.push_back(i);
     }
     report(progress, TableStage::Recognize, 0.55f);
     if (!strict.empty() && !enhanced.empty()) {
@@ -317,11 +304,7 @@ PassOutput recognizeDeep(OcrEngine& engine, const Image8& work, const Image8& en
             if (position < second.size()) candidates.push_back(second[position]);
             const auto found = referee.find(position);
             if (found != referee.end()) candidates.push_back(found->second);
-            if (candidates.size() <= 1) continue;
-            CellReading chosen = pickBest(candidates);
-            // 两路一致就不再进三四遍：换输入重认只会把对的改错
-            chosen.agreed = agreeCount(candidates, trimText(chosen.text)) > 1;
-            pass.readings[strict[position]] = chosen;
+            if (candidates.size() > 1) pass.readings[strict[position]] = pickBest(candidates);
         }
     }
 
@@ -329,9 +312,7 @@ PassOutput recognizeDeep(OcrEngine& engine, const Image8& work, const Image8& en
     std::vector<size_t> third;
     for (size_t i = 0; i < pass.readings.size(); ++i) {
         const CellReading& reading = pass.readings[i];
-        if (reading.hasInk && !reading.agreed && reading.confidence < kThirdConfidence) {
-            third.push_back(i);
-        }
+        if (reading.hasInk && reading.confidence < kThirdConfidence) third.push_back(i);
     }
     report(progress, TableStage::Recognize, 0.7f);
     if (!third.empty()) {
@@ -353,9 +334,7 @@ PassOutput recognizeDeep(OcrEngine& engine, const Image8& work, const Image8& en
             candidates.push_back(pass.readings[third[position]]);
             if (position < fromOriginal.size()) candidates.push_back(fromOriginal[position]);
             if (position < fromReferee.size()) candidates.push_back(fromReferee[position]);
-            CellReading chosen = pickBest(candidates);
-            chosen.agreed = agreeCount(candidates, trimText(chosen.text)) > 1;
-            pass.readings[third[position]] = chosen;
+            pass.readings[third[position]] = pickBest(candidates);
         }
     }
 
@@ -363,9 +342,7 @@ PassOutput recognizeDeep(OcrEngine& engine, const Image8& work, const Image8& en
     std::vector<size_t> hopeless;
     for (size_t i = 0; i < pass.readings.size(); ++i) {
         const CellReading& reading = pass.readings[i];
-        if (reading.hasInk && !reading.agreed && reading.confidence < kHopelessConfidence) {
-            hopeless.push_back(i);
-        }
+        if (reading.hasInk && reading.confidence < kHopelessConfidence) hopeless.push_back(i);
     }
     report(progress, TableStage::Recognize, 0.8f);
     if (!hopeless.empty()) {
@@ -384,9 +361,7 @@ PassOutput recognizeDeep(OcrEngine& engine, const Image8& work, const Image8& en
                 std::vector<CellReading> candidates;
                 candidates.push_back(pass.readings[hopeless[position]]);
                 candidates.push_back(fromBinary[position]);
-                CellReading chosen = pickBest(candidates);
-                chosen.agreed = agreeCount(candidates, trimText(chosen.text)) > 1;
-                pass.readings[hopeless[position]] = chosen;
+                pass.readings[hopeless[position]] = pickBest(candidates);
             }
         }
     }

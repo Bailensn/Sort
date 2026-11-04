@@ -51,12 +51,12 @@ Image8 cropCell(const Image8& src, const Rect& cell, float scale) {
     Image8 source = tightenToInk(roi);
     if (source.empty()) source = roi;
 
-    // 放大只为补足 rec 的 48px 输入高度；大格子放大了也是白烧算力
+    // 放大到 rec 的 48px 输入高度以上：超采样再缩回，噪点和锯齿一起被抹平
     const double needed =
         static_cast<double>(kSmallTextHeight) / static_cast<double>(std::max(source.height, 1));
     double factor = 1.0;
     if (scale > 1.0f) {
-        factor = std::max(1.0, std::min(static_cast<double>(scale), needed));
+        factor = std::max(static_cast<double>(scale), needed);
     } else if (needed > 1.0) {
         factor = std::min(std::max(needed, 1.5), 3.0);
     }
