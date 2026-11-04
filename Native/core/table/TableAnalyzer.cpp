@@ -448,7 +448,7 @@ bool gridFromClusters(OcrEngine& engine, const Image8& work, TableRows& rows) {
 
 }  // namespace
 
-/// 1:1 复刻网页那条路：原图直接检测+识别，不裁、不纠偏、不二值，文字自己聚成行列。
+/// 复刻网页那条路：整页检测+识别，文字自己聚成行列；只在检测前把表格线抹掉。
 TableAnalysis analyzeTableByText(OcrEngine& engine, const Image8& image,
                                  const TableProgress& progress) {
     const auto startAll = Clock::now();
@@ -457,6 +457,13 @@ TableAnalysis analyzeTableByText(OcrEngine& engine, const Image8& image,
     report(progress, TableStage::Prepare, 0.05f);
 
     Image8 work = image;
+    // 表格线会被 det 当成笔画，把相邻格子的字连成一整块：先抹掉再送检测，坐标不变
+    const LineDetection detection = detectLines(work);
+    if (detection.usable()) {
+        const int lineWidth = estimateLineWidth(work, detection.toGridLines());
+        const Image8 clean = eraseLines(work, detection, std::max(1, lineWidth / 2));
+        if (!clean.empty()) work = clean;
+    }
 
     report(progress, TableStage::Recognize, 0.3f);
     const OcrResult result = engine.recognize(work);
