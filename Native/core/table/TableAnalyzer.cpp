@@ -539,14 +539,14 @@ TableAnalysis analyzeTable(OcrEngine& engine, const Image8& image,
             const auto detector = pass.byCell.find(index);
             std::string chosen;
             if (detector == pass.byCell.end()) {
-                // 整图检测没落到这个格子里，以逐格结果为准
+                // 整图没框到这个格子，才退回逐格结果
                 chosen = cellText;
             } else if (!reading.hasInk) {
                 // 格子里没墨迹 = 真空白格：用检测去补会把邻格文字填进来
                 chosen = cellText;
             } else if (cellText.empty()) {
-                // 逐格没认出来就留空。以前拿整图回读去补，补进来的多半是线头
-                chosen = cellText;
+                // 逐格认不出来、整图认出来了：网页版就是这么过的，采信整图
+                chosen = detector->second.text;
             } else if (cellText == detector->second.text) {
                 chosen = cellText;
             } else if (contains(cellText, detector->second.text) ||
@@ -559,9 +559,8 @@ TableAnalysis analyzeTable(OcrEngine& engine, const Image8& image,
                 chosen = shorterConf > longerConf + 0.1f
                              ? (cellLonger ? detector->second.text : cellText)
                              : (cellLonger ? cellText : detector->second.text);
-            } else if (reading.confidence >= detector->second.confidence) {
-                chosen = cellText;
             } else {
+                // 两边都认出来但不一致：信整页，逐格被切坏的嫌疑更大
                 ++corrected;
                 chosen = detector->second.text;
             }
