@@ -542,8 +542,13 @@ TableAnalysis analyzeTable(OcrEngine& engine, const Image8& image,
             } else if (contains(cellText, detector->second.text) ||
                        contains(detector->second.text, cellText)) {
                 ++corrected;
-                chosen =
-                    reading.confidence >= detector->second.confidence ? cellText : detector->second.text;
+                // 一边包含另一边时，短的多半只框了一两个字：除非它明显更可信，留长的
+                const bool cellLonger = cellText.size() > detector->second.text.size();
+                const float longerConf = cellLonger ? reading.confidence : detector->second.confidence;
+                const float shorterConf = cellLonger ? detector->second.confidence : reading.confidence;
+                chosen = shorterConf > longerConf + 0.1f
+                             ? (cellLonger ? detector->second.text : cellText)
+                             : (cellLonger ? cellText : detector->second.text);
             } else if (reading.confidence >= detector->second.confidence) {
                 chosen = cellText;
             } else {
