@@ -312,16 +312,17 @@ void testEraseLines() {
     expect(ink > 0, "格子里的字不该被去线抹掉");
 }
 
-/// 没有推理后端时整条链路也要能跑通：不崩、给出工作图和叠线图、行留空。
+/// 没有推理后端时整条链路也要能跑通：不崩、给出工作图、行留空。
 void testAnalyzeWithoutBackend() {
     const ocr::Image8 table = makeTable(4, 3, 150, 100);
     ocr::OcrEngine engine;
     const ocr::TableAnalysis analysis = ocr::analyzeTable(engine, table);
     expect(analysis.rows.empty(), "没有后端时不应有行数据");
     expect(!analysis.working.empty(), "应当返回工作图");
-    expect(analysis.overlay.width == analysis.working.width &&
-               analysis.overlay.height == analysis.working.height,
-           "叠线图应与工作图同尺寸");
+    // 纯文字那条路没有线，叠线图留空是正常的
+    expect(analysis.overlay.empty() || (analysis.overlay.width == analysis.working.width &&
+                                        analysis.overlay.height == analysis.working.height),
+           "叠线图要么为空，要么和工作图同尺寸");
     expect(analysis.stats.elapsedMs >= 0.0, "应当有耗时");
 }
 

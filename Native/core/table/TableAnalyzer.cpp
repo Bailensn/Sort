@@ -448,8 +448,73 @@ bool gridFromClusters(OcrEngine& engine, const Image8& work, TableRows& rows) {
 
 }  // namespace
 
-TableAnalysis analyzeTable(OcrEngine& engine, const Image8& image,
-                           const TableProgress& progress) {
+/// 1:1 复刻网页那条路：原图直接检测+识别，不裁、不纠偏、不二值，文字自己聚成行列。
+TableAnalysis analyzeTableByText(OcrEngine& engine, const Image8& image,
+                                 const TableProgress& progress) {
+    const auto startAll = Clock::now();
+    TableAnalysis analysis;
+    if (image.empty()) return analysis;
+    report(progress, TableStage::Prepare, 0.05f);
+
+    Image8 work = image;
+
+    report(progress, TableStage::Recognize, 0.3f);
+    const OcrResult result = engine.recognize(work);
+
+    std::vector<TextRegion> regions;
+    double confidenceSum = 0.0;
+    int confidenceCount = 0;
+    for (const auto& item : result.items) {
+        if (item.text.empty()) continue;
+        float left = item.box.points[0].x;
+        float right = left;
+        float top = item.box.points[0].y;
+        float bottom = top;
+        for (int i = 1; i < 4; ++i) {
+            left = std::min(left, item.box.points[i].x);
+            right = std::max(right, item.box.points[i].x);
+            top = std::min(top, item.box.points[i].y);
+            bottom = std::max(bottom, item.box.points[i].y);
+        }
+        regions.push_back(TextRegion{left, top, right, bottom, item.text});
+        confidenceSum += item.confidence;
+        ++confidenceCount;
+    }
+
+    TableRows rows;
+    if (!regions.empty()) {
+        if (const auto grid = buildFromClusters(regions)) {
+            rows = grid->rows;
+            analysis.stats.byLines = false;
+        }
+    }
+
+    if (!rows.empty()) {
+        if (const auto grid = normalizeCells(rows, false)) {
+            analysis.rows = grid->rows;
+        } else {
+            analysis.rows = rows;
+        }
+    }
+
+    analysis.working = work;
+    std::vector<uint8_t> preview = toGray(work);
+    if (!preview.empty()) {
+        flattenLighting(preview, work.width, work.height);
+        analysis.enhanced =
+            grayToImage(binarizeSoft(preview, work.width, work.height), work.width, work.height);
+    }
+
+    analysis.stats.cellCount = static_cast<int>(regions.size());
+    analysis.stats.averageConfidence =
+        confidenceCount > 0 ? static_cast<float>(confidenceSum / confidenceCount) : 0.0f;
+    analysis.stats.elapsedMs = elapsedMs(startAll);
+    report(progress, TableStage::Verify, 1.0f);
+    return analysis;
+}
+
+TableAnalysis analyzeTableByLines(OcrEngine& engine, const Image8& image,
+                                  const TableProgress& progress) {
     const auto startAll = Clock::now();
     TableAnalysis analysis;
     if (image.empty()) return analysis;
@@ -674,6 +739,14 @@ TableAnalysis analyzeTable(OcrEngine& engine, const Image8& image,
     analysis.stats.elapsedMs = elapsedMs(startAll);
     report(progress, TableStage::Verify, 1.0f);
     return analysis;
+}
+
+TableAnalysis analyzeTable(OcrEngine& engine, const Image8& image,
+                           const TableProgress& progress) {
+    // 复刻网页那条路：整页识别 + 文字聚类，不切格
+    constexpr bool kTextFirst = true;
+    if (kTextFirst) return analyzeTableByText(engine, image, progress);
+    return analyzeTableByLines(engine, image, progress);
 }
 
 }  // namespace ocr
