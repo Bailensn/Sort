@@ -2,6 +2,7 @@
 
 #include "ocr/Charset.hpp"
 
+#include <algorithm>
 #include <cstdlib>
 #include <cstring>
 #include <exception>
@@ -10,6 +11,7 @@
 #include <vector>
 
 #include "BackendFactory.hpp"
+#include "ocr/ImageOps.hpp"
 #include "ocr/OcrEngine.hpp"
 #include "table/TableAnalyzer.hpp"
 
@@ -83,6 +85,20 @@ OcrHandle *engine_ocr_create(const char *detModelPath, const char *recModelPath,
 void engine_ocr_destroy(OcrHandle *h) { delete h; }
 
 namespace {
+
+/// 预览只求看得清：原图整份抬进 Java 堆，三张就把堆吃穿了。
+constexpr int kPreviewSide = 1280;
+
+void shrinkForPreview(ocr::Image8 &image) {
+    if (image.empty()) return;
+    const int longest = std::max(image.width, image.height);
+    if (longest <= kPreviewSide) return;
+    const double scale = static_cast<double>(kPreviewSide) / static_cast<double>(longest);
+    ocr::Image8 small = ocr::resize(image, std::max(1, static_cast<int>(image.width * scale)),
+                                    std::max(1, static_cast<int>(image.height * scale)),
+                                    ocr::Interp::Linear);
+    if (!small.empty()) image = std::move(small);
+}
 
 /// 把一张 Image8 交出去，所有权转给调用方。
 void moveImage(ocr::Image8&& source, engine_table_image *out) {
@@ -188,6 +204,9 @@ int32_t engine_table_analyze(OcrHandle *h, const uint8_t *pixels, int32_t width,
             outStats->cellMs = stats.cellMs;
             outStats->detectMs = stats.detectMs;
         }
+        shrinkForPreview(analysis.working);
+        shrinkForPreview(analysis.overlay);
+        shrinkForPreview(analysis.enhanced);
         moveImage(std::move(analysis.working), outImage);
         moveImage(std::move(analysis.overlay), outOverlay);
         moveImage(std::move(analysis.enhanced), outEnhanced);

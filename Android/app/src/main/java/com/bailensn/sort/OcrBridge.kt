@@ -224,14 +224,23 @@ class OcrBridge(
     private fun toBgr(bitmap: Bitmap): ByteArray {
         val width = bitmap.width
         val height = bitmap.height
-        val argb = IntArray(width * height)
-        bitmap.getPixels(argb, 0, width, 0, 0, width, height)
         val out = ByteArray(width * height * 3)
         var index = 0
-        for (pixel in argb) {
-            out[index++] = (pixel and 0xFF).toByte()
-            out[index++] = ((pixel shr 8) and 0xFF).toByte()
-            out[index++] = ((pixel shr 16) and 0xFF).toByte()
+        // 分行取像素：整图 IntArray 在 24 MP 上就是 96 MB，和位图叠一起会 OOM
+        val band = 128
+        val argb = IntArray(width * band)
+        var y = 0
+        while (y < height) {
+            val rows = minOf(band, height - y)
+            bitmap.getPixels(argb, 0, width, 0, y, width, rows)
+            var offset = 0
+            repeat(rows * width) {
+                val pixel = argb[offset++]
+                out[index++] = (pixel and 0xFF).toByte()
+                out[index++] = ((pixel shr 8) and 0xFF).toByte()
+                out[index++] = ((pixel shr 16) and 0xFF).toByte()
+            }
+            y += rows
         }
         return out
     }
