@@ -495,12 +495,12 @@ TableAnalysis analyzeTable(OcrEngine& engine, const Image8& image,
         enhanced = grayToImage(enhancedGray, work.width, work.height);
     }
 
-    // 给人看的那张是二值图：白纸黑字，一眼能看出哪块没认出来。
-    // 灰度的 CLAHE 图看着糊，线也被抹过，拿去当预览只会让人怀疑识别坏了。
+    // 预览也用软二值：硬切会把笔画边缘切成锯齿，看着就像认坏了。
     std::vector<uint8_t> displayGray = toGray(work);
     if (!displayGray.empty()) {
         flattenLighting(displayGray, work.width, work.height);
-        analysis.enhanced = grayToImage(binarizeForText(displayGray), work.width, work.height);
+        analysis.enhanced =
+            grayToImage(binarizeSoft(displayGray, work.width, work.height), work.width, work.height);
     }
 
     report(progress, TableStage::Segment, 0.38f);

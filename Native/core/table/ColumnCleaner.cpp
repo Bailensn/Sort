@@ -116,6 +116,26 @@ bool looksLikeBackgroundText(const std::string& value) {
     return value.size() >= 3 && noChinese(value) && hasLetter(value);
 }
 
+/// 整列都是同一个 1~2 字符的碎屑（线头被认成「1」「|」），不可能是真数据。
+bool isDebrisColumn(const std::vector<std::string>& values) {
+    if (values.size() < 3) return false;
+    const std::string& first = values.front();
+    if (first.empty() || first.size() > 2) return false;
+    bool symbol = false;
+    for (unsigned char ch : first) {
+        if (ch >= '0' && ch <= '9') continue;
+        if (ch == '|' || ch == '-' || ch == '_' || ch == '.' || ch == '\'') {
+            symbol = true;
+            continue;
+        }
+        return false;
+    }
+    for (const auto& value : values) {
+        if (value != first) return false;
+    }
+    return symbol || first == "1" || first == "l" || first == "I" || values.size() >= 10;
+}
+
 std::vector<std::string> columnValues(const TableRows& rows, int column) {
     std::vector<std::string> values;
     for (const auto& row : rows) {
@@ -166,6 +186,10 @@ TrimmedColumns trimColumns(const TableRows& rows) {
             ++start;
             continue;
         }
+        if (isDebrisColumn(values)) {
+            ++start;
+            continue;
+        }
         break;
     }
 
@@ -174,6 +198,10 @@ TrimmedColumns trimColumns(const TableRows& rows) {
         const int column = end - 1;
         const std::vector<std::string> values = columnValues(grid, column);
         if (values.empty()) {
+            --end;
+            continue;
+        }
+        if (isDebrisColumn(values)) {
             --end;
             continue;
         }
@@ -227,10 +255,15 @@ TableRows cleanNoisyColumns(const TableRows& rows) {
     if (width <= 1) return rows;
 
     std::vector<bool> noisy(width, false);
+    std::vector<bool> debris(width, false);
     for (size_t column = 0; column < width; ++column) {
         const std::vector<std::string> values = columnValues(rows, static_cast<int>(column));
         const double filledRatio = static_cast<double>(values.size()) / rows.size();
-        if (filledRatio > kMaxNoisyFill) continue;
+        debris[column] = isDebrisColumn(values);
+        if (filledRatio > kMaxNoisyFill) {
+            noisy[column] = debris[column];
+            continue;
+        }
 
         int longValues = 0;
         int letters = 0;
@@ -241,8 +274,9 @@ TableRows cleanNoisyColumns(const TableRows& rows) {
             if (!noChinese(value)) allNoChinese = false;
         }
         const double letterRatio = values.empty() ? 0.0 : static_cast<double>(letters) / values.size();
-        noisy[column] = (allNoChinese || letterRatio >= kMaxNoiseLetterRatio) &&
-                        longValues <= static_cast<int>(values.size() * kMaxLongValueRatio);
+        noisy[column] = debris[column] ||
+                        ((allNoChinese || letterRatio >= kMaxNoiseLetterRatio) &&
+                         longValues <= static_cast<int>(values.size() * kMaxLongValueRatio));
     }
 
     int start = 0;
@@ -253,8 +287,10 @@ TableRows cleanNoisyColumns(const TableRows& rows) {
         }
         int end = start;
         while (end + 1 < static_cast<int>(width) && noisy[static_cast<size_t>(end + 1)]) ++end;
-        // 单列不算噪声：真数据里「只有部分行有值」的列很常见
-        if (end == start) noisy[static_cast<size_t>(start)] = false;
+        // 单列不算噪声：真数据里「只有部分行有值」的列很常见；碎屑列例外
+        if (end == start && !debris[static_cast<size_t>(start)]) {
+            noisy[static_cast<size_t>(start)] = false;
+        }
         start = end + 1;
     }
 

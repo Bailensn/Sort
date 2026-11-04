@@ -392,6 +392,22 @@ void cleansNoisyColumn() {
     check(cleaned[0][2] == "95", "noisy: 正常列不该被动");
 }
 
+/// 整列都是一个「1」的线头碎屑：裁列时整列去掉，不能当成真数据。
+void dropsDebrisColumn() {
+    const ocr::TableRows rows = {
+        {"1", "张三", "90", "1"},
+        {"2", "李四", "80", "1"},
+        {"3", "王五", "70", "1"},
+    };
+
+    const ocr::TrimmedColumns trimmed = ocr::trimColumns(rows);
+    check(trimmed.rows[0].size() == 3, "debris: 右边缘的碎屑列应被裁掉");
+    check(trimmed.rows[0][2] == "90", "debris: 真分数列要留下");
+
+    const ocr::TableRows cleaned = ocr::cleanNoisyColumns(rows);
+    check(cleaned[0][3].empty(), "debris: 中间的碎屑列应被清空");
+}
+
 void cleansNonNumericNonChineseColumn() {
     const ocr::TableRows rows = {
         {"1", "张三", "95", "Ab12"},
@@ -475,6 +491,7 @@ int main() {
     leavesTextColumnAlone();
     trimsGarbageEdges();
     cleansNoisyColumn();
+    dropsDebrisColumn();
     cleansNonNumericNonChineseColumn();
     buildsGridFromLines();
     buildsGridFromClusters();
