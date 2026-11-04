@@ -1,0 +1,41 @@
+Starting a Gradle Daemon (subsequent builds will be faster)
+Calculating task graph as no cached configuration is available for tasks: :app:testDebugUnitTest
+Problem found: Configuration Cache warn mode is enabled (id: validation:configuration-cache:configuration-cache-warn-mode)
+  Configuration Cache warn mode is ENABLED. Configuration Cache constraint violations are being ignored. Build outputs may be incorrect and the build may crash unexpectedly. Use this only to discover configuration cache incompatibilities. Do not use this to produce artifacts.
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :app:generateDebugResources FROM-CACHE
+> Task :app:javaPreCompileDebug FROM-CACHE
+> Task :app:packageDebugResources FROM-CACHE
+> Task :app:mapDebugSourceSetPaths
+> Task :app:createDebugCompatibleScreenManifests
+> Task :app:extractDeepLinksDebug FROM-CACHE
+> Task :app:processDebugNavigationResources FROM-CACHE
+> Task :app:mergeDebugResources FROM-CACHE
+> Task :app:compileDebugNavigationResources FROM-CACHE
+> Task :app:preDebugUnitTestBuild UP-TO-DATE
+> Task :app:javaPreCompileDebugUnitTest FROM-CACHE
+> Task :app:processDebugMainManifest FROM-CACHE
+> Task :app:processDebugManifest FROM-CACHE
+> Task :app:processDebugManifestForPackage FROM-CACHE
+> Task :app:checkDebugAarMetadata
+> Task :app:parseDebugLocalResources FROM-CACHE
+> Task :app:generateDebugRFile FROM-CACHE
+> Task :app:processDebugResources FROM-CACHE
+> Task :app:compileDebugKotlin FROM-CACHE
+> Task :app:compileDebugJavaWithJavac NO-SOURCE
+> Task :app:compressDebugJavaRes FROM-CACHE
+> Task :app:bundleDebugClassesToCompileJar
+> Task :app:bundleDebugClassesToRuntimeJar
+> Task :app:compileDebugUnitTestKotlin FROM-CACHE
+> Task :app:compileDebugUnitTestJavaWithJavac NO-SOURCE
+> Task :app:compressDebugUnitTestJavaRes FROM-CACHE
+> Task :app:extractDebugUnitTestJavaRes
+> Task :app:testDebugUnitTest FROM-CACHE
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_3-1793823092763.json
+
+[Incubating] Problems report is available at: file:///home/runner/work/Sort/Sort/Android/build/reports/problems/problems-report.html
+
+BUILD SUCCESSFUL in 11s
+25 actionable tasks: 6 executed, 19 from cache
+Configuration cache entry stored.
