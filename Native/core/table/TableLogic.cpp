@@ -533,10 +533,15 @@ TableRows repairIdentifiers(const TableRows& rows) {
 
 namespace {
 
-bool isSingleLetter(const std::string& value) {
-    if (value.size() != 1) return false;
-    const unsigned char ch = static_cast<unsigned char>(value[0]);
-    return (ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z');
+/// 带拉丁字母、又没有半个汉字：这种格子只可能是噪点。
+bool looksLikeLetterNoise(const std::string& value) {
+    bool letter = false;
+    for (unsigned char ch : value) {
+        if (ch >= 0x80) return false;
+        if ((ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z')) letter = true;
+    }
+    // S8、O0 这种能整体映射成数字的，留给 repairNumbers 去改
+    return letter && mapToDigits(value).empty();
 }
 
 }  // namespace
@@ -545,7 +550,7 @@ TableRows dropStrayLetters(const TableRows& rows) {
     TableRows result = rows;
     for (auto& row : result) {
         for (auto& cell : row) {
-            if (isSingleLetter(trim(cell))) cell.clear();
+            if (looksLikeLetterNoise(trim(cell))) cell.clear();
         }
     }
     return result;

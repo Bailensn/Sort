@@ -582,7 +582,8 @@ TableAnalysis analyzeTable(OcrEngine& engine, const Image8& image,
             }
 
             // 学号列先补同形字，自检的连续性才不会被一个 O 打断
-            const TableRows identified = repairIdentifiers(dropStrayLetters(trimmed.rows));
+            const TableRows identified =
+                dropStrayLetters(repairIdentifiers(trimmed.rows));
             // 表头要在自检之前认：表头那行全是文字，会让「数字列」「求和」全判错
             analysis.header = detectHeader(identified);
             // 表头行就是第一行数据，自检时跳过它，但不从表里摘出去
