@@ -1,0 +1,78 @@
+Starting a Gradle Daemon (subsequent builds will be faster)
+Calculating task graph as no cached configuration is available for tasks: :app:assembleRelease :app:bundleRelease
+Problem found: Configuration Cache warn mode is enabled (id: validation:configuration-cache:configuration-cache-warn-mode)
+  Configuration Cache warn mode is ENABLED. Configuration Cache constraint violations are being ignored. Build outputs may be incorrect and the build may crash unexpectedly. Use this only to discover configuration cache incompatibilities. Do not use this to produce artifacts.
+> Task :app:generateReleaseAssets UP-TO-DATE
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preReleaseBuild UP-TO-DATE
+> Task :app:generateReleaseResources FROM-CACHE
+> Task :app:packageReleaseResources FROM-CACHE
+> Task :app:javaPreCompileRelease FROM-CACHE
+> Task :app:processReleaseNavigationResources FROM-CACHE
+> Task :app:mergeReleaseArtProfile
+> Task :app:checkReleaseDuplicateClasses
+> Task :app:mapReleaseSourceSetPaths
+> Task :app:compileReleaseNavigationResources FROM-CACHE
+> Task :app:prepareMnn
+> Task :app:checkReleaseAarMetadata
+> Task :app:mergeReleaseJniLibFolders
+> Task :app:mergeReleaseResources FROM-CACHE
+> Task :app:extractDeepLinksRelease FROM-CACHE
+> Task :app:createReleaseCompatibleScreenManifests
+> Task :app:extractProguardFiles
+> Task :app:mergeReleaseStartupProfile
+> Task :app:parseReleaseLocalResources FROM-CACHE
+> Task :app:generateReleaseRFile FROM-CACHE
+> Task :app:processReleaseMainManifest FROM-CACHE
+> Task :app:mergeReleaseAssets
+> Task :app:processReleaseManifest FROM-CACHE
+> Task :app:compressReleaseAssets FROM-CACHE
+> Task :app:processReleaseManifestForPackage FROM-CACHE
+> Task :app:extractReleaseVersionControlInfo
+> Task :app:collectReleaseDependencies
+> Task :app:processReleaseResources FROM-CACHE
+> Task :app:compileReleaseKotlin FROM-CACHE
+> Task :app:compileReleaseJavaWithJavac NO-SOURCE
+> Task :app:sdkReleaseDependencyData
+> Task :app:mergeReleaseGeneratedProguardFiles
+> Task :app:compressReleaseJavaRes FROM-CACHE
+> Task :app:expandReleaseArtProfileWildcards FROM-CACHE
+> Task :app:produceReleaseComposeMapping FROM-CACHE
+> Task :app:reportReleaseComposeMappingErrors
+> Task :app:mergeReleaseJavaResource
+> Task :app:generateReleaseLintVitalReportModel
+> Task :app:lintVitalAnalyzeRelease FROM-CACHE
+> Task :app:minifyReleaseWithR8 FROM-CACHE
+> Task :app:mergeReleaseComposeMapping FROM-CACHE
+> Task :app:compileReleaseArtProfile FROM-CACHE
+> Task :app:validateSigningRelease
+> Task :app:convertShrunkResourcesToBinaryRelease FROM-CACHE
+> Task :app:writeReleaseAppMetadata
+> Task :app:optimizeReleaseResources FROM-CACHE
+> Task :app:configureReleaseDependencies
+> Task :app:parseReleaseIntegrityConfig FROM-CACHE
+> Task :app:writeReleaseSigningConfigVersions
+> Task :app:lintVitalReportRelease
+> Task :app:lintVitalRelease
+> Task :app:configureCMakeRelWithDebInfo[arm64-v8a]
+> Task :app:buildCMakeRelWithDebInfo[arm64-v8a]
+> Task :app:mergeReleaseNativeLibs
+> Task :app:stripReleaseDebugSymbols
+> Task :app:buildReleasePreBundle
+> Task :app:extractReleaseNativeSymbolTables
+> Task :app:packageRelease
+> Task :app:createReleaseApkListingFileRedirect
+> Task :app:mergeReleaseNativeDebugMetadata
+> Task :app:assembleRelease
+> Task :app:packageReleaseBundle
+> Task :app:signReleaseBundle
+> Task :app:bundleRelease
+> Task :app:produceReleaseBundleIdeListingFile
+> Task :app:createReleaseBundleListingFileRedirect
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_4-1793823105936.json
+
+[Incubating] Problems report is available at: file:///home/runner/work/Sort/Sort/Android/build/reports/problems/problems-report.html
+
+BUILD SUCCESSFUL in 1m
+61 actionable tasks: 36 executed, 25 from cache
+Configuration cache entry stored.
