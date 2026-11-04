@@ -73,7 +73,7 @@ double rowPeakScore(const std::vector<uint8_t>& binary, int width, int height) {
     return score;
 }
 
-double estimateAngle(const Image8& src) {
+double estimateAngle(const Image8& src, double maxAngle, double step, double minGain) {
     const std::vector<uint8_t> gray = toGray(src);
     if (gray.empty()) return 0.0;
 
@@ -98,7 +98,7 @@ double estimateAngle(const Image8& src) {
     double bestAngle = 0.0;
     double bestScore = -1.0;
     double zeroScore = 0.0;
-    for (double angle = -kMaxAngle; angle <= kMaxAngle + 1e-9; angle += kAngleStep) {
+    for (double angle = -maxAngle; angle <= maxAngle + 1e-9; angle += step) {
         int rotatedW = width;
         int rotatedH = height;
         const std::vector<uint8_t> rotated = rotateBinary(binary, width, height, angle, rotatedW, rotatedH);
@@ -110,18 +110,23 @@ double estimateAngle(const Image8& src) {
         }
     }
 
-    if (zeroScore > 0.0 && bestScore < zeroScore * kMinGain) return 0.0;
+    if (zeroScore > 0.0 && bestScore < zeroScore * minGain) return 0.0;
     return bestAngle;
 }
 
 }  // namespace
+
+double estimateSkewDegrees(const Image8& src, double maxAngle, double step, double minGain) {
+    if (src.empty()) return 0.0;
+    return estimateAngle(src, std::max(maxAngle, 0.5), std::max(step, 0.1), minGain);
+}
 
 SkewResult deskewImage(const Image8& src) {
     SkewResult result;
     result.image = src;
     if (src.empty()) return result;
 
-    const double angle = estimateAngle(src);
+    const double angle = estimateAngle(src, kMaxAngle, kAngleStep, kMinGain);
     if (std::abs(angle) < 0.2) return result;
 
     Image8 rotated = rotateImage(src, angle);

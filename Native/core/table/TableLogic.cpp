@@ -163,6 +163,36 @@ ColumnPair resolveExplicit(const TableHeader* header) {
     return pair;
 }
 
+/// 自动认出的表头要拿数据验一遍：科目列不像分数就不采信，免得按错的角色改分。
+bool headerLooksPlausible(const TableRows& rows, const TableHeader& header, const ColumnPair& pair) {
+    if (!header.fromImage || pair.total < 0 || pair.subjects.empty()) return true;
+
+    int totalFilled = 0;
+    int totalNumeric = 0;
+    for (int row = 0; row < static_cast<int>(rows.size()); ++row) {
+        const std::string value = trim(cellAt(rows, row, pair.total));
+        if (value.empty()) continue;
+        ++totalFilled;
+        double number = 0;
+        if (parseNumber(value, number) && number >= 0.0 && number <= 999.0) ++totalNumeric;
+    }
+    if (totalFilled > 0 && static_cast<double>(totalNumeric) / totalFilled < 0.8) return false;
+
+    for (int column : pair.subjects) {
+        int filled = 0;
+        int numeric = 0;
+        for (int row = 0; row < static_cast<int>(rows.size()); ++row) {
+            const std::string value = trim(cellAt(rows, row, column));
+            if (value.empty()) continue;
+            ++filled;
+            double number = 0;
+            if (parseNumber(value, number) && number >= 0.0 && number <= 150.0) ++numeric;
+        }
+        if (filled > 0 && static_cast<double>(numeric) / filled < 0.6) return false;
+    }
+    return true;
+}
+
 ColumnPair findTotalColumn(const TableRows& rows, int columns, const std::vector<bool>& numeric,
                            const std::vector<bool>& constant, const std::vector<bool>& sequences,
                            const std::vector<bool>& identifiers) {
@@ -776,6 +806,11 @@ CheckResult selfCheck(const TableRows& input, const TableConfidence* confidences
     }
 
     ColumnPair pair = resolveExplicit(header);
+    // 表头认错列角色时宁可退回启发式，也不要按错的角色重算总分
+    if (header != nullptr && !headerLooksPlausible(rows, *header, pair)) {
+        pair.total = -1;
+        pair.subjects.clear();
+    }
     // 表头明确给了总分列和科目列时，总分就按各科相加算出来，不采信 OCR 的结果
     const bool derivedTotal = pair.total >= 0 && !pair.subjects.empty();
     if (pair.total < 0) {

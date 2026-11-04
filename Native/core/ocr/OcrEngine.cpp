@@ -10,6 +10,8 @@
 #include "Postprocess.hpp"
 #include "Preprocess.hpp"
 #include "QuadCrop.hpp"
+#include "imgproc/Warp.hpp"
+#include "table/Skew.hpp"
 
 namespace ocr {
 namespace {
@@ -50,6 +52,17 @@ Image8 cropCell(const Image8& src, const Rect& cell, float scale) {
     // 先贴住墨迹再缩放：整格缩到 48 高时字只占一半，小数点会薄到认不出。
     Image8 source = tightenToInk(roi);
     if (source.empty()) source = roi;
+
+    // 外框补不出来时整表没转正，字在格子里还是歪的：按格再找一次角度
+    const double cellAngle = estimateSkewDegrees(source, 5.0, 0.5, 1.10);
+    if (std::abs(cellAngle) >= 1.0) {
+        const Image8 straightened = rotateImage(source, cellAngle);
+        if (!straightened.empty()) {
+            source = straightened;
+            const Image8 tightened = tightenToInk(source);
+            if (!tightened.empty()) source = tightened;
+        }
+    }
 
     // 放大到 rec 的 48px 输入高度以上：超采样再缩回，噪点和锯齿一起被抹平
     const double needed =

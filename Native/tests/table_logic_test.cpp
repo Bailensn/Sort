@@ -193,6 +193,31 @@ void usesExplicitTotalColumnInTheMiddle() {
     check(result.rows[0][2] == "175", "explicit: 表里的总分应保留");
 }
 
+/// 自动认出的表头把文字列当总分时，宁可退回启发式也不改分。
+void ignoresImplausibleHeader() {
+    const ocr::TableRows rows = {
+        {"张三", "90", "优秀", "85"},
+        {"李四", "80", "良好", "70"},
+        {"王五", "70", "及格", "60"},
+    };
+    ocr::TableHeader header;
+    header.fromImage = true;
+    header.columns = {
+        {0, "姓名", ocr::ColumnRole::Other},
+        {1, "语文", ocr::ColumnRole::Subject},
+        {2, "备注", ocr::ColumnRole::Total},
+        {3, "数学", ocr::ColumnRole::Subject},
+    };
+
+    const ocr::CheckResult result = ocr::selfCheck(rows, nullptr, &header);
+
+    check(result.rows == rows, "header: 表头不可信时不该改任何格子");
+    for (const auto& note : result.report.notes) {
+        check(!(note.kind == ocr::Note::Kind::SumChecked && note.a == 2),
+              "header: 不该按错的科目列求和");
+    }
+}
+
 void fixesWrongTotalWhenExplicit() {
     ocr::TableRows rows = {
         {"张三", "90", "170", "85"},
@@ -440,6 +465,7 @@ int main() {
     ignoresHeaderWhenFirstRowIsData();
     usesExplicitTotalColumnInTheMiddle();
     fixesWrongTotalWhenExplicit();
+    ignoresImplausibleHeader();
     derivesTotalFromSubjects();
     keepsPrintedTotalWhenSumExplodes();
     restoresDroppedDecimalPoint();
