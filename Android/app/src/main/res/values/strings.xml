@@ -84,4 +84,8 @@
     <string name="header_hint_manual">没认出表头，可以给每列填个名字</string>
     <string name="section_header">表头</string>
     <string name="stats_confidence_range">%1$.1f%%（%2$.1f–%3$.1f）</string>
+    <string name="privacy_title">隐私说明</string>
+    <string name="privacy_body">本应用默认在手机上离线处理图片，成绩表不会离开这台设备。\n若开启云端识别，整张图片会上传到 PaddleOCR 官方服务（百度 AI Studio）用于本次文字识别，识别完成后本应用不保留任何副本。\n导出的表格只保存在本机，除非你主动分享。\n继续即表示你已阅读并同意以上说明。</string>
+    <string name="privacy_accept">同意并继续</string>
+    <string name="privacy_wait">请先阅读（%1$d 秒）</string>
 </resources>

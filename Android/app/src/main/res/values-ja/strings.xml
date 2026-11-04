@@ -83,4 +83,8 @@
     <string name="header_hint_manual">見出しが見つかりません。列名を入力できます</string>
     <string name="section_header">見出し</string>
     <string name="stats_confidence_range">%1$.1f%%（%2$.1f〜%3$.1f）</string>
+    <string name="privacy_title">プライバシー</string>
+    <string name="privacy_body">このアプリは既定で端末上でオフライン処理を行い、成績表が端末の外に出ることはありません。\nクラウド認識を有効にすると、画像全体が PaddleOCR 公式サービス（Baidu AI Studio）に送信され、この認識にのみ使われます。認識後に本アプリが複製を保持することはありません。\n書き出した表は、あなたが共有しない限り端末内にのみ保存されます。\n続行すると、上記に同意したものとみなされます。</string>
+    <string name="privacy_accept">同意して続行</string>
+    <string name="privacy_wait">先にお読みください（%1$d 秒）</string>
 </resources>
