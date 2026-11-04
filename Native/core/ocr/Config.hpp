@@ -6,10 +6,10 @@ namespace ocr {
 
 enum class LimitType { Max, Min, ResizeLong };
 
-/// 参数与 Android 侧 PaddleOCRConfig 一一对应，默认值必须一致。
+/// 参数沿用 PaddleOCR 官方默认：检测长边缩到 960，识别再按原图裁框。
 struct OcrConfig {
-    int detLimitSideLen = 64;
-    LimitType detLimitType = LimitType::Min;
+    int detLimitSideLen = 960;
+    LimitType detLimitType = LimitType::Max;
     int detMaxSideLimit = 4000;
 
     float detThresh = 0.3f;
