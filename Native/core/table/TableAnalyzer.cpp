@@ -37,6 +37,8 @@ double elapsedMs(Clock::time_point start) {
 
 constexpr float kThirdConfidence = 0.98f;
 constexpr float kHopelessConfidence = 0.6f;
+/// 主模型到这个把握就以它为准：网页版只用一个 v6，投票反而会改坏。
+constexpr float kAnchorConfidence = 0.90f;
 constexpr float kDisplayTrustedConfidence = 0.98f;
 constexpr float kStrictScale = 2.0f;
 constexpr float kThirdScale = 3.0f;
@@ -304,7 +306,11 @@ PassOutput recognizeDeep(OcrEngine& engine, const Image8& work, const Image8& en
             if (position < second.size()) candidates.push_back(second[position]);
             const auto found = referee.find(position);
             if (found != referee.end()) candidates.push_back(found->second);
-            if (candidates.size() > 1) pass.readings[strict[position]] = pickBest(candidates);
+            if (candidates.size() <= 1) continue;
+            const CellReading& current = pass.readings[strict[position]];
+            // 主模型有把握时以它为准：网页版就一个 v6，多路投票反而会把它改坏
+            if (current.confidence >= kAnchorConfidence && !trimText(current.text).empty()) continue;
+            pass.readings[strict[position]] = pickBest(candidates);
         }
     }
 
@@ -334,6 +340,8 @@ PassOutput recognizeDeep(OcrEngine& engine, const Image8& work, const Image8& en
             candidates.push_back(pass.readings[third[position]]);
             if (position < fromOriginal.size()) candidates.push_back(fromOriginal[position]);
             if (position < fromReferee.size()) candidates.push_back(fromReferee[position]);
+            const CellReading& current = pass.readings[third[position]];
+            if (current.confidence >= kAnchorConfidence && !trimText(current.text).empty()) continue;
             pass.readings[third[position]] = pickBest(candidates);
         }
     }
@@ -361,6 +369,8 @@ PassOutput recognizeDeep(OcrEngine& engine, const Image8& work, const Image8& en
                 std::vector<CellReading> candidates;
                 candidates.push_back(pass.readings[hopeless[position]]);
                 candidates.push_back(fromBinary[position]);
+                const CellReading& current = pass.readings[hopeless[position]];
+                if (current.confidence >= kAnchorConfidence && !trimText(current.text).empty()) continue;
                 pass.readings[hopeless[position]] = pickBest(candidates);
             }
         }
