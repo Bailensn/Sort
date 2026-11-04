@@ -18,4 +18,7 @@ std::vector<uint8_t> thresholdBinary(const std::vector<uint8_t>& gray, int thres
 /// 和线检测那套反相掩膜（暗=255）正好相反，别混用。
 std::vector<uint8_t> binarizeForText(const std::vector<uint8_t>& gray);
 
+/// 软二值：背景按块压白，笔画保留原灰度；硬切会把淡笔画和小数点一起抹掉。
+std::vector<uint8_t> binarizeSoft(const std::vector<uint8_t>& gray, int width, int height);
+
 }  // namespace ocr

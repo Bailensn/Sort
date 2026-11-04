@@ -325,6 +325,27 @@ void testAnalyzeWithoutBackend() {
     expect(analysis.stats.elapsedMs >= 0.0, "应当有耗时");
 }
 
+/// 软二值：纸面压成纯白，笔画保留原灰度，淡笔画不能被抹成 0。
+void testSoftBinary() {
+    const int width = 64;
+    const int height = 64;
+    std::vector<uint8_t> gray(static_cast<size_t>(width) * static_cast<size_t>(height), 245);
+    for (int y = 10; y < 54; ++y) {
+        gray[static_cast<size_t>(y) * static_cast<size_t>(width) + 20] = 150;
+        gray[static_cast<size_t>(y) * static_cast<size_t>(width) + 40] = 40;
+    }
+
+    const std::vector<uint8_t> soft = ocr::binarizeSoft(gray, width, height);
+    expect(soft.size() == gray.size(), "软二值尺寸应和输入一致");
+    if (soft.size() != gray.size()) return;
+
+    expect(soft[0] == 255, "纸面应被压成纯白");
+    const size_t faint = static_cast<size_t>(30) * static_cast<size_t>(width) + 20;
+    const size_t solid = static_cast<size_t>(30) * static_cast<size_t>(width) + 40;
+    expect(soft[faint] == 150, "淡笔画应保留原灰度");
+    expect(soft[solid] == 40, "实笔画应保留原灰度");
+}
+
 }  // namespace
 
 int main() {
@@ -333,6 +354,7 @@ int main() {
     testSkew();
     testEdgeLinesAndOverlay();
     testBinaryPolarity();
+    testSoftBinary();
     testMorphology();
     testGrayOrder();
     testStemsAreNotLines();

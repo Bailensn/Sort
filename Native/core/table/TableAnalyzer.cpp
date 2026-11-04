@@ -340,7 +340,7 @@ PassOutput recognizeDeep(OcrEngine& engine, const Image8& work, const Image8& en
         }
     }
 
-    // 四遍：低到看不清的格子用二值图再认一次，输入形态和灰度图完全不同。
+    // 四遍：低到看不清的格子换软二值图再认一次，背景全白、笔画留灰度。
     std::vector<size_t> hopeless;
     for (size_t i = 0; i < pass.readings.size(); ++i) {
         const CellReading& reading = pass.readings[i];
@@ -351,14 +351,13 @@ PassOutput recognizeDeep(OcrEngine& engine, const Image8& work, const Image8& en
         std::vector<uint8_t> binaryGray = toGray(work);
         if (!binaryGray.empty()) {
             flattenLighting(binaryGray, work.width, work.height);
-            // 白纸黑字：纸 255、笔画 0，直接喂 rec
-            const std::vector<uint8_t> binary = binarizeForText(binaryGray);
-            const Image8 binaryImage = grayToImage(binary, work.width, work.height);
+            const std::vector<uint8_t> soft = binarizeSoft(binaryGray, work.width, work.height);
+            const Image8 softImage = grayToImage(soft, work.width, work.height);
             std::vector<Rect> hopelessRects;
             hopelessRects.reserve(hopeless.size());
             for (size_t index : hopeless) hopelessRects.push_back(rects[index]);
             const std::vector<CellReading> fromBinary =
-                engine.recognizeCells(binaryImage, hopelessRects, kStrictScale);
+                engine.recognizeCells(softImage, hopelessRects, kStrictScale);
             for (size_t position = 0; position < hopeless.size() && position < fromBinary.size();
                  ++position) {
                 std::vector<CellReading> candidates;
