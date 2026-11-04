@@ -542,28 +542,10 @@ bool isSingleLetter(const std::string& value) {
 }  // namespace
 
 TableRows dropStrayLetters(const TableRows& rows) {
-    if (rows.empty()) return rows;
-    size_t width = 0;
-    for (const auto& row : rows) width = std::max(width, row.size());
-    if (width == 0) return rows;
-
     TableRows result = rows;
-    for (size_t column = 0; column < width; ++column) {
-        std::vector<std::string> values;
-        for (const auto& row : result) {
-            if (column >= row.size()) continue;
-            const std::string value = trim(row[column]);
-            if (!value.empty()) values.push_back(value);
-        }
-        int letters = 0;
-        for (const auto& value : values) {
-            if (isSingleLetter(value)) ++letters;
-        }
-        // 整列都是单个字母才算「等级列」；孤零零一个 E 是线头
-        if (letters == 0 || (letters >= 3 && letters == static_cast<int>(values.size()))) continue;
-        for (auto& row : result) {
-            if (column >= row.size()) continue;
-            if (isSingleLetter(trim(row[column]))) row[column].clear();
+    for (auto& row : result) {
+        for (auto& cell : row) {
+            if (isSingleLetter(trim(cell))) cell.clear();
         }
     }
     return result;
