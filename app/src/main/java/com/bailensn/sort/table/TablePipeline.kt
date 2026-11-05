@@ -216,6 +216,12 @@ object TablePipeline {
         // 逐格识别整批失败（曾经因为一次把所有裁剪图攒在内存里而 OOM）时，
         // 先退回原尺寸再试一次；还不行就保留网格结构、留空，别退回文字聚类——
         // 聚类出来的列数对不上，导出的表直接没法用。
+        // 第一遍用「去掉大片阴影」的原图：阴影被压平，笔画还是原样，
+        // 比直接喂原图少一层干扰，也不像增强图那样动对比度。
+        val firstSource = ImageEnhancer.flattenOnly(bitmap) ?: bitmap
+        ScanLog.scan(
+            if (firstSource === bitmap) "第一遍：原图（压平失败）" else "第一遍：去阴影原图",
+        )
         // 一行一次调用：识别完一行就报一行，界面上才能实时看到「这行有没有字」。
         val readings = MutableList(cellGrid.cells.size) { CellReading("", 0f, hasInk = false) }
         var rowFailed = false
@@ -223,7 +229,7 @@ object TablePipeline {
             val indices = cellGrid.cells.indices.filter { cellGrid.cells[it].row == row }
             if (indices.isEmpty()) continue
             val rowRects = indices.map { rects[it] }
-            val part = runCatching { ocr.recognizeCells(bitmap, rowRects) }.getOrNull()
+            val part = runCatching { ocr.recognizeCells(firstSource, rowRects) }.getOrNull()
             if (part == null || part.size != rowRects.size) {
                 rowFailed = true
                 break
@@ -245,7 +251,9 @@ object TablePipeline {
         // 逐行失败就退回整批再试一次（曾经因为一次攒太多裁剪图而 OOM）。
         var recognized: List<CellReading> = if (rowFailed) {
             runCatching {
-                ocr.recognizeCells(bitmap, rects) { fraction -> onProgress(0.25f + 0.33f * fraction) }
+                ocr.recognizeCells(firstSource, rects) { fraction ->
+                    onProgress(0.25f + 0.33f * fraction)
+                }
             }.getOrElse {
                 runCatching { ocr.recognizeCells(bitmap, rects, scale = 1f) }.getOrElse {
                     return@coroutineScope CellPass(TableGrid(emptyList(), TableGrid.Mode.GRID_LINES), 0)
@@ -254,6 +262,7 @@ object TablePipeline {
         } else {
             readings
         }
+        if (firstSource !== bitmap) firstSource.recycle()
 
         // 置信度统计只看首遍（纯 v6）：后面几遍混进了 v5 复核模型，
         // 它的分数天生低一截，平均进去会永远卡在 82% 上下。
