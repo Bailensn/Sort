@@ -5,6 +5,7 @@ import android.graphics.Bitmap
 import android.graphics.Rect
 import android.graphics.RectF
 import android.os.SystemClock
+import com.bailensn.sort.util.ScanLog
 import com.paddle.ocr.PaddleOCR
 import com.paddle.ocr.model.CellReading
 import com.paddle.ocr.postprocess.CellText
@@ -65,6 +66,11 @@ object TablePipeline {
         var working = deskewed.bitmap
         var detection = detectSafely(working)
         var rectified = false
+        ScanLog.scan(
+            "裁边 ${cropped.width}×${cropped.height}，纠偏 " +
+                "${String.format(java.util.Locale.US, "%.2f", deskewed.angleDegrees)}°，" +
+                "检测到横线 ${detection.horizontal.size} 竖线 ${detection.vertical.size}",
+        )
 
         if (detection.isUsable) {
             val warped = runCatching { PerspectiveRectifier.rectify(working, detection) }.getOrNull()
@@ -85,6 +91,10 @@ object TablePipeline {
             }
         }
 
+        ScanLog.scan(
+            if (rectified) "透视校正完成，工作图 ${working.width}×${working.height}" else "透视校正跳过",
+        )
+
         // 二遍识别和界面预览都用这张：照度压平 + 拉对比度后的灰度图。
         val enhanced = runCatching { ImageEnhancer.enhance(working) }.getOrNull()
 
@@ -99,6 +109,10 @@ object TablePipeline {
         // 表格线宽估计 + 1px，用于裁格时把线整个切掉：
         // 残留的线头会被识别成 "1" 或 "|"，这是空白格里出现 1 的主要原因。
         val borderInset = LineThickness.estimate(working, gridLines) + 1
+        ScanLog.scan(
+            "切格：${cellGrid.rows} 行 × ${cellGrid.columns} 列，共 $cellCount 格，" +
+                "线宽偏置 $borderInset",
+        )
 
         var grid = TableGrid(emptyList(), TableGrid.Mode.TEXT_CLUSTER)
         var correctedCells = 0
@@ -118,16 +132,27 @@ object TablePipeline {
             lowConfidenceCells = pass.lowConfidenceCells
             selfCheck = pass.selfCheck
 
+            ScanLog.scan(
+                "逐格识别：平均置信度 " +
+                    "${String.format(java.util.Locale.US, "%.1f", averageConfidence * 100)}%，" +
+                    "低置信度 $lowConfidenceCells 格，修正 $correctedCells 格",
+            )
             if (grid.filledCellCount < 2) {
+                ScanLog.scan("逐格几乎没读出内容，改整图识别")
                 onStage(Stage.RECOGNIZE)
                 grid = recognizeByDetection(ocr, working)
                 correctedCells = 0
             }
         } else {
+            ScanLog.scan("没切出格子，直接整图识别")
             onStage(Stage.RECOGNIZE)
             grid = recognizeByDetection(ocr, working)
         }
 
+        ScanLog.scan(
+            "输出：${grid.rows.size} 行 × ${grid.rows.firstOrNull()?.size ?: 0} 列，" +
+                "有内容 ${grid.filledCellCount} 格",
+        )
         val overlay = runCatching { GridOverlay.draw(working, detection) }.getOrElse { working }
         onProgress(1f)
         return Analysis(
@@ -208,8 +233,10 @@ object TablePipeline {
             val reading = recognized[index]
             reading.hasInk && reading.confidence < TRUSTED_CONFIDENCE
         }
+        ScanLog.scan("首遍逐格：${recognized.size} 格里有 ${strictIndices.size} 格不够可信")
         if (strictIndices.isNotEmpty()) {
             onProgress(0.62f)
+            ScanLog.scan("二遍换增强图重认 ${strictIndices.size} 格")
             val strictSource = enhanced ?: bitmap
             val strictRects = strictIndices.map { rects[it] }
             // 串行跑：两个会话共享同一个 ORT 环境，并发调用没在真机上验证过，
