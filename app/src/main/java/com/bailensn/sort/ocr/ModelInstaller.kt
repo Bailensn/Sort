@@ -5,49 +5,73 @@ import com.bailensn.sort.R
 import com.bailensn.sort.util.ScanLog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import org.json.JSONObject
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
-import java.net.URLEncoder
 
 /**
- * 模型不再随包发：首启从分享盘拉，边下边校验字节数。
- * 网盘只给签名直链（约一小时过期），所以每次下载前现换一个。
+ * 模型不再随包发：首启从 ModelScope 的 CDN 拉，边下边校验字节数。
+ * 备用源是 GitHub prerelease，CDN 不通时兜底。
  */
 object ModelInstaller {
 
     private const val VERSION = "onnx-share-1"
     private const val DIR = "ocr-models"
 
-    /** 分享盘目录 key，对应 https://pan.fuwushang.net/s/Qdws1。 */
-    private const val SHARE_KEY = "Qdws1"
-    private const val SHARE_API = "https://pan.fuwushang.net/api/v3/share/download"
-
-    /** 兜底源：GitHub prerelease，网盘挂了也能装得上。 */
+    private const val MODELSCOPE = "https://modelscope.cn/models/PaddlePaddle"
     private const val BACKUP_BASE = "https://github.com/Bailensn/Sort/releases/download/models-onnx"
 
     private data class Spec(
-        /** 网盘上的文件名。 */
-        val remote: String,
-        /** 备用源上的文件名。 */
-        val backup: String,
         /** 落盘后的相对路径，ppocr-sdk 按这个布局找模型。 */
         val local: String,
+        /** 主源地址（ModelScope CDN）。 */
+        val primary: String,
+        /** 备用源文件名（GitHub release）。 */
+        val backup: String,
         val size: Long,
         val required: Boolean,
     )
 
-    // 大小是网盘上文件的真实字节数，下完只按字节数校验。
+    // 大小是官方仓库里的真实字节数，下完只按字节数校验。
     private val FILES = listOf(
-        Spec("det.onnx.pak", "det.onnx", "det/inference.onnx", 62032837L, true),
-        Spec("rec.onnx.pak", "rec.onnx", "rec/inference.onnx", 76554979L, true),
-        Spec("rec.yml.pak", "rec.yml", "rec/inference.yml", 150580L, true),
+        Spec(
+            "det/inference.onnx",
+            "$MODELSCOPE/PP-OCRv6_medium_det_onnx/resolve/main/inference.onnx",
+            "det.onnx",
+            62032837L,
+            true,
+        ),
+        Spec(
+            "rec/inference.onnx",
+            "$MODELSCOPE/PP-OCRv6_medium_rec_onnx/resolve/main/inference.onnx",
+            "rec.onnx",
+            76554979L,
+            true,
+        ),
+        Spec(
+            "rec/inference.yml",
+            "$MODELSCOPE/PP-OCRv6_medium_rec_onnx/resolve/main/inference.yml",
+            "rec.yml",
+            150580L,
+            true,
+        ),
         // 复核模型可选：缺了只是少一遍投票
-        Spec("referee.onnx.pak", "referee.onnx", "referee/inference.onnx", 84503027L, false),
-        Spec("referee.yml.pak", "referee.yml", "referee/inference.yml", 148345L, false),
+        Spec(
+            "referee/inference.onnx",
+            "$MODELSCOPE/PP-OCRv5_server_rec_onnx/resolve/main/inference.onnx",
+            "referee.onnx",
+            84503027L,
+            false,
+        ),
+        Spec(
+            "referee/inference.yml",
+            "$MODELSCOPE/PP-OCRv5_server_rec_onnx/resolve/main/inference.yml",
+            "referee.yml",
+            148345L,
+            false,
+        ),
     )
 
     fun modelDir(context: Context): File = File(context.filesDir, DIR)
@@ -86,21 +110,21 @@ object ModelInstaller {
                 val target = File(dir, spec.local)
                 target.parentFile?.mkdirs()
                 ScanLog.d(
-                    "模型 ${index + 1}/${FILES.size}：${spec.remote} " +
+                    "模型 ${index + 1}/${FILES.size}：${spec.local} " +
                         "(${spec.size / 1024 / 1024} MB)",
                 )
                 val ok = runCatching {
                     fetch(spec, target) { fraction -> onProgress(index, FILES.size, fraction) }
                 }.getOrElse { error ->
-                    ScanLog.e("模型下载异常：${spec.remote}", error)
+                    ScanLog.e("模型下载异常：${spec.local}", error)
                     false
                 }
                 if (ok) {
                     ScanLog.d("模型就绪：${spec.local}")
                 } else {
-                    ScanLog.w("模型没下成：${spec.remote}")
+                    ScanLog.w("模型没下成：${spec.local}")
                     if (spec.required) {
-                        throw IOException(context.getString(R.string.model_download_failed, spec.remote))
+                        throw IOException(context.getString(R.string.model_download_failed, spec.local))
                     }
                     ScanLog.w("复核模型缺失，继续跑（少一遍投票）")
                 }
@@ -110,20 +134,19 @@ object ModelInstaller {
             dir
         }
 
-    /** 两轮：每轮先网盘、再 prerelease，谁的字节数对上就用谁。 */
+    /** 两轮：每轮先 CDN、再 prerelease，谁的字节数对上就用谁。 */
     private fun fetch(spec: Spec, target: File, onFraction: (Float) -> Unit): Boolean {
         val temp = File(target.parentFile, "${target.name}.part")
         repeat(2) { round ->
-            val sources = mutableListOf<String>()
-            signUrl(spec.remote)?.let { sources.add(it) }
-            sources.add("$BACKUP_BASE/${spec.backup}")
-
-            for (source in sources) {
+            val sources = listOf(spec.primary, "$BACKUP_BASE/${spec.backup}")
+            for ((position, source) in sources.withIndex()) {
                 val done = temp.takeIf { it.isFile }?.length() ?: 0L
                 if (done == spec.size) break
                 if (done > spec.size) temp.delete()
-                val host = if (source.contains("github.com")) "backup" else "share"
-                ScanLog.d("下载 ${spec.remote}（第 ${round + 1} 轮，$host，已有 $done 字节）")
+                ScanLog.d(
+                    "下载 ${spec.local}（第 ${round + 1} 轮，" +
+                        "${if (position == 0) "cdn" else "backup"}，已有 $done 字节）",
+                )
                 download(source, temp, spec.size, onFraction)
             }
 
@@ -136,35 +159,6 @@ object ModelInstaller {
         return false
     }
 
-    /** 换一个签名直链；失败返回 null，交给下一轮重试。 */
-    private fun signUrl(remote: String): String? {
-        val path = URLEncoder.encode("/$remote", "UTF-8")
-        val connection =
-            URL("$SHARE_API/$SHARE_KEY?path=$path").openConnection() as HttpURLConnection
-        return try {
-            connection.requestMethod = "PUT"
-            connection.connectTimeout = 15000
-            connection.readTimeout = 30000
-            connection.doOutput = true
-            connection.setFixedLengthStreamingMode(0)
-            connection.outputStream.close()
-            if (connection.responseCode != 200) {
-                ScanLog.w("换签名失败：HTTP ${connection.responseCode}")
-                return null
-            }
-            val body = connection.inputStream.bufferedReader().use { it.readText() }
-            val json = JSONObject(body)
-            if (json.optInt("code") != 0) {
-                ScanLog.w("换签名被拒：code ${json.optInt("code")}")
-                return null
-            }
-            json.optString("data").takeIf { it.startsWith("http") }
-        } catch (error: IOException) {
-            ScanLog.w("换签名异常：${error.javaClass.simpleName}")
-            null
-        }
-    }
-
     /** 断点续传：有 .part 就带 Range，服务端不认 206 就整份重下。 */
     private fun download(
         url: String,
@@ -175,12 +169,13 @@ object ModelInstaller {
         return try {
             val start = temp.takeIf { it.isFile }?.length() ?: 0L
             val connection = URL(url).openConnection() as HttpURLConnection
+            connection.instanceFollowRedirects = true
             connection.connectTimeout = 15000
             connection.readTimeout = 120000
             if (start > 0L) connection.setRequestProperty("Range", "bytes=$start-")
             val code = connection.responseCode
             if (code != 200 && code != 206) {
-                ScanLog.w("下载失败：HTTP $code")
+                ScanLog.w("下载失败：HTTP $code（$url）")
                 return false
             }
 
