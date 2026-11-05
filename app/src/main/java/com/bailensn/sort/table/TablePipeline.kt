@@ -468,6 +468,9 @@ object TablePipeline {
 
         val selfCheckResult = TableSelfCheck.check(trimmedAligned.rows, alignedConfidence)
         val selfCheck = selfCheckResult.report
+        ScanLog.scan(
+            "算术自检：修正 ${selfCheck.correctedCells} 格，存疑 ${selfCheck.suspiciousRows.size} 行",
+        )
         val trimmed = selfCheckResult.rows
         // 分数列里 5→S、0→O 这类错字按列纠正：整列大多是数字时才动手。
         val repaired = NumericColumnRepair.repair(trimmed)

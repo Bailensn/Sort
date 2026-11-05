@@ -45,6 +45,18 @@ class TableSelfCheckTest {
     }
 
     @Test
+    fun restoresDroppedDecimalPoint() {
+        // 语文 94.5 被认成 945：补一个小数点就能和总分对上
+        val broken = clean.mapIndexed { index, row ->
+            if (index == 0) row.toMutableList().also { it[4] = "945" } else row
+        }
+        val result = TableSelfCheck.check(broken, confidences())
+
+        assertEquals("94.5", result.rows[0][4])
+        assertEquals(1, result.report.correctedCells)
+    }
+
+    @Test
     fun leavesAmbiguousMismatchAlone() {
         // 同时改两格（差 3 和差 9），任何单格修改都对不平——宁可不改，只报存疑。
         val broken = clean.mapIndexed { index, row ->

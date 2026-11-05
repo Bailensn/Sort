@@ -184,6 +184,19 @@ object TableSelfCheck {
                     }
                 }
             }
+            // 小数点被吃掉：94.5 认成 945，补个点就能和总分对上
+            if (!raw.contains('.')) {
+                for (position in 1 until raw.length) {
+                    val candidate = raw.substring(0, position) + "." + raw.substring(position)
+                    if (column == totalColumn) {
+                        val edited = parseNumber(candidate) ?: continue
+                        if (kotlin.math.abs(sum - edited) <= SUM_EPSILON) candidates.add(column to candidate)
+                    } else {
+                        val editedSum = sum - (parseNumber(raw) ?: 0.0) + (parseNumber(candidate) ?: 0.0)
+                        if (kotlin.math.abs(editedSum - total) <= SUM_EPSILON) candidates.add(column to candidate)
+                    }
+                }
+            }
         }
         if (candidates.size == 1) return candidates.first()
         if (candidates.isEmpty() || confidences == null) return null
