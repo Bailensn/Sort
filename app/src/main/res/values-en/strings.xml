@@ -82,4 +82,8 @@
     <string name="tab_history">History</string>
     <string name="history_subtitle">Tap to open, tick to delete</string>
     <string name="section_log">Scan log</string>
+    <string name="privacy_title">Privacy</string>
+    <string name="privacy_body">Photos are recognized on this device by default and never uploaded. With cloud recognition on, the image goes to the PaddleOCR service for that one recognition; exported sheets stay on this device.</string>
+    <string name="privacy_accept">Agree and continue</string>
+    <string name="privacy_wait">Read first (%1$d s)</string>
 </resources>

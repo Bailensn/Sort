@@ -82,4 +82,8 @@
     <string name="tab_history">履歴</string>
     <string name="history_subtitle">タップで開く、選択で削除</string>
     <string name="section_log">スキャンログ</string>
+    <string name="privacy_title">プライバシー</string>
+    <string name="privacy_body">画像は既定で端末内で認識され、アップロードされません。クラウド認識を有効にすると、画像は PaddleOCR サービスに送信され、この認識にのみ使われます。書き出した表は端末内にのみ保存されます。</string>
+    <string name="privacy_accept">同意して続行</string>
+    <string name="privacy_wait">先にお読みください（%1$d 秒）</string>
 </resources>
