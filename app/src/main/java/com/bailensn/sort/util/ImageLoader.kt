@@ -13,10 +13,13 @@ import com.bailensn.sort.R
 import com.bailensn.sort.util.ScanLog
 import java.io.ByteArrayInputStream
 
-/** 从相册 Uri 解码出可用于 OCR 的 Bitmap：限制尺寸、按 EXIF 摆正。 */
+/** 从相册 Uri 解码出可用于 OCR 的 Bitmap：原图分辨率优先、按 EXIF 摆正。 */
 object ImageLoader {
 
-    fun decode(context: Context, uri: Uri, maxSide: Int = 2048): Bitmap {
+    /** 24 MP 以上才缩：小字优先，但内存别先炸。 */
+    private const val MAX_PIXELS = 24_000_000
+
+    fun decode(context: Context, uri: Uri): Bitmap {
         val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
             ?: error(context.getString(R.string.error_image_read))
         ScanLog.d("读入图片：${bytes.size / 1024} KB")
@@ -28,17 +31,17 @@ object ImageLoader {
         }
         ScanLog.d("原图尺寸：${bounds.outWidth}×${bounds.outHeight}")
 
+        // 缩采样一次，小字和小数点就永久回不来了：只有超预算或 OOM 才降
         var sampleSize = 1
-        while (maxOf(bounds.outWidth, bounds.outHeight) / sampleSize > maxSide) {
+        while (bounds.outWidth.toLong() * bounds.outHeight / (sampleSize * sampleSize) > MAX_PIXELS) {
             sampleSize *= 2
         }
-
-        val options = BitmapFactory.Options().apply {
-            inSampleSize = sampleSize
-            inPreferredConfig = Bitmap.Config.ARGB_8888
+        var decoded = decodeOrNull(bytes, sampleSize)
+        while (decoded == null && sampleSize < 8) {
+            sampleSize *= 2
+            decoded = decodeOrNull(bytes, sampleSize)
         }
-        val decoded = BitmapFactory.decodeByteArray(bytes, 0, bytes.size, options)
-            ?: error(context.getString(R.string.error_image_decode))
+        val bitmap = decoded ?: error(context.getString(R.string.error_image_decode))
 
         val orientation = runCatching {
             ExifInterface(ByteArrayInputStream(bytes)).getAttributeInt(
@@ -47,7 +50,22 @@ object ImageLoader {
             )
         }.getOrDefault(ExifInterface.ORIENTATION_NORMAL)
 
-        return flattenOnWhite(applyOrientation(decoded, orientation))
+        ScanLog.d("解码尺寸：${bitmap.width}×${bitmap.height}（sample=$sampleSize）")
+        return flattenOnWhite(applyOrientation(bitmap, orientation))
+    }
+
+    private fun decodeOrNull(bytes: ByteArray, sampleSize: Int): Bitmap? = try {
+        BitmapFactory.decodeByteArray(
+            bytes,
+            0,
+            bytes.size,
+            BitmapFactory.Options().apply {
+                inSampleSize = sampleSize
+                inPreferredConfig = Bitmap.Config.ARGB_8888
+            },
+        )
+    } catch (oom: OutOfMemoryError) {
+        null
     }
 
     private fun flattenOnWhite(bitmap: Bitmap): Bitmap {

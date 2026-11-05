@@ -418,7 +418,15 @@ object TablePipeline {
 
                 cellText.contains(detector.first) || detector.first.contains(cellText) -> {
                     corrected++
-                    if (reading.confidence >= detector.second) cellText else detector.first
+                    // 一边包含另一边：短的多半只框了一两个字，除非它明显更可信，留长的
+                    val cellLonger = cellText.length > detector.first.length
+                    val longerConf = if (cellLonger) reading.confidence else detector.second
+                    val shorterConf = if (cellLonger) detector.second else reading.confidence
+                    if (shorterConf > longerConf + 0.1f) {
+                        if (cellLonger) detector.first else cellText
+                    } else {
+                        if (cellLonger) cellText else detector.first
+                    }
                 }
 
                 reading.confidence >= detector.second -> cellText
@@ -473,7 +481,7 @@ object TablePipeline {
         )
         val trimmed = selfCheckResult.rows
         // 分数列里 5→S、0→O 这类错字按列纠正：整列大多是数字时才动手。
-        val repaired = NumericColumnRepair.repair(trimmed)
+        val repaired = dropLetterCells(NumericColumnRepair.repair(trimmed))
         val repairedCells = trimmed.zip(repaired).sumOf { (before, after) ->
             before.zip(after).count { (left, right) -> left != right }
         }
@@ -489,6 +497,16 @@ object TablePipeline {
             lowConfidenceCells = lowConfidenceCells,
             selfCheck = selfCheck,
         )
+    }
+
+    /** 格里只可能是数字或中文：带拉丁字母又没汉字的，判空（S8/O0 已经被数字修复吃掉）。 */
+    private fun dropLetterCells(rows: List<List<String>>): List<List<String>> = rows.map { row ->
+        row.map { cell ->
+            val value = cell.trim()
+            val letter = value.any { it in 'a'..'z' || it in 'A'..'Z' }
+            val wide = value.any { it.code > 0x2E7F }
+            if (letter && !wide) "" else cell
+        }
     }
 
     private suspend fun recognizeByDetection(ocr: PaddleOCR, bitmap: Bitmap): TableGrid {

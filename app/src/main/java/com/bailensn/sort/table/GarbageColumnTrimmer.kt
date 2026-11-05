@@ -18,6 +18,25 @@ object GarbageColumnTrimmer {
 
     private const val LETTER_COLUMN_RATIO = 0.5
 
+
+    /** 整列都是同一个 1~2 字符的碎屑（线头被认成「1」「|」），不可能是真数据。 */
+    private fun isDebrisColumn(values: List<String>): Boolean {
+        if (values.size < 3) return false
+        val first = values.first()
+        if (first.isEmpty() || first.length > 2) return false
+        var symbol = false
+        for (character in first) {
+            when {
+                character in '0'..'9' -> Unit
+                character == '|' || character == '-' || character == '_' ||
+                    character == '.' || character == '\'' -> symbol = true
+                else -> return false
+            }
+        }
+        if (values.any { it != first }) return false
+        return symbol || first == "1" || first == "l" || first == "I" || values.size >= 10
+    }
+
     /** 裁列结果：裁完的行 + 左边被丢掉的列数（用于对齐置信度矩阵）。 */
     data class Trimmed(val rows: List<List<String>>, val droppedLeading: Int)
 
@@ -44,6 +63,11 @@ object GarbageColumnTrimmer {
                 start++
                 continue
             }
+            // 整列都是同一个「1」：线头，不是数据
+            if (isDebrisColumn(values)) {
+                start++
+                continue
+            }
             break
         }
 
@@ -52,6 +76,10 @@ object GarbageColumnTrimmer {
             val column = end - 1
             val values = grid.mapNotNull { it[column].takeIf(String::isNotEmpty) }
             if (values.isEmpty()) {
+                end--
+                continue
+            }
+            if (isDebrisColumn(values)) {
                 end--
                 continue
             }
@@ -86,11 +114,14 @@ object GarbageColumnTrimmer {
         val width = rows.maxOfOrNull { it.size } ?: return rows
         if (width <= 1) return rows
 
+        val debris = BooleanArray(width) { column ->
+            isDebrisColumn(rows.mapNotNull { row -> row.getOrNull(column)?.takeIf(String::isNotBlank) })
+        }
         val noisy = BooleanArray(width) { column ->
             val values = rows.mapNotNull { row -> row.getOrNull(column)?.takeIf(String::isNotBlank) }
             val filledRatio = values.size.toDouble() / rows.size
             if (filledRatio > MAX_NOISY_FILL) {
-                false
+                debris[column]
             } else {
                 val longValues = values.count { it.length > 3 }
                 val letterRatio = if (values.isEmpty()) {
@@ -102,8 +133,9 @@ object GarbageColumnTrimmer {
                 // 成绩单这块业务里，拉丁字母只会是噪声：姓名是中文、学号是数字、分数是数字。
                 // 所以「含字母的比例够高」可以直接判噪声，不必要求整列都没有中文
                 // （横线碎片 `一` 这种会让「无中文」判定失效）。
-                (values.all(::noChinese) || letterRatio >= MAX_NOISE_LETTER_RATIO) &&
-                    longValues <= values.size * MAX_LONG_VALUE_RATIO
+                debris[column] ||
+                    ((values.all(::noChinese) || letterRatio >= MAX_NOISE_LETTER_RATIO) &&
+                        longValues <= values.size * MAX_LONG_VALUE_RATIO)
             }
         }
 
@@ -115,8 +147,8 @@ object GarbageColumnTrimmer {
             }
             var end = start
             while (end + 1 < width && noisy[end + 1]) end++
-            // 单列不算：真数据里「只有部分行有值」的列很常见。
-            if (end == start) noisy[start] = false
+            // 单列不算：真数据里「只有部分行有值」的列很常见；碎屑列例外。
+            if (end == start && !debris[start]) noisy[start] = false
             start = end + 1
         }
         if (noisy.none { it }) return rows
