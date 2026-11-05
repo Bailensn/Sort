@@ -428,6 +428,12 @@ object TablePipeline {
                     detector.first
                 }
             }
+            // 具体到每一格：只写位置和有没有字，不写内容
+            ScanLog.scan(
+                "R${cell.row + 1}C${cell.column + 1} " +
+                    (if (reading.hasInk) "有字" else "空") +
+                    (if (chosen.isEmpty()) "（留空）" else ""),
+            )
             matrix[cell.row][cell.column] = chosen
             confidenceGrid[cell.row][cell.column] =
                 if (detector != null && chosen == detector.first && chosen != cellText) detector.second
@@ -437,10 +443,22 @@ object TablePipeline {
         // 顺序很重要：先清坏列/空列噪声、裁掉两侧垃圾列，**最后再做算术自检**。
         // 反过来的话「最右一列是总分」会命中右边的垃圾列，
         // 自检把算出来的总分写进垃圾列，导出后就会出现两列一模一样的成绩。
+        val beforeWidth = matrix.firstOrNull()?.size ?: 0
         val cleanedRows = GarbageColumnTrimmer.cleanNoisyColumns(
             GarbageColumnTrimmer.cleanBadColumns(matrix),
         )
+        val emptiedColumns = (0 until beforeWidth).count { column ->
+            matrix.any { it.getOrNull(column)?.isNotEmpty() == true } &&
+                cleanedRows.all { it.getOrNull(column).isNullOrEmpty() }
+        }
+        if (emptiedColumns > 0) {
+            ScanLog.scan("判为垃圾列：$emptiedColumns 列被清空")
+        }
         val trimmedAligned = GarbageColumnTrimmer.trimAligned(cleanedRows)
+        ScanLog.scan(
+            "裁列：$beforeWidth 列 → ${trimmedAligned.rows.firstOrNull()?.size ?: 0} 列，" +
+                "左侧丢 ${trimmedAligned.droppedLeading} 列",
+        )
 
         // 裁列会丢掉左边的空白列，置信度矩阵按同样偏移切一刀，保持一一对应。
         val width = trimmedAligned.rows.firstOrNull()?.size ?: 0
@@ -453,6 +471,10 @@ object TablePipeline {
         val trimmed = selfCheckResult.rows
         // 分数列里 5→S、0→O 这类错字按列纠正：整列大多是数字时才动手。
         val repaired = NumericColumnRepair.repair(trimmed)
+        val repairedCells = trimmed.zip(repaired).sumOf { (before, after) ->
+            before.zip(after).count { (left, right) -> left != right }
+        }
+        if (repairedCells > 0) ScanLog.scan("数字列修复：改了 $repairedCells 格")
         val grid = TableGridBuilder.normalize(repaired, TableGrid.Mode.GRID_LINES)
             ?: TableGrid(emptyList(), TableGrid.Mode.GRID_LINES)
         CellPass(
