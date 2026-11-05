@@ -1,0 +1,56 @@
+name: models-onnx
+
+# 手动跑：从分享盘把 ONNX 模型拉下来，发到 prerelease 当兜底源。
+# App 首启先走网盘，网盘挂了就吃这里的同名文件。
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    name: Publish ONNX models
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Download from share
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p out
+          # 网盘上的文件名带 .pak 后缀，落盘用原名
+          declare -A spec=(
+            [det.onnx]=det.onnx.pak
+            [rec.onnx]=rec.onnx.pak
+            [rec.yml]=rec.yml.pak
+            [referee.onnx]=referee.onnx.pak
+            [referee.yml]=referee.yml.pak
+          )
+          for name in "${!spec[@]}"; do
+            remote="${spec[$name]}"
+            url=$(curl -fsS -X PUT --data '' \
+              "https://pan.fuwushang.net/api/v3/share/download/Qdws1?path=/${remote}" \
+              | python3 -c 'import sys, json; print(json.load(sys.stdin)["data"])')
+            curl -fsSL --retry 3 --retry-delay 2 -o "out/${name}" "$url"
+            printf '%s %s\n' "$name" "$(stat -c%s "out/${name}")"
+          done
+          # 少一个字节都别往 release 发
+          test "$(stat -c%s out/det.onnx)" = "62032837"
+          test "$(stat -c%s out/rec.onnx)" = "76554979"
+          test "$(stat -c%s out/rec.yml)" = "150580"
+          test "$(stat -c%s out/referee.onnx)" = "84503027"
+          test "$(stat -c%s out/referee.yml)" = "148345"
+
+      - name: Publish prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          # 整条重建：旧资产一律不残留
+          gh release delete models-onnx --yes --cleanup-tag || true
+          gh release create models-onnx out/* \
+            --prerelease \
+            --title "models-onnx" \
+            --notes "PP-OCR ONNX 模型，首启从分享盘下载失败时的兜底源。"

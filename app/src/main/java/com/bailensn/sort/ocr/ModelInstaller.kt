@@ -25,9 +25,14 @@ object ModelInstaller {
     private const val SHARE_KEY = "Qdws1"
     private const val SHARE_API = "https://pan.fuwushang.net/api/v3/share/download"
 
+    /** 兜底源：GitHub prerelease，网盘挂了也能装得上。 */
+    private const val BACKUP_BASE = "https://github.com/Bailensn/Sort/releases/download/models-onnx"
+
     private data class Spec(
         /** 网盘上的文件名。 */
         val remote: String,
+        /** 备用源上的文件名。 */
+        val backup: String,
         /** 落盘后的相对路径，ppocr-sdk 按这个布局找模型。 */
         val local: String,
         val size: Long,
@@ -36,12 +41,12 @@ object ModelInstaller {
 
     // 大小是网盘上文件的真实字节数，下完只按字节数校验。
     private val FILES = listOf(
-        Spec("det.onnx.pak", "det/inference.onnx", 62032837L, true),
-        Spec("rec.onnx.pak", "rec/inference.onnx", 76554979L, true),
-        Spec("rec.yml.pak", "rec/inference.yml", 150580L, true),
+        Spec("det.onnx.pak", "det.onnx", "det/inference.onnx", 62032837L, true),
+        Spec("rec.onnx.pak", "rec.onnx", "rec/inference.onnx", 76554979L, true),
+        Spec("rec.yml.pak", "rec.yml", "rec/inference.yml", 150580L, true),
         // 复核模型可选：缺了只是少一遍投票
-        Spec("referee.onnx.pak", "referee/inference.onnx", 84503027L, false),
-        Spec("referee.yml.pak", "referee/inference.yml", 148345L, false),
+        Spec("referee.onnx.pak", "referee.onnx", "referee/inference.onnx", 84503027L, false),
+        Spec("referee.yml.pak", "referee.yml", "referee/inference.yml", 148345L, false),
     )
 
     fun modelDir(context: Context): File = File(context.filesDir, DIR)
@@ -78,20 +83,22 @@ object ModelInstaller {
             dir
         }
 
-    /** 两轮：签名过期或断流都靠换一个链接重来。 */
+    /** 两轮：每轮先网盘、再 prerelease，谁的字节数对上就用谁。 */
     private fun fetch(spec: Spec, target: File): Boolean {
         val temp = File(target.parentFile, "${target.name}.part")
         repeat(2) {
-            val done = temp.takeIf { it.isFile }?.length() ?: 0L
-            if (done == spec.size) {
-                target.delete()
-                return temp.renameTo(target)
-            }
-            if (done > spec.size) temp.delete()
+            val sources = mutableListOf<String>()
+            signUrl(spec.remote)?.let { sources.add(it) }
+            sources.add("$BACKUP_BASE/${spec.backup}")
 
-            val url = signUrl(spec.remote) ?: return@repeat
-            if (!download(url, temp)) return@repeat
-            if (temp.length() == spec.size) {
+            for (source in sources) {
+                val done = temp.takeIf { it.isFile }?.length() ?: 0L
+                if (done == spec.size) break
+                if (done > spec.size) temp.delete()
+                download(source, temp)
+            }
+
+            if (temp.takeIf { it.isFile }?.length() == spec.size) {
                 target.delete()
                 return temp.renameTo(target)
             }
