@@ -82,11 +82,6 @@ internal fun RecognizePage(
         modifier = Modifier.fillMaxSize(),
         contentPadding = contentPadding,
     ) {
-        // 扫描日志放最上面：正在识别时能一眼看到走到哪一步、卡在哪
-        if (logs.isNotEmpty()) {
-            item("log-title") { SmallTitle(stringResource(R.string.section_log)) }
-            item("log") { LogCard(lines = logs) }
-        }
         when (val engine = state.engine) {
             is EngineState.Loading -> {
                 item("engine-loading") {
@@ -204,6 +199,11 @@ internal fun RecognizePage(
                     }
                 }
             }
+        }
+        // 扫描日志放最下面：跟着识别往下滚，不挡抬头的内容
+        if (logs.isNotEmpty()) {
+            item("log-title") { SmallTitle(stringResource(R.string.section_log)) }
+            item("log") { LogCard(lines = logs) }
         }
     }
 }

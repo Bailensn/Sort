@@ -189,13 +189,13 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
             }
             try {
                 ScanLog.clear()
-                ScanLog.d("选中图片：$uri")
+                ScanLog.scan("选中图片：$uri")
                 val bitmap = withContext(Dispatchers.IO) { ImageLoader.decode(app, uri) }
-                ScanLog.d("解码完成：${bitmap.width}×${bitmap.height}")
+                ScanLog.scan("解码完成：${bitmap.width}×${bitmap.height}")
                 _state.update { it.copy(original = bitmap) }
                 runPipeline(bitmap)
             } catch (t: Throwable) {
-                ScanLog.e("取图失败", t)
+                ScanLog.scanError("取图失败", t)
                 _state.update {
                     it.copy(
                         phase = Phase.ERROR,
@@ -231,7 +231,7 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
                     ocr = ocr,
                     source = bitmap,
                     onStage = { stage ->
-                        ScanLog.d("阶段：$stage")
+                        ScanLog.scan("阶段：$stage")
                         _state.update { it.copy(stage = stage) }
                     },
                     onProgress = { value -> _state.update { it.copy(progress = value) } },
@@ -241,6 +241,10 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
             // 一行都没读到也是失败：界面上会摆出一张空表，看着像「渲染成空白」。
             val blank = analysis.grid.isEmpty || analysis.grid.filledCellCount == 0
             if (blank) {
+                ScanLog.scanError(
+                    "没认出内容：横线 ${analysis.horizontalLines}，竖线 ${analysis.verticalLines}，" +
+                        "格子 ${analysis.cellCount}",
+                )
                 val hint = if (analysis.cellCount == 0) {
                     app.getString(R.string.hint_no_lines, analysis.horizontalLines, analysis.verticalLines)
                 } else {
@@ -297,6 +301,11 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
                         meta = meta,
                     )
                 }
+                ScanLog.scan(
+                    "识别完成：${polished.rows.size} 行 × " +
+                        "${polished.rows.firstOrNull()?.size ?: 0} 列，" +
+                        "用时 ${analysis.elapsedMs} ms",
+                )
                 currentEntryId = entry?.id
                 _history.value = withContext(Dispatchers.IO) { HistoryStore.list(app) }
                 _state.update {
