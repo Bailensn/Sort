@@ -216,10 +216,7 @@ object TablePipeline {
         // 逐格识别整批失败（曾经因为一次把所有裁剪图攒在内存里而 OOM）时，
         // 先退回原尺寸再试一次；还不行就保留网格结构、留空，别退回文字聚类——
         // 聚类出来的列数对不上，导出的表直接没法用。
-        // 第一遍就用裁好的工作图：多余的部分已经在 ContentCropper 里切掉了，
-        // 这里不做任何光照补偿，笔画保持原样。
         val firstSource = bitmap
-        ScanLog.scan("第一遍：裁好的原图")
         // 一行一次调用：识别完一行就报一行，界面上才能实时看到「这行有没有字」。
         val readings = MutableList(cellGrid.cells.size) { CellReading("", 0f, hasInk = false) }
         var rowFailed = false
@@ -227,6 +224,7 @@ object TablePipeline {
             val indices = cellGrid.cells.indices.filter { cellGrid.cells[it].row == row }
             if (indices.isEmpty()) continue
             val rowRects = indices.map { rects[it] }
+            val rowStarted = SystemClock.elapsedRealtime()
             val part = runCatching { ocr.recognizeCells(firstSource, rowRects) }.getOrNull()
             if (part == null || part.size != rowRects.size) {
                 rowFailed = true
@@ -240,8 +238,12 @@ object TablePipeline {
                 )
             }
             val ink = part.count { it.hasInk }
+            val scored = part.filter { it.hasInk }
+            val lowest = scored.minOfOrNull { it.confidence } ?: 0f
             ScanLog.scan(
-                "第 ${row + 1}/${cellGrid.rows} 行：${indices.size} 格，$ink 格有字",
+                "第 ${row + 1}/${cellGrid.rows} 行：${indices.size} 格，$ink 格有字，" +
+                    "最低 ${String.format(java.util.Locale.US, "%.0f", lowest * 100)}%，" +
+                    "耗时 ${SystemClock.elapsedRealtime() - rowStarted} ms",
             )
             onProgress(0.25f + 0.33f * (row + 1).toFloat() / cellGrid.rows.coerceAtLeast(1))
         }
@@ -317,6 +319,8 @@ object TablePipeline {
                     )
                     if (candidates.size > 1) merged[index] = pickBest(candidates)
                 }
+                val changed = strictIndices.count { merged[it].text != recognized[it].text }
+                ScanLog.scan("二遍结果：改了 $changed 格的字")
                 recognized = merged
             }
         }
@@ -350,6 +354,8 @@ object TablePipeline {
                     )
                     merged[index] = pickBest(candidates)
                 }
+                val changed = thirdIndices.count { merged[it].text != recognized[it].text }
+                ScanLog.scan("三遍结果：改了 $changed 格的字")
                 recognized = merged
             }
         }
@@ -374,6 +380,8 @@ object TablePipeline {
                         val candidate = fromBinary.getOrNull(position) ?: return@forEachIndexed
                         merged[index] = pickBest(listOf(recognized[index], candidate))
                     }
+                    val changed = hopelessIndices.count { merged[it].text != recognized[it].text }
+                    ScanLog.scan("四遍（二值图）：改了 $changed 格的字")
                     recognized = merged
                 }
                 if (binary !== bitmap) binary.recycle()
@@ -493,7 +501,13 @@ object TablePipeline {
                 cleanedRows.all { it.getOrNull(column).isNullOrEmpty() }
         }
         if (emptiedColumns > 0) {
-            ScanLog.scan("判为垃圾列：$emptiedColumns 列被清空")
+            val indexes = (0 until beforeWidth).filter { column ->
+                matrix.any { it.getOrNull(column)?.isNotEmpty() == true } &&
+                    cleanedRows.all { it.getOrNull(column).isNullOrEmpty() }
+            }
+            ScanLog.scan(
+                "判为垃圾列：${indexes.size} 列被清空（第 ${indexes.joinToString(",") { (it + 1).toString() }} 列）",
+            )
         }
         val trimmedAligned = GarbageColumnTrimmer.trimAligned(cleanedRows)
         ScanLog.scan(
