@@ -41,7 +41,7 @@
 
     <string name="model_failed_title">模型加载失败</string>
     <string name="model_loading">正在加载识别模型</string>
-    <string name="model_downloading">正在下载识别模型 %1$d/%2$d</string>
+    <string name="model_downloading">正在下载识别模型 %1$d/%2$d（%3$d%%）</string>
     <string name="model_download_failed">模型下载失败：%1$s</string>
     <string name="error_model_load">识别模型加载失败</string>
     <string name="error_opencv">OpenCV 初始化失败</string>
@@ -82,8 +82,5 @@
     <string name="tab_recognize">识别</string>
     <string name="tab_history">历史</string>
     <string name="history_subtitle">点选可打开，勾选可删除</string>
-    <string name="privacy_title">隐私说明</string>
-    <string name="privacy_body">本应用默认在手机上离线处理图片，成绩表不会离开这台设备。\n若开启云端识别，整张图片会上传到 PaddleOCR 官方服务（百度 AI Studio）用于本次文字识别，识别完成后本应用不保留任何副本。\n导出的表格只保存在本机，除非你主动分享。\n继续即表示你已阅读并同意以上说明。</string>
-    <string name="privacy_accept">同意并继续</string>
-    <string name="privacy_wait">请先阅读（%1$d 秒）</string>
+    <string name="section_log">扫描日志</string>
 </resources>

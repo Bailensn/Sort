@@ -14,6 +14,7 @@ import com.bailensn.sort.table.TablePipeline
 import com.bailensn.sort.table.TableSelfCheck
 import com.bailensn.sort.ui.table.TableUiState.Phase
 import com.bailensn.sort.util.ImageLoader
+import com.bailensn.sort.util.ScanLog
 import com.bailensn.sort.ocr.ModelInstaller
 import com.bailensn.sort.xlsx.ExportedFile
 import com.bailensn.sort.xlsx.XlsxExporter
@@ -123,11 +124,18 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
                 if (!OpenCVUtils.init(app)) {
                     error(app.getString(R.string.error_opencv))
                 }
-                val modelDir = ModelInstaller.ensure(app) { index, total ->
+                ScanLog.d("开始加载识别引擎")
+                val modelDir = ModelInstaller.ensure(app) { index, total, fraction ->
+                    val percent = (fraction * 100).toInt()
                     _state.update {
                         it.copy(
                             engine = EngineState.Loading(
-                                app.getString(R.string.model_downloading, index + 1, total),
+                                app.getString(
+                                    R.string.model_downloading,
+                                    index + 1,
+                                    total,
+                                    percent,
+                                ),
                             ),
                         )
                     }
@@ -150,8 +158,10 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
                 }
                 engine = created
                 engineDeferred.complete(created)
+                ScanLog.d("识别引擎就绪，冷启动 ${created.coldLoadTimeMs} ms")
                 _state.update { it.copy(engine = EngineState.Ready(created.coldLoadTimeMs)) }
             } catch (t: Throwable) {
+                ScanLog.e("引擎加载失败", t)
                 engineDeferred.completeExceptionally(t)
                 _state.update {
                     it.copy(engine = EngineState.Failed(t.message ?: app.getString(R.string.error_model_load)))
@@ -178,10 +188,14 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
                 )
             }
             try {
+                ScanLog.clear()
+                ScanLog.d("选中图片：$uri")
                 val bitmap = withContext(Dispatchers.IO) { ImageLoader.decode(app, uri) }
+                ScanLog.d("解码完成：${bitmap.width}×${bitmap.height}")
                 _state.update { it.copy(original = bitmap) }
                 runPipeline(bitmap)
             } catch (t: Throwable) {
+                ScanLog.e("取图失败", t)
                 _state.update {
                     it.copy(
                         phase = Phase.ERROR,
@@ -216,7 +230,10 @@ class TableViewModel(application: Application) : AndroidViewModel(application) {
                 TablePipeline.analyze(
                     ocr = ocr,
                     source = bitmap,
-                    onStage = { stage -> _state.update { it.copy(stage = stage) } },
+                    onStage = { stage ->
+                        ScanLog.d("阶段：$stage")
+                        _state.update { it.copy(stage = stage) }
+                    },
                     onProgress = { value -> _state.update { it.copy(progress = value) } },
                 )
             }

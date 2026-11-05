@@ -10,6 +10,7 @@ import android.graphics.Matrix
 import android.net.Uri
 import androidx.exifinterface.media.ExifInterface
 import com.bailensn.sort.R
+import com.bailensn.sort.util.ScanLog
 import java.io.ByteArrayInputStream
 
 /** 从相册 Uri 解码出可用于 OCR 的 Bitmap：限制尺寸、按 EXIF 摆正。 */
@@ -18,12 +19,14 @@ object ImageLoader {
     fun decode(context: Context, uri: Uri, maxSide: Int = 2048): Bitmap {
         val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
             ?: error(context.getString(R.string.error_image_read))
+        ScanLog.d("读入图片：${bytes.size / 1024} KB")
 
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
         BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
         require(bounds.outWidth > 0 && bounds.outHeight > 0) {
             context.getString(R.string.error_image_invalid)
         }
+        ScanLog.d("原图尺寸：${bounds.outWidth}×${bounds.outHeight}")
 
         var sampleSize = 1
         while (maxOf(bounds.outWidth, bounds.outHeight) / sampleSize > maxSide) {

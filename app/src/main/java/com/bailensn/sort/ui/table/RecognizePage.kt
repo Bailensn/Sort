@@ -24,6 +24,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -38,6 +40,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.bailensn.sort.R
+import com.bailensn.sort.util.ScanLog
 import com.bailensn.sort.table.TableGrid
 import com.bailensn.sort.table.TablePipeline
 import java.util.Locale
@@ -74,10 +77,16 @@ internal fun RecognizePage(
     onCellClick: (row: Int, column: Int, value: String) -> Unit,
     contentPadding: PaddingValues,
 ) {
+    val logs by ScanLog.lines.collectAsState()
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = contentPadding,
     ) {
+        // 扫描日志放最上面：正在识别时能一眼看到走到哪一步、卡在哪
+        if (logs.isNotEmpty()) {
+            item("log-title") { SmallTitle(stringResource(R.string.section_log)) }
+            item("log") { LogCard(lines = logs) }
+        }
         when (val engine = state.engine) {
             is EngineState.Loading -> {
                 item("engine-loading") {
@@ -484,3 +493,23 @@ internal fun stageLabel(stage: TablePipeline.Stage?): String = stringResource(
         null -> R.string.stage_idle
     },
 )
+
+@Composable
+internal fun LogCard(lines: List<String>) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp)
+            .padding(bottom = 12.dp),
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            lines.takeLast(12).forEach { line ->
+                Text(
+                    text = line,
+                    style = MiuixTheme.textStyles.footnote1,
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                )
+            }
+        }
+    }
+}
