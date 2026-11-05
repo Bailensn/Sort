@@ -216,7 +216,6 @@ object TablePipeline {
         // 逐格识别整批失败（曾经因为一次把所有裁剪图攒在内存里而 OOM）时，
         // 先退回原尺寸再试一次；还不行就保留网格结构、留空，别退回文字聚类——
         // 聚类出来的列数对不上，导出的表直接没法用。
-        val firstSource = bitmap
         // 一行一次调用：识别完一行就报一行，界面上才能实时看到「这行有没有字」。
         val readings = MutableList(cellGrid.cells.size) { CellReading("", 0f, hasInk = false) }
         var rowFailed = false
@@ -225,7 +224,7 @@ object TablePipeline {
             if (indices.isEmpty()) continue
             val rowRects = indices.map { rects[it] }
             val rowStarted = SystemClock.elapsedRealtime()
-            val part = runCatching { ocr.recognizeCells(firstSource, rowRects) }.getOrNull()
+            val part = runCatching { ocr.recognizeCells(bitmap, rowRects) }.getOrNull()
             if (part == null || part.size != rowRects.size) {
                 rowFailed = true
                 break
@@ -251,7 +250,7 @@ object TablePipeline {
         // 逐行失败就退回整批再试一次（曾经因为一次攒太多裁剪图而 OOM）。
         var recognized: List<CellReading> = if (rowFailed) {
             runCatching {
-                ocr.recognizeCells(firstSource, rects) { fraction ->
+                ocr.recognizeCells(bitmap, rects) { fraction ->
                     onProgress(0.25f + 0.33f * fraction)
                 }
             }.getOrElse {
