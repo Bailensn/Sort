@@ -57,6 +57,18 @@ class TableSelfCheckTest {
     }
 
     @Test
+    fun refusesAbsurdTotalFromPollutedSum() {
+        // 语文 94.5 认成 945、数学 7 认成 70：单格反推不了，
+        // 求和 1243 也不能拿去覆盖印出来的 329.5
+        val broken = clean.mapIndexed { index, row ->
+            if (index == 0) row.toMutableList().also { it[4] = "945"; it[5] = "70" } else row
+        }
+        val result = TableSelfCheck.check(broken, confidences(mapOf((0 to 10) to 0.3f)))
+
+        assertEquals("329.5", result.rows[0][10])
+    }
+
+    @Test
     fun leavesAmbiguousMismatchAlone() {
         // 同时改两格（差 3 和差 9），任何单格修改都对不平——宁可不改，只报存疑。
         val broken = clean.mapIndexed { index, row ->

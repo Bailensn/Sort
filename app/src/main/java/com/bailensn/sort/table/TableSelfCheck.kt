@@ -25,6 +25,12 @@ object TableSelfCheck {
     /** 总分这格置信度低于这个值、又和求和对不上时，直接用求和的数覆盖。 */
     private const val RECOMPUTE_TOTAL_CONFIDENCE = 0.9f
 
+    /** 单科满分上限：求和超过它乘以科目数，多半是某科被认成了三位数。 */
+    private const val MAX_SUBJECT_SCORE = 200.0
+
+    /** 求和超过印出来的总分这么多倍，说明科目里混进了错值，不许覆盖。 */
+    private const val MAX_TOTAL_RATIO = 2.5
+
     data class Report(
         /** 自检发现的约束明细，由界面翻译成文案。 */
         val notes: List<Note> = emptyList(),
@@ -102,7 +108,9 @@ object TableSelfCheck {
                 val value = parseNumber(raw)
                 if (value == null) {
                     if (raw.isNotEmpty()) return@forEachIndexed
-                    if (taken.size >= MIN_SUBJECTS_FOR_SUM) {
+                    if (taken.size >= MIN_SUBJECTS_FOR_SUM &&
+                        sum <= MAX_SUBJECT_SCORE * taken.size
+                    ) {
                         row[totalColumn] = formatNumber(sum)
                         corrected++
                         if (!allSubjectsPresent) partialTotals++
@@ -129,7 +137,9 @@ object TableSelfCheck {
                 // 单格反推不出来，但六科都在：总分是可以算出来的，用它覆盖那格。
                 // 前提是总分这格本身不够有把握，否则宁可相信印出来的数字。
                 val totalConfidence = confidences?.getOrNull(index)?.getOrNull(totalColumn) ?: 0f
-                if (allSubjectsPresent && totalConfidence < RECOMPUTE_TOTAL_CONFIDENCE) {
+                // 求和离谱（比如某科 94.5 认成 945）就别拿它覆盖印出来的总分
+                val plausible = value <= 0.0 || sum <= value * MAX_TOTAL_RATIO
+                if (allSubjectsPresent && totalConfidence < RECOMPUTE_TOTAL_CONFIDENCE && plausible) {
                     row[totalColumn] = formatNumber(sum)
                     corrected++
                 } else {
