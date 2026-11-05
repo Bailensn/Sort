@@ -36,28 +36,6 @@ object ImageEnhancer {
         }
     }.getOrNull()
 
-    /**
-     * 只压平光照、不加 CLAHE：大片阴影被除掉，但笔画还是原样。
-     * 首遍识别用这张，比原图少一层阴影干扰，又不会像增强图那样把淡笔画拉糊。
-     */
-    fun flattenOnly(bitmap: Bitmap): Bitmap? = runCatching {
-        val rgba = Mat()
-        val gray = Mat()
-        val lighting = Mat()
-        try {
-            Utils.bitmapToMat(bitmap, rgba)
-            Imgproc.cvtColor(rgba, gray, Imgproc.COLOR_RGBA2GRAY)
-            GrayPreprocessor.flatten(gray, lighting)
-            val out = createBitmap(bitmap.width, bitmap.height, Bitmap.Config.ARGB_8888)
-            Utils.matToBitmap(gray, out)
-            out
-        } finally {
-            rgba.release()
-            gray.release()
-            lighting.release()
-        }
-    }.getOrNull()
-
     fun enhance(bitmap: Bitmap): Bitmap {
         val rgba = Mat()
         val gray = Mat()
