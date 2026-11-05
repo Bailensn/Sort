@@ -203,7 +203,7 @@ internal fun RecognizePage(
         // 只在扫描过程中露出：扫完或没开始就收起来
         if (state.phase == TableUiState.Phase.RECOGNIZING && logs.isNotEmpty()) {
             item("log-title") { SmallTitle(stringResource(R.string.section_log)) }
-            item("log") { LogCard(lines = logs) }
+            item("log") { LogLines(lines = logs) }
         }
     }
 }
@@ -494,22 +494,21 @@ internal fun stageLabel(stage: TablePipeline.Stage?): String = stringResource(
     },
 )
 
+/** 扫描日志直接铺在背景上，不套卡片。 */
 @Composable
-internal fun LogCard(lines: List<String>) {
-    Card(
+internal fun LogLines(lines: List<String>) {
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp)
+            .padding(horizontal = 16.dp)
             .padding(bottom = 12.dp),
     ) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            lines.takeLast(12).forEach { line ->
-                Text(
-                    text = line,
-                    style = MiuixTheme.textStyles.footnote1,
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                )
-            }
+        lines.takeLast(12).forEach { line ->
+            Text(
+                text = line,
+                style = MiuixTheme.textStyles.footnote1,
+                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+            )
         }
     }
 }
