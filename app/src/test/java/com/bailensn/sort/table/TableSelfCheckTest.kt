@@ -69,6 +69,17 @@ class TableSelfCheckTest {
     }
 
     @Test
+    fun fixesTotalWithExtraDigit() {
+        // 总分 329.5 被认成 3295：就算置信度很高也不能留着
+        val broken = clean.mapIndexed { index, row ->
+            if (index == 0) row.toMutableList().also { it[10] = "3295" } else row
+        }
+        val result = TableSelfCheck.check(broken, confidences())
+
+        assertEquals("329.5", result.rows[0][10])
+    }
+
+    @Test
     fun leavesAmbiguousMismatchAlone() {
         // 同时改两格（差 3 和差 9），任何单格修改都对不平——宁可不改，只报存疑。
         val broken = clean.mapIndexed { index, row ->

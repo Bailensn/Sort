@@ -128,6 +128,16 @@ object TableSelfCheck {
                     return@forEachIndexed
                 }
 
+                // 总分被多认了一位：329.5 认成 3295，除以 10 能对上就直接改
+                if (allSubjectsPresent && value > sum * MAX_TOTAL_RATIO) {
+                    val shifted = value / 10.0
+                    if (kotlin.math.abs(shifted - sum) <= 0.05) {
+                        row[totalColumn] = formatNumber(shifted)
+                        corrected++
+                        return@forEachIndexed
+                    }
+                }
+
                 val fixed = fixSingleCell(row, index, subjectColumns, totalColumn, sum, value, confidences)
                 if (fixed != null) {
                     row[fixed.first] = fixed.second
@@ -139,7 +149,11 @@ object TableSelfCheck {
                 val totalConfidence = confidences?.getOrNull(index)?.getOrNull(totalColumn) ?: 0f
                 // 求和离谱（比如某科 94.5 认成 945）就别拿它覆盖印出来的总分
                 val plausible = value <= 0.0 || sum <= value * MAX_TOTAL_RATIO
-                if (allSubjectsPresent && totalConfidence < RECOMPUTE_TOTAL_CONFIDENCE && plausible) {
+                // 总分离谱（几千分）时不管置信度多高都不能留
+                val absurd = value > sum * MAX_TOTAL_RATIO
+                if (allSubjectsPresent && (totalConfidence < RECOMPUTE_TOTAL_CONFIDENCE || absurd) &&
+                    plausible
+                ) {
                     row[totalColumn] = formatNumber(sum)
                     corrected++
                 } else {
