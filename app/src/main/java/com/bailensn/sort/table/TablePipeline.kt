@@ -243,7 +243,7 @@ object TablePipeline {
         }
 
         // 逐行失败就退回整批再试一次（曾经因为一次攒太多裁剪图而 OOM）。
-        val recognized: List<CellReading> = if (rowFailed) {
+        var recognized: List<CellReading> = if (rowFailed) {
             runCatching {
                 ocr.recognizeCells(bitmap, rects) { fraction -> onProgress(0.25f + 0.33f * fraction) }
             }.getOrElse {
@@ -254,6 +254,10 @@ object TablePipeline {
         } else {
             readings
         }
+
+        // 置信度统计只看首遍（纯 v6）：后面几遍混进了 v5 复核模型，
+        // 它的分数天生低一截，平均进去会永远卡在 82% 上下。
+        val baseline = recognized
 
         // 第二遍：增强图（压平光照 + CLAHE）放大 2 倍。
         // 两个模型一起上：v6 medium 主认，v5 server 复核，加上第一遍共三路投票。
@@ -372,7 +376,7 @@ object TablePipeline {
 
         onProgress(0.88f)
         // 统计用：只看有墨迹的格子，空白格不该拉低置信度。
-        val scored = recognized.filter { it.hasInk }
+        val scored = baseline.filter { it.hasInk }
         val averageConfidence = if (scored.isEmpty()) 0f else scored.sumOf { it.confidence.toDouble() }.toFloat() / scored.size
         // 展示用的门槛固定 98%：TRUSTED_CONFIDENCE 现在是 1.01（表示二遍全跑），
         // 用它来数会把所有格子都算成「低置信度」。
