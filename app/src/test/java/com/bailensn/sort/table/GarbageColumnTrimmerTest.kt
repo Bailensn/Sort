@@ -22,6 +22,22 @@ class GarbageColumnTrimmerTest {
     }
 
     @Test
+    fun keepsConstantClassColumn() {
+        // 全班都是 14 班：整列同一个数字是真数据，不能当线头碎屑删掉
+        val rows = listOf(
+            listOf("14", "张三丰", "329.5"),
+            listOf("14", "李四海", "334.5"),
+            listOf("14", "王五岳", "411.5"),
+            listOf("14", "示例甲", "388"),
+        )
+
+        val trimmed = GarbageColumnTrimmer.trim(rows)
+
+        assertEquals(3, trimmed.first().size)
+        assertEquals("14", trimmed.first()[0])
+    }
+
+    @Test
     fun keepsFullyFilledTrailingNumericColumn() {
         val rows = listOf(
             listOf("A", "1"),

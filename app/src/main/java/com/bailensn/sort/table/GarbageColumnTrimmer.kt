@@ -34,7 +34,8 @@ object GarbageColumnTrimmer {
             }
         }
         if (values.any { it != first }) return false
-        return symbol || first == "1" || first == "l" || first == "I" || values.size >= 10
+        // 纯数字的整列是真数据（班级号 14 这种），只有带符号或疑似竖线的才算碎屑
+        return symbol || first == "l" || first == "I"
     }
 
     /** 裁列结果：裁完的行 + 左边被丢掉的列数（用于对齐置信度矩阵）。 */
