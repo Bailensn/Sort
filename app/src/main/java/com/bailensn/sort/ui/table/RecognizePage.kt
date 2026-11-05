@@ -200,8 +200,8 @@ internal fun RecognizePage(
                 }
             }
         }
-        // 扫描日志放最下面：跟着识别往下滚，不挡抬头的内容
-        if (logs.isNotEmpty()) {
+        // 只在扫描过程中露出：扫完或没开始就收起来
+        if (state.phase == TableUiState.Phase.RECOGNIZING && logs.isNotEmpty()) {
             item("log-title") { SmallTitle(stringResource(R.string.section_log)) }
             item("log") { LogCard(lines = logs) }
         }
