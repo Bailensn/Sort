@@ -10,6 +10,8 @@ import java.io.FileOutputStream
 import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
+import java.net.URLEncoder
+import org.json.JSONObject
 
 /**
  * 模型不再随包发：首启从 ModelScope 的 CDN 拉，边下边校验字节数。
@@ -23,12 +25,18 @@ object ModelInstaller {
     private const val MODELSCOPE = "https://modelscope.cn/models/PaddlePaddle"
     private const val BACKUP_BASE = "https://github.com/Bailensn/Sort/releases/download/models-onnx"
 
+    /** 次选源：分享盘，要先 PUT 换签名直链。 */
+    private const val SHARE_KEY = "Qdws1"
+    private const val SHARE_API = "https://pan.fuwushang.net/api/v3/share/download"
+
     private data class Spec(
         /** 落盘后的相对路径，ppocr-sdk 按这个布局找模型。 */
         val local: String,
         /** 主源地址（ModelScope CDN）。 */
         val primary: String,
-        /** 备用源文件名（GitHub release）。 */
+        /** 次选：分享盘上的文件名。 */
+        val share: String,
+        /** 兜底：GitHub release 上的文件名。 */
         val backup: String,
         val size: Long,
         val required: Boolean,
@@ -39,6 +47,7 @@ object ModelInstaller {
         Spec(
             "det/inference.onnx",
             "$MODELSCOPE/PP-OCRv6_medium_det_onnx/resolve/main/inference.onnx",
+            "det.onnx.pak",
             "det.onnx",
             62032837L,
             true,
@@ -46,6 +55,7 @@ object ModelInstaller {
         Spec(
             "rec/inference.onnx",
             "$MODELSCOPE/PP-OCRv6_medium_rec_onnx/resolve/main/inference.onnx",
+            "rec.onnx.pak",
             "rec.onnx",
             76554979L,
             true,
@@ -53,6 +63,7 @@ object ModelInstaller {
         Spec(
             "rec/inference.yml",
             "$MODELSCOPE/PP-OCRv6_medium_rec_onnx/resolve/main/inference.yml",
+            "rec.yml.pak",
             "rec.yml",
             150580L,
             true,
@@ -61,6 +72,7 @@ object ModelInstaller {
         Spec(
             "referee/inference.onnx",
             "$MODELSCOPE/PP-OCRv5_server_rec_onnx/resolve/main/inference.onnx",
+            "referee.onnx.pak",
             "referee.onnx",
             84503027L,
             false,
@@ -68,6 +80,7 @@ object ModelInstaller {
         Spec(
             "referee/inference.yml",
             "$MODELSCOPE/PP-OCRv5_server_rec_onnx/resolve/main/inference.yml",
+            "referee.yml.pak",
             "referee.yml",
             148345L,
             false,
@@ -134,18 +147,25 @@ object ModelInstaller {
             dir
         }
 
-    /** 两轮：每轮先 CDN、再 prerelease，谁的字节数对上就用谁。 */
+    /** 两轮：每轮依次试 CDN、分享盘、prerelease，谁的字节数对上就用谁。 */
     private fun fetch(spec: Spec, target: File, onFraction: (Float) -> Unit): Boolean {
         val temp = File(target.parentFile, "${target.name}.part")
         repeat(2) { round ->
-            val sources = listOf(spec.primary, "$BACKUP_BASE/${spec.backup}")
+            val sources = mutableListOf(spec.primary)
+            signUrl(spec.share)?.let { sources.add(it) }
+            sources.add("$BACKUP_BASE/${spec.backup}")
+
             for ((position, source) in sources.withIndex()) {
                 val done = temp.takeIf { it.isFile }?.length() ?: 0L
                 if (done == spec.size) break
                 if (done > spec.size) temp.delete()
+                val host = when (position) {
+                    0 -> "cdn"
+                    1 -> if (source.startsWith("http") && source.contains("github.com")) "backup" else "share"
+                    else -> "backup"
+                }
                 ScanLog.d(
-                    "下载 ${spec.local}（第 ${round + 1} 轮，" +
-                        "${if (position == 0) "cdn" else "backup"}，已有 $done 字节）",
+                    "下载 ${spec.local}（第 ${round + 1} 轮，$host，已有 $done 字节）",
                 )
                 download(source, temp, spec.size, onFraction)
             }
@@ -157,6 +177,35 @@ object ModelInstaller {
             temp.delete()
         }
         return false
+    }
+
+    /** 分享盘换签名直链；失败返回 null，这家直接跳过。 */
+    private fun signUrl(remote: String): String? {
+        val path = URLEncoder.encode("/$remote", "UTF-8")
+        val connection =
+            URL("$SHARE_API/$SHARE_KEY?path=$path").openConnection() as HttpURLConnection
+        return try {
+            connection.requestMethod = "PUT"
+            connection.connectTimeout = 15000
+            connection.readTimeout = 30000
+            connection.doOutput = true
+            connection.setFixedLengthStreamingMode(0)
+            connection.outputStream.close()
+            if (connection.responseCode != 200) {
+                ScanLog.w("分享盘换签名失败：HTTP ${connection.responseCode}")
+                return null
+            }
+            val body = connection.inputStream.bufferedReader().use { it.readText() }
+            val json = JSONObject(body)
+            if (json.optInt("code") != 0) {
+                ScanLog.w("分享盘换签名被拒：code ${json.optInt("code")}")
+                return null
+            }
+            json.optString("data").takeIf { it.startsWith("http") }
+        } catch (error: IOException) {
+            ScanLog.w("分享盘换签名异常：${error.javaClass.simpleName}")
+            null
+        }
     }
 
     /** 断点续传：有 .part 就带 Range，服务端不认 206 就整份重下。 */
