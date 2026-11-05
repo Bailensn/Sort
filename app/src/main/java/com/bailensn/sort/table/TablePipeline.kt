@@ -216,14 +216,43 @@ object TablePipeline {
         // 逐格识别整批失败（曾经因为一次把所有裁剪图攒在内存里而 OOM）时，
         // 先退回原尺寸再试一次；还不行就保留网格结构、留空，别退回文字聚类——
         // 聚类出来的列数对不上，导出的表直接没法用。
-        val recognizedResult = runCatching {
-            // 一整遍逐格识别占大头，按块把进度从 25% 推到 58%。
-            ocr.recognizeCells(bitmap, rects) { fraction -> onProgress(0.25f + 0.33f * fraction) }
-        }
-        var recognized: List<CellReading> = recognizedResult.getOrElse {
-            runCatching { ocr.recognizeCells(bitmap, rects, scale = 1f) }.getOrElse {
-                return@coroutineScope CellPass(TableGrid(emptyList(), TableGrid.Mode.GRID_LINES), 0)
+        // 一行一次调用：识别完一行就报一行，界面上才能实时看到「这行有没有字」。
+        val readings = MutableList(cellGrid.cells.size) { CellReading("", 0f, hasInk = false) }
+        var rowFailed = false
+        for (row in 0 until cellGrid.rows) {
+            val indices = cellGrid.cells.indices.filter { cellGrid.cells[it].row == row }
+            if (indices.isEmpty()) continue
+            val rowRects = indices.map { rects[it] }
+            val part = runCatching { ocr.recognizeCells(bitmap, rowRects) }.getOrNull()
+            if (part == null || part.size != rowRects.size) {
+                rowFailed = true
+                break
             }
+            part.forEachIndexed { position, reading ->
+                readings[indices[position]] = reading
+                val cell = cellGrid.cells[indices[position]]
+                ScanLog.scan(
+                    "R${cell.row + 1}C${cell.column + 1} " + if (reading.hasInk) "有字" else "空",
+                )
+            }
+            val ink = part.count { it.hasInk }
+            ScanLog.scan(
+                "第 ${row + 1}/${cellGrid.rows} 行：${indices.size} 格，$ink 格有字",
+            )
+            onProgress(0.25f + 0.33f * (row + 1).toFloat() / cellGrid.rows.coerceAtLeast(1))
+        }
+
+        // 逐行失败就退回整批再试一次（曾经因为一次攒太多裁剪图而 OOM）。
+        val recognized: List<CellReading> = if (rowFailed) {
+            runCatching {
+                ocr.recognizeCells(bitmap, rects) { fraction -> onProgress(0.25f + 0.33f * fraction) }
+            }.getOrElse {
+                runCatching { ocr.recognizeCells(bitmap, rects, scale = 1f) }.getOrElse {
+                    return@coroutineScope CellPass(TableGrid(emptyList(), TableGrid.Mode.GRID_LINES), 0)
+                }
+            }
+        } else {
+            readings
         }
 
         // 第二遍：增强图（压平光照 + CLAHE）放大 2 倍。
@@ -436,12 +465,6 @@ object TablePipeline {
                     detector.first
                 }
             }
-            // 具体到每一格：只写位置和有没有字，不写内容
-            ScanLog.scan(
-                "R${cell.row + 1}C${cell.column + 1} " +
-                    (if (reading.hasInk) "有字" else "空") +
-                    (if (chosen.isEmpty()) "（留空）" else ""),
-            )
             matrix[cell.row][cell.column] = chosen
             confidenceGrid[cell.row][cell.column] =
                 if (detector != null && chosen == detector.first && chosen != cellText) detector.second
