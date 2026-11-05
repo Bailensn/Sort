@@ -41,8 +41,8 @@
 
     <string name="model_failed_title">模型加载失败</string>
     <string name="model_loading">正在加载识别模型</string>
-    <string name="model_extracting">正在解压内置模型 %1$d/%2$d</string>
-    <string name="model_extract_failed">内置模型解压失败：%1$s</string>
+    <string name="model_downloading">正在下载识别模型 %1$d/%2$d</string>
+    <string name="model_download_failed">模型下载失败：%1$s</string>
     <string name="error_model_load">识别模型加载失败</string>
     <string name="error_opencv">OpenCV 初始化失败</string>
     <string name="error_image_read">无法读取图片</string>
