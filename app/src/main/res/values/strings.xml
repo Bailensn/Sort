@@ -84,7 +84,7 @@
     <string name="history_subtitle">点选可打开，勾选可删除</string>
     <string name="section_log">扫描日志</string>
     <string name="privacy_title">隐私说明</string>
-    <string name="privacy_body">图片默认在本机识别，不上传。开启云端识别后，整张图片会上传到 PaddleOCR 官方服务，仅用于这次识别；导出的表格只保存在本机。</string>
+    <string name="privacy_body">图片只在本机识别，不会上传。首次启动会从 ModelScope 下载识别模型（约 300 MB）。导出的表格只保存在本机。</string>
     <string name="privacy_accept">同意并继续</string>
     <string name="privacy_wait">请先阅读（%1$d 秒）</string>
 </resources>

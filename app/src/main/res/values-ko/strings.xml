@@ -83,7 +83,7 @@
     <string name="history_subtitle">탭하면 열기, 선택하면 삭제</string>
     <string name="section_log">스캔 로그</string>
     <string name="privacy_title">개인정보 안내</string>
-    <string name="privacy_body">사진은 기본적으로 기기에서 인식되며 업로드되지 않습니다. 클라우드 인식을 켜면 이미지가 PaddleOCR 서비스로 전송되어 이번 인식에만 사용되며, 내보낸 표는 기기에만 저장됩니다.</string>
+    <string name="privacy_body">사진은 기기에서만 인식되며 업로드되지 않습니다. 첫 실행 시 인식 모델(약 300MB)을 ModelScope에서 내려받습니다. 내보낸 표는 기기에만 저장됩니다.</string>
     <string name="privacy_accept">동의하고 계속</string>
     <string name="privacy_wait">먼저 읽어 주세요 (%1$d초)</string>
 </resources>

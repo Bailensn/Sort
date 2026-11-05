@@ -83,7 +83,7 @@
     <string name="history_subtitle">點選可開啟，勾選可刪除</string>
     <string name="section_log">掃描日誌</string>
     <string name="privacy_title">隱私說明</string>
-    <string name="privacy_body">圖片預設在本機辨識，不上傳。開啟雲端辨識後，整張圖片會上傳到 PaddleOCR 官方服務，僅用於這次辨識；匯出的表格只保存在本機。</string>
+    <string name="privacy_body">圖片只在本機辨識，不會上傳。首次啟動會從 ModelScope 下載辨識模型（約 300 MB）。匯出的表格只保存在本機。</string>
     <string name="privacy_accept">同意並繼續</string>
     <string name="privacy_wait">請先閱讀（%1$d 秒）</string>
 </resources>
