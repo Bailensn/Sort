@@ -1,3 +1,20 @@
+*.iml
+.gradle/
+local.properties
+.idea/
+.DS_Store
+build/
+captures/
+.cxx/
+.externalNativeBuild/
+.kotlin/
+*.apk
+*.aab
+*.part
+
+# 模型由 Gradle 任务下载（约 31 MB），不进仓库
+app/src/main/assets/models/
+
 # 本地验证用的成绩单照片（含真实姓名/成绩），不入库
 /*.png
 /*.jpg
@@ -6,16 +23,3 @@
 # CI 产物
 build.log
 ci-report/
-
-# 手动编译的中间产物
-*.o
-*.o.tmp
-
-# 本地 cmake 构建目录
-/Native/build/
-
-# CI 现场转换出来的鸿蒙模型
-/Harmony/main/src/main/resources/rawfile/models/
-iOS/ios-app/Vendor/
-# MNN 的鸿蒙预编译包（CI 现场下载）
-/Harmony/main/src/main/cpp/third_party/mnn/

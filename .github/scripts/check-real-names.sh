@@ -23,7 +23,7 @@ while IFS= read -r file; do
       found=1
     fi
   done < <(grep -oP '[\x{4e00}-\x{9fa5}]{2,4}' "$file" 2>/dev/null | sort -u || true)
-done < <(git ls-files '*.kt' '*.java' '*.xml' '*.md' '*.txt' '*.kts' '*.yml' '*.yaml' '*.json' '*.cpp' '*.h' '*.hpp' '*.ets' '*.swift')
+done < <(git ls-files '*.kt' '*.java' '*.xml' '*.md' '*.txt' '*.kts' '*.yml' '*.yaml' '*.json')
 else
   echo "未配置 REAL_NAME_HASHES，跳过人名检查（学号检查照常执行）"
 fi
@@ -37,9 +37,8 @@ while IFS= read -r file; do
     esac
     echo "::error file=$file::出现疑似真实学号（${#number} 位数字），请改用 9000 开头的假号"
     found=1
-  # 先抹掉 32 位以上的十六进制串（sha256 之类），否则哈希里的数字段会被当成学号
-  done < <(sed -E 's/[0-9a-fA-F]{32,}//g' "$file" 2>/dev/null | grep -oE '[0-9]{10,13}' | sort -u | sed "s|^|$file:|" || true)
-done < <(git ls-files '*.kt' '*.java' '*.xml' '*.md' '*.txt' '*.kts' '*.yml' '*.yaml' '*.json' '*.cpp' '*.h' '*.hpp' '*.ets' '*.swift')
+  done < <(grep -oE '[0-9]{10,13}' "$file" 2>/dev/null | sort -u | sed "s|^|$file:|" || true)
+done < <(git ls-files '*.kt' '*.java' '*.xml' '*.md' '*.txt' '*.kts' '*.yml' '*.yaml' '*.json')
 
 if [[ "$found" -eq 1 ]]; then
   echo "::error::仓库里出现了真实人名，提交被拒绝。请换成占位名（见 AGENTS.md）"

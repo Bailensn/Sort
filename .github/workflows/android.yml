@@ -1,69 +1,23 @@
 name: Android CI
 
 on:
-  # 改了安卓或 Native 就自己跑：这是唯一能在真机上验证的端
   push:
     branches: [ "main" ]
-    paths:
-      - "Android/**"
-      - "Native/**"
-      - "tools/**"
-      - ".github/workflows/android.yml"
   pull_request:
-    paths:
-      - "Android/**"
-      - "Native/**"
   workflow_dispatch:
 
 permissions:
-  # 失败时要把日志推到 ci-log-* 分支
-  contents: write
+  contents: read
 
 concurrency:
-  group: ci-${{ github.ref }}
-  # main 上的推送要跑完：连着推几次时，取消旧的那次等于哪个都跑不完。
-  # PR 仍然只在最新提交上跑。
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  group: android-ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  # 纯 C++ 核心：不依赖任何平台 SDK，跑得最快，挂在这里先挡一道。
-  native-core:
-    name: Native core
-    runs-on: ubuntu-24.04
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v7
-      - name: Cache native build
-        uses: actions/cache@v6
-        with:
-          path: Native/build
-          key: native-build-${{ hashFiles('Native/**') }}
-          restore-keys: native-build-
-      - name: Configure
-        run: cmake -S Native -B Native/build -DSORT_BUILD_TESTS=ON -DSORT_BUILD_TOOLS=ON
-      - name: Build
-        run: |
-          set -o pipefail
-          cmake --build Native/build --parallel 2 2>&1 | tee build.log
-      - name: Smoke test
-        run: ctest --test-dir Native/build --output-on-failure
-      - name: Publish build log
-        if: always()
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        run: bash "$GITHUB_WORKSPACE/.github/scripts/publish-log.sh" build.log native-core.log ci-log-native-core
-      - name: C ABI headers stay pure C
-        run: |
-          printf '#include "engine_errors.h"\n#include "engine_ocr_capi.h"\nint main(void){return 0;}\n' > /tmp/abi_check.c
-          gcc -std=c11 -Wall -Wextra -INative/capi -c /tmp/abi_check.c -o /tmp/abi_check.o
-
   assemble-release:
     name: Assemble release
     runs-on: ubuntu-24.04
     timeout-minutes: 45
-    defaults:
-      run:
-        working-directory: Android
     steps:
       - uses: actions/checkout@v7
       - name: Set up JDK 21
@@ -76,11 +30,36 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v6
         with:
+          # 缓存按周清理一次，避免 Gradle Home 越滚越大。
           cache-cleanup: on-success
       - name: Install SDK components
-        run: bash "$GITHUB_WORKSPACE/.github/scripts/install-sdk-components.sh" ndk
+        run: |
+          set -o pipefail
+          yes | sdkmanager --licenses > /dev/null || true
+          installed=""
+          for attempt in 1 2; do
+            if sdkmanager --install "platforms;android-37.0" "build-tools;36.0.0" "cmake;3.22.1" "ndk;30.0.16248370" > sdk-install.log 2>&1; then
+              installed=1
+              break
+            fi
+            echo "第 $attempt 次安装失败，5 秒后重试"
+            tail -5 sdk-install.log || true
+            sleep 5
+          done
+          if [ -z "$installed" ]; then
+            tail -20 sdk-install.log || true
+            echo "::error::SDK 组件安装失败：$(tail -3 sdk-install.log | tr '\n' ' ')"
+            exit 1
+          fi
+      # 构建期要下载约 139 MB 的内置模型，缓存后不用每次拉。
+      - name: Cache bundled OCR models
+        continue-on-error: true
+        uses: actions/cache@v6
+        with:
+          path: app/build/generated/ocrModels
+          key: ocr-models-medium-v2
+      # 真实人名一律不允许进仓库。名单以 sha256 形式放在 secret 里，仓库本身不存名单。
       - name: Check for real names
-        working-directory: ${{ github.workspace }}
         env:
           REAL_NAME_HASHES: ${{ secrets.REAL_NAME_HASHES }}
         run: bash .github/scripts/check-real-names.sh
@@ -89,40 +68,25 @@ jobs:
       - name: Assemble release
         run: |
           set -o pipefail
-          # 一次 Gradle 调用出 APK + AAB；-PciSign 让 APK 用 debug key 签，能直接装
-          ./gradlew --stacktrace --warning-mode=all --build-cache \
-            :app:assembleRelease :app:bundleRelease -PciSign 2>&1 | tee build.log \
-            || { bash "$GITHUB_WORKSPACE/.github/scripts/print-errors.sh" build.log; exit 1; }
-
-      - name: Publish build log
-        if: always()
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        run: bash "$GITHUB_WORKSPACE/.github/scripts/publish-log.sh" build.log "${{ github.job }}.log" "ci-log-${{ github.job }}"
+          ./gradlew --stacktrace --warning-mode=all --build-cache :app:assembleRelease 2>&1 | tee build.log \
+            || { bash .github/scripts/print-errors.sh build.log; exit 1; }
       - name: Upload release APK
         if: success()
         uses: actions/upload-artifact@v7
         with:
           name: apk-release
-          path: Android/app/build/outputs/apk/release/*.apk
+          path: app/build/outputs/apk/release/*.apk
           if-no-files-found: warn
           retention-days: 14
-      - name: Upload release AAB
-        if: success()
-        uses: actions/upload-artifact@v7
-        with:
-          name: aab-release
-          path: Android/app/build/outputs/bundle/release/*.aab
-          if-no-files-found: warn
-          retention-days: 14
+      - name: Diagnose failure
+        if: failure()
+        run: |
+          echo "::error::环境诊断 job=${{ github.job }} sdk=${ANDROID_SDK_ROOT:-unset} java=${JAVA_HOME:-unset} sdkmanager=$(command -v sdkmanager || echo none)"
 
   lint:
     name: Lint
     runs-on: ubuntu-24.04
     timeout-minutes: 45
-    defaults:
-      run:
-        working-directory: Android
     steps:
       - uses: actions/checkout@v7
       - name: Set up JDK 21
@@ -135,22 +99,42 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v6
         with:
+          # 缓存按周清理一次，避免 Gradle Home 越滚越大。
           cache-cleanup: on-success
       - name: Install SDK components
-        run: bash "$GITHUB_WORKSPACE/.github/scripts/install-sdk-components.sh"
+        run: |
+          set -o pipefail
+          yes | sdkmanager --licenses > /dev/null || true
+          installed=""
+          for attempt in 1 2; do
+            if sdkmanager --install "platforms;android-37.0" "build-tools;36.0.0" > sdk-install.log 2>&1; then
+              installed=1
+              break
+            fi
+            echo "第 $attempt 次安装失败，5 秒后重试"
+            tail -5 sdk-install.log || true
+            sleep 5
+          done
+          if [ -z "$installed" ]; then
+            tail -20 sdk-install.log || true
+            echo "::error::SDK 组件安装失败：$(tail -3 sdk-install.log | tr '\n' ' ')"
+            exit 1
+          fi
+      # 构建期要下载约 139 MB 的内置模型，缓存后不用每次拉。
+      - name: Cache bundled OCR models
+        continue-on-error: true
+        uses: actions/cache@v6
+        with:
+          path: app/build/generated/ocrModels
+          key: ocr-models-medium-v2
       - name: Make gradlew executable
         run: chmod +x ./gradlew
       - name: Lint debug
         run: |
           set -o pipefail
           ./gradlew --stacktrace --warning-mode=all --build-cache :app:lintDebug 2>&1 | tee build.log \
-            || { bash "$GITHUB_WORKSPACE/.github/scripts/print-errors.sh" build.log; exit 1; }
-
-      - name: Publish build log
-        if: always()
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        run: bash "$GITHUB_WORKSPACE/.github/scripts/publish-log.sh" build.log "${{ github.job }}.log" "ci-log-${{ github.job }}"
+            || { bash .github/scripts/print-errors.sh build.log; exit 1; }
+      # 只有真正报了 Warning / Error 才上传报告：干净的 run 不该多一个产物。
       - name: Check lint findings
         id: lint-findings
         if: always()
@@ -158,10 +142,12 @@ jobs:
           xml=app/build/reports/lint-results-debug.xml
           if [ ! -f "$xml" ]; then
             echo "found=false" >> "$GITHUB_OUTPUT"
+            echo "没有 lint 报告，跳过上传"
             exit 0
           fi
           warnings=$(grep -c 'severity="Warning"' "$xml" || true)
           errors=$(grep -c 'severity="Error"' "$xml" || true)
+          echo "Warning=$warnings Error=$errors"
           if [ "$warnings" -gt 0 ] || [ "$errors" -gt 0 ]; then
             echo "found=true" >> "$GITHUB_OUTPUT"
           else
@@ -173,18 +159,18 @@ jobs:
         with:
           name: lint-report
           path: |
-            Android/app/build/reports/lint-results-*.html
-            Android/app/build/reports/lint-results-*.xml
+            app/build/reports/lint-results-*.html
+            app/build/reports/lint-results-*.xml
           if-no-files-found: warn
           retention-days: 7
-
+      - name: Diagnose failure
+        if: failure()
+        run: |
+          echo "::error::环境诊断 job=${{ github.job }} sdk=${ANDROID_SDK_ROOT:-unset} java=${JAVA_HOME:-unset} sdkmanager=$(command -v sdkmanager || echo none)"
   unit-test:
     name: Unit tests
     runs-on: ubuntu-24.04
     timeout-minutes: 30
-    defaults:
-      run:
-        working-directory: Android
     steps:
       - uses: actions/checkout@v7
       - name: Set up JDK 21
@@ -197,30 +183,49 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v6
         with:
+          # 缓存按周清理一次，避免 Gradle Home 越滚越大。
           cache-cleanup: on-success
       - name: Install SDK components
-        run: bash "$GITHUB_WORKSPACE/.github/scripts/install-sdk-components.sh"
+        run: |
+          set -o pipefail
+          yes | sdkmanager --licenses > /dev/null || true
+          installed=""
+          for attempt in 1 2; do
+            if sdkmanager --install "platforms;android-37.0" "build-tools;36.0.0" > sdk-install.log 2>&1; then
+              installed=1
+              break
+            fi
+            echo "第 $attempt 次安装失败，5 秒后重试"
+            tail -5 sdk-install.log || true
+            sleep 5
+          done
+          if [ -z "$installed" ]; then
+            tail -20 sdk-install.log || true
+            echo "::error::SDK 组件安装失败：$(tail -3 sdk-install.log | tr '\n' ' ')"
+            exit 1
+          fi
+      # 构建期要下载约 139 MB 的内置模型，缓存后不用每次拉。
+      - name: Cache bundled OCR models
+        continue-on-error: true
+        uses: actions/cache@v6
+        with:
+          path: app/build/generated/ocrModels
+          key: ocr-models-medium-v2
       - name: Make gradlew executable
         run: chmod +x ./gradlew
       - name: Run JVM unit tests
         run: |
           set -o pipefail
           ./gradlew --stacktrace --warning-mode=all --build-cache :app:testDebugUnitTest 2>&1 | tee build.log \
-            || { bash "$GITHUB_WORKSPACE/.github/scripts/print-errors.sh" build.log; exit 1; }
-
-      - name: Publish build log
-        if: always()
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        run: bash "$GITHUB_WORKSPACE/.github/scripts/publish-log.sh" build.log "${{ github.job }}.log" "ci-log-${{ github.job }}"
-
+            || { bash .github/scripts/print-errors.sh build.log; exit 1; }
+      - name: Diagnose failure
+        if: failure()
+        run: |
+          echo "::error::环境诊断 job=${{ github.job }} sdk=${ANDROID_SDK_ROOT:-unset} java=${JAVA_HOME:-unset} sdkmanager=$(command -v sdkmanager || echo none)"
   android-test:
     name: Instrumentation APK
     runs-on: ubuntu-24.04
     timeout-minutes: 45
-    defaults:
-      run:
-        working-directory: Android
     steps:
       - uses: actions/checkout@v7
       - name: Set up JDK 21
@@ -233,19 +238,42 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v6
         with:
+          # 缓存按周清理一次，避免 Gradle Home 越滚越大。
           cache-cleanup: on-success
       - name: Install SDK components
-        run: bash "$GITHUB_WORKSPACE/.github/scripts/install-sdk-components.sh" ndk
+        run: |
+          set -o pipefail
+          yes | sdkmanager --licenses > /dev/null || true
+          installed=""
+          for attempt in 1 2; do
+            if sdkmanager --install "platforms;android-37.0" "build-tools;36.0.0" "cmake;3.22.1" "ndk;30.0.16248370" > sdk-install.log 2>&1; then
+              installed=1
+              break
+            fi
+            echo "第 $attempt 次安装失败，5 秒后重试"
+            tail -5 sdk-install.log || true
+            sleep 5
+          done
+          if [ -z "$installed" ]; then
+            tail -20 sdk-install.log || true
+            echo "::error::SDK 组件安装失败：$(tail -3 sdk-install.log | tr '\n' ' ')"
+            exit 1
+          fi
+      # 构建期要下载约 139 MB 的内置模型，缓存后不用每次拉。
+      - name: Cache bundled OCR models
+        continue-on-error: true
+        uses: actions/cache@v6
+        with:
+          path: app/build/generated/ocrModels
+          key: ocr-models-medium-v2
       - name: Make gradlew executable
         run: chmod +x ./gradlew
       - name: Assemble instrumentation APK
         run: |
           set -o pipefail
           ./gradlew --stacktrace --warning-mode=all --build-cache :app:assembleDebugAndroidTest 2>&1 | tee build.log \
-            || { bash "$GITHUB_WORKSPACE/.github/scripts/print-errors.sh" build.log; exit 1; }
-
-      - name: Publish build log
-        if: always()
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        run: bash "$GITHUB_WORKSPACE/.github/scripts/publish-log.sh" build.log "${{ github.job }}.log" "ci-log-${{ github.job }}"
+            || { bash .github/scripts/print-errors.sh build.log; exit 1; }
+      - name: Diagnose failure
+        if: failure()
+        run: |
+          echo "::error::环境诊断 job=${{ github.job }} sdk=${ANDROID_SDK_ROOT:-unset} java=${JAVA_HOME:-unset} sdkmanager=$(command -v sdkmanager || echo none)"
