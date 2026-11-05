@@ -81,4 +81,8 @@
     <string name="tab_recognize">인식</string>
     <string name="tab_history">기록</string>
     <string name="history_subtitle">탭하면 열기, 선택하면 삭제</string>
+    <string name="privacy_title">개인정보 안내</string>
+    <string name="privacy_body">이 앱은 기본적으로 휴대폰에서 오프라인으로 처리하며, 성적표가 기기 밖으로 나가지 않습니다.\n클라우드 인식을 켜면 이미지 전체가 PaddleOCR 공식 서비스(Baidu AI Studio)로 전송되어 이번 인식에만 사용되며, 인식 후 앱은 어떤 사본도 보관하지 않습니다.\n내보낸 표는 직접 공유하지 않는 한 기기에만 저장됩니다.\n계속하면 위 내용을 읽고 동의한 것으로 간주합니다.</string>
+    <string name="privacy_accept">동의하고 계속</string>
+    <string name="privacy_wait">먼저 읽어 주세요 (%1$d초)</string>
 </resources>

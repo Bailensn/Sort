@@ -81,4 +81,8 @@
     <string name="tab_recognize">辨識</string>
     <string name="tab_history">歷史</string>
     <string name="history_subtitle">點選可開啟，勾選可刪除</string>
+    <string name="privacy_title">隱私說明</string>
+    <string name="privacy_body">本應用程式預設在手機上離線處理圖片，成績表不會離開這台裝置。\n若開啟雲端辨識，整張圖片會上傳到 PaddleOCR 官方服務（百度 AI Studio）用於本次文字辨識，辨識完成後本應用程式不保留任何副本。\n匯出的表格只保存在本機，除非你主動分享。\n繼續即表示你已閱讀並同意以上說明。</string>
+    <string name="privacy_accept">同意並繼續</string>
+    <string name="privacy_wait">請先閱讀（%1$d 秒）</string>
 </resources>
